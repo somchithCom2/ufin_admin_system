@@ -1,3 +1,3 @@
-// Auth data exports
+// Admin data layer exports
 export 'models/models.dart';
 export 'repositories/repositories.dart';

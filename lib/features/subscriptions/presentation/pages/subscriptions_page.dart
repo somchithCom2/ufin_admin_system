@@ -42,13 +42,15 @@ class SubscriptionsPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'User Information',
+                      'Admin Information',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 12),
-                    Text('Email: ${authState.email ?? "N/A"}'),
+                    Text('Username: ${authState.username ?? "N/A"}'),
                     const SizedBox(height: 8),
                     Text('User ID: ${authState.userId ?? "N/A"}'),
+                    const SizedBox(height: 8),
+                    Text('Role: ${authState.role ?? "N/A"}'),
                     const SizedBox(height: 8),
                     Text(
                       'Status: ${authState.isAuthenticated ? "Authenticated" : "Not Authenticated"}',
@@ -59,7 +61,7 @@ class SubscriptionsPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Your Subscriptions',
+              'Subscriptions Management',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
@@ -125,24 +127,22 @@ class SubscriptionsPage extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ...features
-                .map(
-                  (feature) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle,
-                          size: 16,
-                          color: Theme.of(context).primaryColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(feature),
-                      ],
+            ...features.map(
+              (feature) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 16,
+                      color: Theme.of(context).primaryColor,
                     ),
-                  ),
-                )
-                .toList(),
+                    const SizedBox(width: 8),
+                    Text(feature),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,

@@ -18,8 +18,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _emailController = TextEditingController();
-    _passwordController = TextEditingController();
+    _emailController = TextEditingController(text: "systemadmin");
+    _passwordController = TextEditingController(text: "123456");
   }
 
   @override
@@ -35,7 +35,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     ref.listen(authStateProvider, (previous, next) {
       if (next.isAuthenticated) {
-        context.go(AppRoutes.subscriptions);
+        context.go(AppRoutes.admin);
       }
       if (next.error != null) {
         ScaffoldMessenger.of(
@@ -97,23 +97,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         )
                       : const Text('Login'),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Don't have an account? "),
-                  GestureDetector(
-                    onTap: () => context.go(AppRoutes.register),
-                    child: Text(
-                      'Register',
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
