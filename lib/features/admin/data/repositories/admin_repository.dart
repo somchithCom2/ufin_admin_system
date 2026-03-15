@@ -511,6 +511,16 @@ class AdminRepository {
     }
   }
 
+  /// Get subscription plan by ID (from subscriptions endpoint)
+  Future<AdminPlan> getSubscriptionPlanById(int id) async {
+    try {
+      final response = await _dio.get(ApiConstants.subscriptionPlanById(id));
+      return _parseResponse(response, AdminPlan.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Create new plan
   Future<AdminPlan> createPlan(CreatePlanRequest request) async {
     try {

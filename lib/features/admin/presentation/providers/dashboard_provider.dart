@@ -629,3 +629,87 @@ final plansProvider = StateNotifierProvider<PlansNotifier, PlansState>((ref) {
   final repository = ref.watch(adminRepositoryProvider);
   return PlansNotifier(repository);
 });
+
+// ========== Plan Detail ==========
+class PlanDetailState {
+  final bool isLoading;
+  final String? error;
+  final AdminPlan? plan;
+
+  const PlanDetailState({this.isLoading = false, this.error, this.plan});
+
+  PlanDetailState copyWith({
+    bool? isLoading,
+    String? error,
+    AdminPlan? plan,
+    bool clearError = false,
+    bool clearPlan = false,
+  }) {
+    return PlanDetailState(
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+      plan: clearPlan ? null : (plan ?? this.plan),
+    );
+  }
+}
+
+class PlanDetailNotifier extends StateNotifier<PlanDetailState> {
+  final AdminRepository _repository;
+  final Ref _ref;
+
+  PlanDetailNotifier(this._repository, this._ref)
+    : super(const PlanDetailState());
+
+  Future<void> loadPlan(int planId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final plan = await _repository.getSubscriptionPlanById(planId);
+      state = state.copyWith(isLoading: false, plan: plan);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> activatePlan(int planId) async {
+    try {
+      await _repository.activatePlan(planId);
+      loadPlan(planId); // Refresh
+      _ref.read(plansProvider.notifier).loadPlans(); // Refresh list
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> deactivatePlan(int planId) async {
+    try {
+      await _repository.deactivatePlan(planId);
+      loadPlan(planId); // Refresh
+      _ref.read(plansProvider.notifier).loadPlans(); // Refresh list
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<bool> updatePlan(int planId, UpdatePlanRequest request) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final updatedPlan = await _repository.updatePlan(planId, request);
+      state = state.copyWith(isLoading: false, plan: updatedPlan);
+      _ref.read(plansProvider.notifier).loadPlans(); // Refresh list
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  void clear() {
+    state = const PlanDetailState();
+  }
+}
+
+final planDetailProvider =
+    StateNotifierProvider<PlanDetailNotifier, PlanDetailState>((ref) {
+      final repository = ref.watch(adminRepositoryProvider);
+      return PlanDetailNotifier(repository, ref);
+    });

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:ufin_admin_system/core/constants/api_constants.dart';
+import 'package:ufin_admin_system/core/services/auth_event_bus.dart';
 import 'package:ufin_admin_system/core/services/secure_storage_service.dart';
 
 class DioClient {
@@ -59,10 +60,15 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    // Handle 401 Unauthorized - token expired
+    // Handle 401 Unauthorized - token expired or server restarted
     if (err.response?.statusCode == 401) {
-      // Token expired, clear storage
-      SecureStorageService.clearAll();
+      // Skip logout trigger for login endpoint
+      if (!err.requestOptions.path.contains('/login')) {
+        // Token expired or invalid, clear storage and notify app
+        SecureStorageService.clearAll();
+        // Emit unauthorized event to trigger logout in UI
+        AuthEventBus.instance.emitUnauthorized();
+      }
     }
     handler.next(err);
   }

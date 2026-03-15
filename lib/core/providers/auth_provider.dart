@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/services/auth_event_bus.dart';
 import 'package:ufin_admin_system/core/services/dio_client.dart';
 import 'package:ufin_admin_system/core/services/secure_storage_service.dart';
 import 'package:ufin_admin_system/features/auth/data/models/login_request.dart';
@@ -73,9 +76,43 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repository;
+  StreamSubscription<AuthEvent>? _authEventSubscription;
 
   AuthNotifier(this._repository) : super(const AuthState()) {
     _initializeAuth();
+    _listenToAuthEvents();
+  }
+
+  /// Listen to auth events from DioClient (401 errors)
+  void _listenToAuthEvents() {
+    _authEventSubscription = AuthEventBus.instance.stream.listen((event) {
+      switch (event) {
+        case AuthEvent.unauthorized:
+        case AuthEvent.sessionExpired:
+        case AuthEvent.forceLogout:
+          _handleUnauthorized();
+          break;
+      }
+    });
+  }
+
+  /// Handle unauthorized event - force logout
+  Future<void> _handleUnauthorized() async {
+    // Only process if currently authenticated
+    if (state.isAuthenticated) {
+      await SecureStorageService.clearAll();
+      DioClient.reset();
+      state = const AuthState(
+        isInitializing: false,
+        error: 'Session expired. Please login again.',
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _authEventSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _initializeAuth() async {

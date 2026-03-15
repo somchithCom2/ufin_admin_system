@@ -88,6 +88,12 @@ class ApiConstants {
   static String adminPlanActivate(int id) => '/admin/plans/$id/activate';
   static String adminPlanDeactivate(int id) => '/admin/plans/$id/deactivate';
 
+  // Subscription Plans (public endpoints)
+  static const String subscriptionPlans = '/subscriptions/plans';
+  static String subscriptionPlanById(int id) => '/subscriptions/plans/id/$id';
+  static String subscriptionPlanByCode(String code) =>
+      '/subscriptions/plans/$code';
+
   // ============================================================
   // HELPER METHODS
   // ============================================================

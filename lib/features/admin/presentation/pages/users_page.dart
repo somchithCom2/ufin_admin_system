@@ -118,6 +118,10 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       value: 'status:suspended',
                       child: Text('  Suspended'),
                     ),
+                    const PopupMenuItem(
+                      value: 'status:deleted',
+                      child: Text('  Deleted'),
+                    ),
                     const PopupMenuDivider(),
                     const PopupMenuItem(
                       enabled: false,
@@ -190,76 +194,96 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   }
 
   Widget _buildUserCard(AdminUser user) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getStatusColor(user.status).withValues(alpha: 0.1),
-          backgroundImage: user.avatarUrl != null
-              ? NetworkImage(user.avatarUrl!)
-              : null,
-          child: user.avatarUrl == null
-              ? Text(
-                  user.username.substring(0, 1).toUpperCase(),
-                  style: TextStyle(color: _getStatusColor(user.status)),
-                )
-              : null,
-        ),
-        title: Text(
-          user.fullName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('@${user.username}'),
-            Row(
-              children: [
-                _buildStatusChip(user.status),
-                const SizedBox(width: 8),
-                _buildTypeChip(user.userType),
-              ],
+    final isDeleted = user.status.toLowerCase() == 'deleted';
+    return Opacity(
+      opacity: isDeleted ? 0.5 : 1.0,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: _getStatusColor(
+              user.status,
+            ).withValues(alpha: 0.1),
+            backgroundImage: user.avatarUrl != null
+                ? NetworkImage(user.avatarUrl!)
+                : null,
+            child: user.avatarUrl == null
+                ? Text(
+                    user.username.substring(0, 1).toUpperCase(),
+                    style: TextStyle(color: _getStatusColor(user.status)),
+                  )
+                : null,
+          ),
+          title: Text(
+            user.fullName,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              decoration: isDeleted ? TextDecoration.lineThrough : null,
             ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (action) => _handleUserAction(user, action),
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'view',
-              child: Row(
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('@${user.username}'),
+              Row(
                 children: [
-                  Icon(Icons.visibility),
-                  SizedBox(width: 8),
-                  Text('View Details'),
+                  _buildStatusChip(user.status),
+                  const SizedBox(width: 8),
+                  _buildTypeChip(user.userType),
                 ],
               ),
-            ),
-            if (user.status != 'suspended')
+            ],
+          ),
+          trailing: PopupMenuButton<String>(
+            onSelected: (action) => _handleUserAction(user, action),
+            itemBuilder: (context) => [
               const PopupMenuItem(
-                value: 'suspend',
+                value: 'view',
                 child: Row(
                   children: [
-                    Icon(Icons.block, color: Colors.orange),
+                    Icon(Icons.visibility),
                     SizedBox(width: 8),
-                    Text('Suspend'),
+                    Text('View Details'),
                   ],
                 ),
               ),
-            if (user.status == 'suspended')
-              const PopupMenuItem(
-                value: 'activate',
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Activate'),
-                  ],
+              if (user.status != 'suspended')
+                const PopupMenuItem(
+                  value: 'suspend',
+                  child: Row(
+                    children: [
+                      Icon(Icons.block, color: Colors.orange),
+                      SizedBox(width: 8),
+                      Text('Suspend'),
+                    ],
+                  ),
                 ),
-              ),
-          ],
+              if (user.status == 'suspended')
+                const PopupMenuItem(
+                  value: 'activate',
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green),
+                      SizedBox(width: 8),
+                      Text('Activate'),
+                    ],
+                  ),
+                ),
+              if (user.status != 'deleted')
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete'),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          onTap: () => _showUserDetails(user),
         ),
-        onTap: () => _showUserDetails(user),
       ),
     );
   }
@@ -308,6 +332,8 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         return Colors.orange;
       case 'banned':
         return Colors.red;
+      case 'deleted':
+        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -323,6 +349,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         break;
       case 'activate':
         _showStatusDialog(user, 'active');
+        break;
+      case 'delete':
+        _showStatusDialog(user, 'deleted');
         break;
     }
   }
@@ -412,6 +441,14 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 ),
               ]),
               const SizedBox(height: 16),
+              _buildDetailSection('Account Status', [
+                _buildDetailRow('Status', user.status.toUpperCase()),
+                _buildDetailRow(
+                  'Deleted',
+                  user.status.toLowerCase() == 'deleted' ? 'Yes' : 'No',
+                ),
+              ]),
+              const SizedBox(height: 16),
               _buildDetailSection('Activity', [
                 _buildDetailRow(
                   'Last Login',
@@ -474,18 +511,29 @@ class _UsersPageState extends ConsumerState<UsersPage> {
 
   void _showStatusDialog(AdminUser user, String newStatus) {
     final reasonController = TextEditingController();
+    String dialogTitle;
+    String actionText;
+    switch (newStatus) {
+      case 'suspended':
+        dialogTitle = 'Suspend User';
+        actionText = 'suspend';
+        break;
+      case 'deleted':
+        dialogTitle = 'Delete User';
+        actionText = 'delete';
+        break;
+      default:
+        dialogTitle = 'Activate User';
+        actionText = 'activate';
+    }
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          newStatus == 'suspended' ? 'Suspend User' : 'Activate User',
-        ),
+        title: Text(dialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Are you sure you want to ${newStatus == 'suspended' ? 'suspend' : 'activate'} "${user.username}"?',
-            ),
+            Text('Are you sure you want to $actionText "${user.username}"?'),
             const SizedBox(height: 16),
             TextField(
               controller: reasonController,
