@@ -62,12 +62,27 @@ class AdminPlan {
     this.updatedAt,
   });
 
+  /// Extracts a string from a value that may be a localized map or a plain string.
+  static String? _localized(dynamic value, [String fallback = '']) {
+    if (value == null) return fallback.isEmpty ? null : fallback;
+    if (value is String) return value;
+    if (value is Map) {
+      return (value['en'] ??
+                  value['lo'] ??
+                  value['th'] ??
+                  value.values.firstOrNull)
+              ?.toString() ??
+          fallback;
+    }
+    return value.toString();
+  }
+
   factory AdminPlan.fromJson(Map<String, dynamic> json) {
     return AdminPlan(
       id: json['id'] as int,
       code: json['code'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      description: json['description'] as String?,
+      name: _localized(json['name']) ?? '',
+      description: _localized(json['description']),
       priceMonthly: (json['priceMonthly'] as num?)?.toDouble() ?? 0,
       priceYearly: (json['priceYearly'] as num?)?.toDouble() ?? 0,
       currency: json['currency'] as String? ?? 'LAK',

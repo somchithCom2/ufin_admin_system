@@ -88,6 +88,14 @@ class ApiConstants {
   static String adminPlanActivate(int id) => '/admin/plans/$id/activate';
   static String adminPlanDeactivate(int id) => '/admin/plans/$id/deactivate';
 
+  // Shop Types (Business Types)
+  static const String businessTypes = '/business-types';
+  static const String businessTypesAdminAll = '/business-types/admin/all';
+  static String businessTypeById(int id) => '/business-types/$id';
+  static String businessTypeByCode(String code) => '/business-types/code/$code';
+  static String businessTypeToggle(int id) => '/business-types/$id/toggle';
+  static const String businessTypeStats = '/business-types/stats';
+
   // Subscription Plans (public endpoints)
   static const String subscriptionPlans = '/subscriptions/plans';
   static String subscriptionPlanById(int id) => '/subscriptions/plans/id/$id';

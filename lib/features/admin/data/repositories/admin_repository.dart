@@ -568,6 +568,105 @@ class AdminRepository {
   }
 
   // ============================================================
+  // SHOP TYPES (BUSINESS TYPES)
+  // ============================================================
+
+  /// Get enabled shop types only (public endpoint)
+  Future<List<ShopType>> getShopTypes() async {
+    try {
+      final response = await _dio.get(ApiConstants.businessTypes);
+      return _parseListResponse(response, ShopType.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get all shop types including disabled (admin endpoint)
+  Future<List<ShopType>> getAllShopTypes() async {
+    try {
+      final response = await _dio.get(ApiConstants.businessTypesAdminAll);
+      return _parseListResponse(response, ShopType.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get shop type by ID
+  Future<ShopType> getShopTypeById(int id) async {
+    try {
+      final response = await _dio.get(ApiConstants.businessTypeById(id));
+      return _parseResponse(response, ShopType.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get shop type by code
+  Future<ShopType> getShopTypeByCode(String code) async {
+    try {
+      final response = await _dio.get(ApiConstants.businessTypeByCode(code));
+      return _parseResponse(response, ShopType.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get shop types with stats
+  Future<List<ShopType>> getShopTypesWithStats() async {
+    try {
+      final response = await _dio.get(ApiConstants.businessTypeStats);
+      return _parseListResponse(response, ShopType.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Create new shop type
+  Future<ShopType> createShopType(CreateShopTypeRequest request) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.businessTypes,
+        data: request.toJson(),
+      );
+      return _parseResponse(response, ShopType.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Update shop type
+  Future<ShopType> updateShopType(int id, UpdateShopTypeRequest request) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.businessTypeById(id),
+        data: request.toJson(),
+      );
+      return _parseResponse(response, ShopType.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Delete shop type
+  Future<void> deleteShopType(int id) async {
+    try {
+      await _dio.delete(ApiConstants.businessTypeById(id));
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Toggle shop type enabled/disabled
+  Future<ShopType> toggleShopType(int id) async {
+    try {
+      final response = await _dio.patch(ApiConstants.businessTypeToggle(id));
+      return _parseResponse(response, ShopType.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  // ============================================================
   // HELPER METHODS
   // ============================================================
 

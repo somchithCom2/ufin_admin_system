@@ -713,3 +713,105 @@ final planDetailProvider =
       final repository = ref.watch(adminRepositoryProvider);
       return PlanDetailNotifier(repository, ref);
     });
+
+// ========== Shop Types ==========
+class ShopTypesState {
+  final bool isLoading;
+  final String? error;
+  final List<ShopType> shopTypes;
+
+  const ShopTypesState({
+    this.isLoading = false,
+    this.error,
+    this.shopTypes = const [],
+  });
+
+  ShopTypesState copyWith({
+    bool? isLoading,
+    String? error,
+    List<ShopType>? shopTypes,
+    bool clearError = false,
+  }) {
+    return ShopTypesState(
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+      shopTypes: shopTypes ?? this.shopTypes,
+    );
+  }
+}
+
+class ShopTypesNotifier extends StateNotifier<ShopTypesState> {
+  final AdminRepository _repository;
+
+  ShopTypesNotifier(this._repository) : super(const ShopTypesState());
+
+  /// Load all shop types (including disabled) for admin management
+  Future<void> loadShopTypes() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final shopTypes = await _repository.getAllShopTypes();
+      state = state.copyWith(isLoading: false, shopTypes: shopTypes);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<bool> createShopType(CreateShopTypeRequest request) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.createShopType(request);
+      await loadShopTypes();
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> updateShopType(int id, UpdateShopTypeRequest request) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.updateShopType(id, request);
+      await loadShopTypes();
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> deleteShopType(int id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.deleteShopType(id);
+      await loadShopTypes();
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  /// Toggle shop type enabled/disabled
+  Future<bool> toggleShopType(int id) async {
+    try {
+      final updated = await _repository.toggleShopType(id);
+      // Update the item in the list without full reload
+      state = state.copyWith(
+        shopTypes: state.shopTypes
+            .map((s) => s.id == id ? updated : s)
+            .toList(),
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+}
+
+final shopTypesProvider =
+    StateNotifierProvider<ShopTypesNotifier, ShopTypesState>((ref) {
+      final repository = ref.watch(adminRepositoryProvider);
+      return ShopTypesNotifier(repository);
+    });

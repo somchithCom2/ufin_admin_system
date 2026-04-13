@@ -9,6 +9,7 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/plans_page.d
 import 'package:ufin_admin_system/features/admin/presentation/pages/payments_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/statistics_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/revenue_report_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/shop_type_page.dart';
 
 /// Global scaffold key for drawer access
 final adminScaffoldKey = GlobalKey<ScaffoldState>();
@@ -45,6 +46,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     DashboardPage(),
     ShopsPage(),
     UsersPage(),
+    ShopTypePage(),
     SubscriptionsListPage(),
     PlansPage(),
     PaymentsPage(),
@@ -74,36 +76,42 @@ class _AdminShellState extends ConsumerState<AdminShell> {
       icon: Icons.people_outline,
       selectedIcon: Icons.people,
     ),
-    // Subscriptions
     _NavItem(
       index: 3,
+      label: 'Shop Types',
+      icon: Icons.category_outlined,
+      selectedIcon: Icons.category,
+    ),
+    // Subscriptions
+    _NavItem(
+      index: 4,
       label: 'Subscriptions',
       icon: Icons.card_membership_outlined,
       selectedIcon: Icons.card_membership,
       section: 'Subscriptions',
     ),
     _NavItem(
-      index: 4,
+      index: 5,
       label: 'Plans',
       icon: Icons.inventory_2_outlined,
       selectedIcon: Icons.inventory_2,
     ),
     _NavItem(
-      index: 6,
+      index: 7,
       label: 'Statistics',
       icon: Icons.analytics_outlined,
       selectedIcon: Icons.analytics,
     ),
     // Finance
     _NavItem(
-      index: 5,
+      index: 6,
       label: 'Payments',
       icon: Icons.payment_outlined,
       selectedIcon: Icons.payment,
       section: 'Finance',
     ),
     _NavItem(
-      index: 7,
+      index: 8,
       label: 'Revenue Report',
       icon: Icons.bar_chart_outlined,
       selectedIcon: Icons.bar_chart,
