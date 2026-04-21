@@ -88,6 +88,14 @@ class ApiConstants {
   static String adminPlanActivate(int id) => '/admin/plans/$id/activate';
   static String adminPlanDeactivate(int id) => '/admin/plans/$id/deactivate';
 
+  // Subscription Upgrade Requests (admin)
+  static const String adminUpgradeRequests =
+      '/admin/subscriptions/upgrade-requests';
+  static String adminUpgradeRequestApprove(int requestId) =>
+      '/admin/subscriptions/upgrade-requests/$requestId/approve';
+  static String adminUpgradeRequestReject(int requestId) =>
+      '/admin/subscriptions/upgrade-requests/$requestId/reject';
+
   // Shop Types (Business Types)
   static const String businessTypes = '/business-types';
   static const String businessTypesAdminAll = '/business-types/admin/all';

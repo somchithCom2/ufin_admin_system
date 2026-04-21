@@ -73,6 +73,16 @@ class AdminSubscription {
   });
 
   factory AdminSubscription.fromJson(Map<String, dynamic> json) {
+    // planName may be a plain String or a localized map {"en":…, "lo":…}
+    String? _parsePlanName(dynamic raw) {
+      if (raw == null) return null;
+      if (raw is String) return raw;
+      if (raw is Map) {
+        return (raw['en'] ?? raw.values.firstOrNull)?.toString();
+      }
+      return raw.toString();
+    }
+
     return AdminSubscription(
       id: json['id'] as int,
       shopId: json['shopId'] as int,
@@ -80,7 +90,7 @@ class AdminSubscription {
       shopOwnerEmail: json['shopOwnerEmail'] as String?,
       planId: json['planId'] as int?,
       planCode: json['planCode'] as String?,
-      planName: json['planName'] as String?,
+      planName: _parsePlanName(json['planName']),
       status: json['status'] as String? ?? 'active',
       billingCycle: json['billingCycle'] as String?,
       startedAt: json['startedAt'] != null

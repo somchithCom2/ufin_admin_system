@@ -568,6 +568,63 @@ class AdminRepository {
   }
 
   // ============================================================
+  // SUBSCRIPTION UPGRADE REQUESTS
+  // ============================================================
+
+  /// List upgrade requests (paginated, filterable by status)
+  Future<PaginatedResponse<UpgradeRequestDto>> getUpgradeRequests({
+    int page = 0,
+    int size = 20,
+    String? status,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminUpgradeRequests,
+        queryParameters: {
+          'page': page,
+          'size': size,
+          if (status != null) 'status': status,
+        },
+      );
+      return _parsePaginatedResponse(response, UpgradeRequestDto.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Approve an upgrade request
+  Future<UpgradeRequestDto> approveUpgradeRequest(
+    int requestId,
+    ReviewUpgradeRequestBody body,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminUpgradeRequestApprove(requestId),
+        data: body.toJson(),
+      );
+      return _parseResponse(response, UpgradeRequestDto.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Reject an upgrade request
+  Future<UpgradeRequestDto> rejectUpgradeRequest(
+    int requestId,
+    ReviewUpgradeRequestBody body,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminUpgradeRequestReject(requestId),
+        data: body.toJson(),
+      );
+      return _parseResponse(response, UpgradeRequestDto.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  // ============================================================
   // SHOP TYPES (BUSINESS TYPES)
   // ============================================================
 

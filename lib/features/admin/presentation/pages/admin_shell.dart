@@ -10,6 +10,7 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/payments_pag
 import 'package:ufin_admin_system/features/admin/presentation/pages/statistics_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/revenue_report_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_type_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/upgrade_requests_page.dart';
 
 /// Global scaffold key for drawer access
 final adminScaffoldKey = GlobalKey<ScaffoldState>();
@@ -52,6 +53,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     PaymentsPage(),
     StatisticsPage(),
     RevenueReportPage(),
+    UpgradeRequestsPage(),
   ];
 
   final List<_NavItem> _navItems = const [
@@ -95,6 +97,12 @@ class _AdminShellState extends ConsumerState<AdminShell> {
       label: 'Plans',
       icon: Icons.inventory_2_outlined,
       selectedIcon: Icons.inventory_2,
+    ),
+    _NavItem(
+      index: 9,
+      label: 'Upgrade Requests',
+      icon: Icons.upgrade_outlined,
+      selectedIcon: Icons.upgrade,
     ),
     _NavItem(
       index: 7,

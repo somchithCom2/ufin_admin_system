@@ -368,3 +368,14 @@ class UpdatePaymentStatusRequest {
     );
   }
 }
+
+/// Request body for approving or rejecting an upgrade request
+class ReviewUpgradeRequestBody {
+  final String? reviewNote;
+
+  const ReviewUpgradeRequestBody({this.reviewNote});
+
+  Map<String, dynamic> toJson() => {
+    if (reviewNote != null) 'reviewNote': reviewNote,
+  };
+}

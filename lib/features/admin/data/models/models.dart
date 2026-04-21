@@ -7,6 +7,7 @@ export 'admin_revenue_report.dart';
 export 'admin_shop.dart';
 export 'admin_statistics.dart';
 export 'admin_subscription.dart';
+export 'admin_upgrade_request.dart';
 export 'admin_user.dart';
 export 'shop_type.dart';
 export 'subscription_history.dart';

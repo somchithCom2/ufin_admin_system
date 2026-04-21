@@ -47,6 +47,16 @@ class SubscriptionHistory {
         (json['shop'] as Map<String, dynamic>?)?['name'] as String? ??
         '';
 
+    // Plan name may be a plain String or a localized map {"en":…, "lo":…}
+    String? _parsePlanName(dynamic raw) {
+      if (raw == null) return null;
+      if (raw is String) return raw;
+      if (raw is Map) {
+        return (raw['en'] ?? raw.values.firstOrNull)?.toString();
+      }
+      return raw.toString();
+    }
+
     return SubscriptionHistory(
       id: json['id'] as int,
       shopId: json['shopId'] as int? ?? json['shop_id'] as int? ?? 0,
@@ -57,9 +67,9 @@ class SubscriptionHistory {
           json['action_type'] as String? ??
           'unknown',
       fromPlanCode: json['fromPlanCode'] as String?,
-      fromPlanName: json['fromPlanName'] as String?,
+      fromPlanName: _parsePlanName(json['fromPlanName']),
       toPlanCode: json['toPlanCode'] as String?,
-      toPlanName: json['toPlanName'] as String?,
+      toPlanName: _parsePlanName(json['toPlanName']),
       previousStatus:
           json['fromStatus'] as String? ?? json['previousStatus'] as String?,
       newStatus: json['toStatus'] as String? ?? json['newStatus'] as String?,

@@ -815,3 +815,110 @@ final shopTypesProvider =
       final repository = ref.watch(adminRepositoryProvider);
       return ShopTypesNotifier(repository);
     });
+
+// ========== Upgrade Requests ==========
+class UpgradeRequestsState {
+  final bool isLoading;
+  final String? error;
+  final List<UpgradeRequestDto> requests;
+  final int currentPage;
+  final int totalPages;
+  final int totalElements;
+
+  const UpgradeRequestsState({
+    this.isLoading = false,
+    this.error,
+    this.requests = const [],
+    this.currentPage = 0,
+    this.totalPages = 0,
+    this.totalElements = 0,
+  });
+
+  UpgradeRequestsState copyWith({
+    bool? isLoading,
+    String? error,
+    List<UpgradeRequestDto>? requests,
+    int? currentPage,
+    int? totalPages,
+    int? totalElements,
+    bool clearError = false,
+  }) {
+    return UpgradeRequestsState(
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+      requests: requests ?? this.requests,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+      totalElements: totalElements ?? this.totalElements,
+    );
+  }
+}
+
+class UpgradeRequestsNotifier extends StateNotifier<UpgradeRequestsState> {
+  final AdminRepository _repository;
+
+  UpgradeRequestsNotifier(this._repository)
+    : super(const UpgradeRequestsState());
+
+  Future<void> loadRequests({
+    int page = 0,
+    int size = 20,
+    String? status,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final result = await _repository.getUpgradeRequests(
+        page: page,
+        size: size,
+        status: status,
+      );
+      state = state.copyWith(
+        isLoading: false,
+        requests: result.content,
+        currentPage: result.page,
+        totalPages: result.totalPages,
+        totalElements: result.totalElements,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<bool> approveRequest(int requestId, {String? reviewNote}) async {
+    try {
+      final body = ReviewUpgradeRequestBody(reviewNote: reviewNote);
+      final updated = await _repository.approveUpgradeRequest(requestId, body);
+      state = state.copyWith(
+        requests: state.requests
+            .map((r) => r.id == requestId ? updated : r)
+            .toList(),
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> rejectRequest(int requestId, {String? reviewNote}) async {
+    try {
+      final body = ReviewUpgradeRequestBody(reviewNote: reviewNote);
+      final updated = await _repository.rejectUpgradeRequest(requestId, body);
+      state = state.copyWith(
+        requests: state.requests
+            .map((r) => r.id == requestId ? updated : r)
+            .toList(),
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+}
+
+final upgradeRequestsProvider =
+    StateNotifierProvider<UpgradeRequestsNotifier, UpgradeRequestsState>((ref) {
+      final repository = ref.watch(adminRepositoryProvider);
+      return UpgradeRequestsNotifier(repository);
+    });
