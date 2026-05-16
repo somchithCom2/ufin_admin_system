@@ -280,6 +280,16 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     ],
                   ),
                 ),
+              const PopupMenuItem(
+                value: 'reset_password',
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_reset, color: Colors.purple),
+                    SizedBox(width: 8),
+                    Text('Reset Password'),
+                  ],
+                ),
+              ),
             ],
           ),
           onTap: () => _showUserDetails(user),
@@ -352,6 +362,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         break;
       case 'delete':
         _showStatusDialog(user, 'deleted');
+        break;
+      case 'reset_password':
+        _showResetPasswordDialog(user);
         break;
     }
   }
@@ -505,6 +518,87 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           Text(label, style: TextStyle(color: Colors.grey[600])),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
+      ),
+    );
+  }
+
+  void _showResetPasswordDialog(AdminUser user) {
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscure = true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Reset Password'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Set a new password for "${user.username}"'),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: obscure,
+                  decoration: InputDecoration(
+                    labelText: 'New Password',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscure ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () => setDialogState(() => obscure = !obscure),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password is required';
+                    }
+                    if (value.length < 8) {
+                      return 'Password must be at least 8 characters';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                final messenger = ScaffoldMessenger.of(this.context);
+                final password = passwordController.text;
+                Navigator.pop(context);
+                try {
+                  await ref
+                      .read(usersProvider.notifier)
+                      .resetUserPassword(user.id, password);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Password reset for "${user.username}"'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (_) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to reset password'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Reset'),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -42,6 +42,8 @@ class ApiConstants {
   static const String adminUsers = '/admin/users';
   static String adminUserById(int id) => '/admin/users/$id';
   static String adminUserStatus(int id) => '/admin/users/$id/status';
+  static String adminUserResetPassword(int id) =>
+      '/admin/users/$id/reset-password';
 
   // Subscriptions
   static const String adminSubscriptions = '/admin/subscriptions';

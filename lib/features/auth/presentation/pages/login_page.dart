@@ -19,7 +19,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   void initState() {
     super.initState();
     _emailController = TextEditingController(text: "systemadmin");
-    _passwordController = TextEditingController(text: "123456");
+    _passwordController = TextEditingController(text: "123456@ufin#2025");
+    // _emailController = TextEditingController(text: "systemadmin");
+    // _passwordController = TextEditingController(text: "123456");
   }
 
   @override

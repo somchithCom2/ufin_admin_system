@@ -141,6 +141,21 @@ class AdminRepository {
     }
   }
 
+  /// Reset user password (admin)
+  Future<void> resetUserPassword(
+    int id,
+    ResetUserPasswordRequest request,
+  ) async {
+    try {
+      await _dio.put(
+        ApiConstants.adminUserResetPassword(id),
+        data: request.toJson(),
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   // ============================================================
   // SUBSCRIPTIONS
   // ============================================================

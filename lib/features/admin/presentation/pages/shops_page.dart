@@ -332,7 +332,12 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               const SizedBox(height: 24),
               _buildDetailSection('Shop Information', [
                 _buildDetailRow('Business Name', shop.businessName ?? 'N/A'),
-                _buildDetailRow('Business Type', shop.businessType ?? 'N/A'),
+                _buildDetailRow(
+                  'Business Type',
+                  shop.businessType?['en'] ??
+                      shop.businessType?.values.firstOrNull ??
+                      'N/A',
+                ),
                 _buildDetailRow('Email', shop.email ?? 'N/A'),
                 _buildDetailRow('Phone', shop.phone ?? 'N/A'),
                 _buildDetailRow('Address', shop.address ?? 'N/A'),

@@ -218,6 +218,16 @@ class UsersNotifier extends StateNotifier<UsersState> {
       state = state.copyWith(error: e.toString());
     }
   }
+
+  Future<void> resetUserPassword(int userId, String newPassword) async {
+    try {
+      final request = ResetUserPasswordRequest(newPassword: newPassword);
+      await _repository.resetUserPassword(userId, request);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    }
+  }
 }
 
 final usersProvider = StateNotifierProvider<UsersNotifier, UsersState>((ref) {

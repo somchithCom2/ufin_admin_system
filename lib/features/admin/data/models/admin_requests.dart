@@ -38,6 +38,15 @@ class UpdateUserStatusRequest {
   }
 }
 
+/// Request to reset a user's password (admin)
+class ResetUserPasswordRequest {
+  final String newPassword;
+
+  const ResetUserPasswordRequest({required this.newPassword});
+
+  Map<String, dynamic> toJson() => {'newPassword': newPassword};
+}
+
 /// Request to extend subscription
 class ExtendSubscriptionRequest {
   final int? days;

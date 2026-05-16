@@ -7,7 +7,7 @@ class AdminShop {
   final String? phone;
   final String? email;
   final String? logoUrl;
-  final String? businessType;
+  final Map<String, String>? businessType;
   final String status;
   final String? currency;
   final String? timezone;
@@ -65,7 +65,13 @@ class AdminShop {
       phone: json['phone'] as String?,
       email: json['email'] as String?,
       logoUrl: json['logoUrl'] as String?,
-      businessType: json['businessType'] as String?,
+      businessType: json['businessType'] != null
+          ? Map<String, String>.from(
+              (json['businessType'] as Map<String, dynamic>).map(
+                (k, v) => MapEntry(k, v.toString()),
+              ),
+            )
+          : null,
       status: json['status'] as String? ?? 'active',
       currency: json['currency'] as String?,
       timezone: json['timezone'] as String?,
