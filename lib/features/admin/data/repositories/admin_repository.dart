@@ -156,6 +156,74 @@ class AdminRepository {
     }
   }
 
+  /// Get soft-deleted users (paginated, sorted by deletedAt DESC)
+  Future<PaginatedResponse<AdminUser>> getDeletedUsers({
+    int page = 0,
+    int size = 20,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminUsersDeleted,
+        queryParameters: {'page': page, 'size': size},
+      );
+      return _parsePaginatedResponse(response, AdminUser.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Restore a soft-deleted user
+  Future<void> restoreUser(int id) async {
+    try {
+      await _dio.put(ApiConstants.adminUserRestore(id));
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  // ============================================================
+  // PRODUCTS
+  // ============================================================
+
+  /// Get products for a shop (paginated + infinite scroll)
+  Future<PaginatedResponse<AdminProduct>> getProducts({
+    required int shopId,
+    required int empId,
+    int page = 0,
+    int size = 20,
+    String? search,
+    int? categoryId,
+    bool? inStockOnly,
+    bool? includeInactive,
+    bool? includeDeleted,
+    double? minPrice,
+    double? maxPrice,
+    String sortBy = 'name',
+    String sortDirection = 'asc',
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.productsPaginated(shopId, empId),
+        queryParameters: {
+          'page': page,
+          'size': size,
+          'sortBy': sortBy,
+          'sortDirection': sortDirection,
+          if (search != null && search.isNotEmpty) 'search': search,
+          if (categoryId != null) 'categoryId': categoryId,
+          if (inStockOnly != null) 'inStockOnly': inStockOnly,
+          if (includeInactive != null) 'include_inactive': includeInactive,
+          if (includeDeleted != null) 'include_deleted': includeDeleted,
+          if (minPrice != null) 'minPrice': minPrice,
+          if (maxPrice != null) 'maxPrice': maxPrice,
+        },
+      );
+      return _parsePaginatedResponse(response, AdminProduct.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   // ============================================================
   // SUBSCRIPTIONS
   // ============================================================

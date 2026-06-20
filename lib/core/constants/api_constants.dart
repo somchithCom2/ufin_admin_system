@@ -40,10 +40,16 @@ class ApiConstants {
 
   // Users
   static const String adminUsers = '/admin/users';
+  static const String adminUsersDeleted = '/admin/users/deleted';
   static String adminUserById(int id) => '/admin/users/$id';
   static String adminUserStatus(int id) => '/admin/users/$id/status';
   static String adminUserResetPassword(int id) =>
       '/admin/users/$id/reset-password';
+  static String adminUserRestore(int id) => '/admin/users/$id/restore';
+
+  // Products
+  static String productsPaginated(int shopId, int empId) =>
+      '/products/$shopId/$empId/paginated';
 
   // Subscriptions
   static const String adminSubscriptions = '/admin/subscriptions';

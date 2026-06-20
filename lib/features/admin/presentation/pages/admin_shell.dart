@@ -10,6 +10,7 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/payments_pag
 import 'package:ufin_admin_system/features/admin/presentation/pages/statistics_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/revenue_report_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_type_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/deleted_users_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/upgrade_requests_page.dart';
 
 /// Global scaffold key for drawer access
@@ -54,6 +55,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     StatisticsPage(),
     RevenueReportPage(),
     UpgradeRequestsPage(),
+    DeletedUsersPage(),
   ];
 
   final List<_NavItem> _navItems = const [
@@ -83,6 +85,12 @@ class _AdminShellState extends ConsumerState<AdminShell> {
       label: 'Shop Types',
       icon: Icons.category_outlined,
       selectedIcon: Icons.category,
+    ),
+    _NavItem(
+      index: 10,
+      label: 'Deleted Users',
+      icon: Icons.person_remove_outlined,
+      selectedIcon: Icons.person_remove,
     ),
     // Subscriptions
     _NavItem(

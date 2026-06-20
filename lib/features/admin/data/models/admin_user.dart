@@ -14,6 +14,7 @@ class AdminUser {
   final DateTime? lastLogin;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
 
   // Shops this user belongs to
   final List<UserShopInfo> shops;
@@ -33,6 +34,7 @@ class AdminUser {
     this.lastLogin,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
     this.shops = const [],
   });
 
@@ -58,6 +60,9 @@ class AdminUser {
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'] as String)
           : null,
+      deletedAt: json['deletedAt'] != null
+          ? DateTime.tryParse(json['deletedAt'] as String)
+          : null,
       shops:
           (json['shops'] as List<dynamic>?)
               ?.map((e) => UserShopInfo.fromJson(e as Map<String, dynamic>))
@@ -81,6 +86,7 @@ class AdminUser {
     'lastLogin': lastLogin?.toIso8601String(),
     'createdAt': createdAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
+    'deletedAt': deletedAt?.toIso8601String(),
     'shops': shops.map((e) => e.toJson()).toList(),
   };
 

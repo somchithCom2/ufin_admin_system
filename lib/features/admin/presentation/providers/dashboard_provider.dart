@@ -58,33 +58,37 @@ final dashboardProvider =
 // ========== Shops ==========
 class ShopsState {
   final bool isLoading;
+  final bool isLoadingMore;
   final String? error;
   final List<AdminShop> shops;
   final int currentPage;
-  final int totalPages;
+  final bool hasNext;
 
   const ShopsState({
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.error,
     this.shops = const [],
     this.currentPage = 0,
-    this.totalPages = 0,
+    this.hasNext = false,
   });
 
   ShopsState copyWith({
     bool? isLoading,
+    bool? isLoadingMore,
     String? error,
     List<AdminShop>? shops,
     int? currentPage,
-    int? totalPages,
+    bool? hasNext,
     bool clearError = false,
   }) {
     return ShopsState(
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
       shops: shops ?? this.shops,
       currentPage: currentPage ?? this.currentPage,
-      totalPages: totalPages ?? this.totalPages,
+      hasNext: hasNext ?? this.hasNext,
     );
   }
 }
@@ -92,18 +96,22 @@ class ShopsState {
 class ShopsNotifier extends StateNotifier<ShopsState> {
   final AdminRepository _repository;
 
+  String? _search;
+  String? _status;
+
   ShopsNotifier(this._repository) : super(const ShopsState());
 
   Future<void> loadShops({
-    int page = 0,
     int size = 20,
     String? search,
     String? status,
   }) async {
+    _search = search;
+    _status = status;
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final result = await _repository.getShops(
-        page: page,
+        page: 0,
         size: size,
         search: search,
         status: status,
@@ -112,10 +120,30 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
         isLoading: false,
         shops: result.content,
         currentPage: result.page,
-        totalPages: result.totalPages,
+        hasNext: result.hasNext,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMoreShops() async {
+    if (state.isLoadingMore || !state.hasNext) return;
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final result = await _repository.getShops(
+        page: state.currentPage + 1,
+        search: _search,
+        status: _status,
+      );
+      state = state.copyWith(
+        isLoadingMore: false,
+        shops: [...state.shops, ...result.content],
+        currentPage: result.page,
+        hasNext: result.hasNext,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
 
@@ -127,7 +155,7 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
     try {
       final request = UpdateShopStatusRequest(status: status, reason: reason);
       await _repository.updateShopStatus(shopId, request);
-      loadShops(); // Refresh list
+      loadShops(search: _search, status: _status); // Refresh list
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -234,6 +262,77 @@ final usersProvider = StateNotifierProvider<UsersNotifier, UsersState>((ref) {
   final repository = ref.watch(adminRepositoryProvider);
   return UsersNotifier(repository);
 });
+
+// ========== Deleted Users ==========
+class DeletedUsersState {
+  final bool isLoading;
+  final String? error;
+  final List<AdminUser> users;
+  final int currentPage;
+  final int totalPages;
+
+  const DeletedUsersState({
+    this.isLoading = false,
+    this.error,
+    this.users = const [],
+    this.currentPage = 0,
+    this.totalPages = 0,
+  });
+
+  DeletedUsersState copyWith({
+    bool? isLoading,
+    String? error,
+    List<AdminUser>? users,
+    int? currentPage,
+    int? totalPages,
+    bool clearError = false,
+  }) {
+    return DeletedUsersState(
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+      users: users ?? this.users,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+    );
+  }
+}
+
+class DeletedUsersNotifier extends StateNotifier<DeletedUsersState> {
+  final AdminRepository _repository;
+
+  DeletedUsersNotifier(this._repository) : super(const DeletedUsersState());
+
+  Future<void> loadDeletedUsers({int page = 0, int size = 20}) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final result = await _repository.getDeletedUsers(page: page, size: size);
+      state = state.copyWith(
+        isLoading: false,
+        users: result.content,
+        currentPage: result.page,
+        totalPages: result.totalPages,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> restoreUser(int userId) async {
+    try {
+      await _repository.restoreUser(userId);
+      loadDeletedUsers(); // Refresh list
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      rethrow;
+    }
+  }
+}
+
+final deletedUsersProvider =
+    StateNotifierProvider<DeletedUsersNotifier, DeletedUsersState>((ref) {
+      final repository = ref.watch(adminRepositoryProvider);
+      return DeletedUsersNotifier(repository);
+    });
 
 // ========== Subscriptions ==========
 class SubscriptionsState {
@@ -931,4 +1030,115 @@ final upgradeRequestsProvider =
     StateNotifierProvider<UpgradeRequestsNotifier, UpgradeRequestsState>((ref) {
       final repository = ref.watch(adminRepositoryProvider);
       return UpgradeRequestsNotifier(repository);
+    });
+
+// ========== Products ==========
+class ProductsState {
+  final bool isLoading;
+  final bool isLoadingMore;
+  final String? error;
+  final List<AdminProduct> products;
+  final int currentPage;
+  final bool hasNext;
+
+  const ProductsState({
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.error,
+    this.products = const [],
+    this.currentPage = 0,
+    this.hasNext = false,
+  });
+
+  ProductsState copyWith({
+    bool? isLoading,
+    bool? isLoadingMore,
+    String? error,
+    List<AdminProduct>? products,
+    int? currentPage,
+    bool? hasNext,
+    bool clearError = false,
+  }) {
+    return ProductsState(
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      error: clearError ? null : (error ?? this.error),
+      products: products ?? this.products,
+      currentPage: currentPage ?? this.currentPage,
+      hasNext: hasNext ?? this.hasNext,
+    );
+  }
+}
+
+class ProductsNotifier extends StateNotifier<ProductsState> {
+  final AdminRepository _repository;
+
+  int? _shopId;
+  int? _empId;
+  String? _search;
+  bool? _inStockOnly;
+
+  ProductsNotifier(this._repository) : super(const ProductsState());
+
+  Future<void> loadProducts({
+    required int shopId,
+    required int empId,
+    String? search,
+    bool? inStockOnly,
+  }) async {
+    _shopId = shopId;
+    _empId = empId;
+    _search = search;
+    _inStockOnly = inStockOnly;
+
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final result = await _repository.getProducts(
+        shopId: shopId,
+        empId: empId,
+        page: 0,
+        search: search,
+        inStockOnly: inStockOnly,
+      );
+      state = state.copyWith(
+        isLoading: false,
+        products: result.content,
+        currentPage: result.page,
+        hasNext: result.hasNext,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasNext) return;
+    final shopId = _shopId;
+    final empId = _empId;
+    if (shopId == null || empId == null) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final result = await _repository.getProducts(
+        shopId: shopId,
+        empId: empId,
+        page: state.currentPage + 1,
+        search: _search,
+        inStockOnly: _inStockOnly,
+      );
+      state = state.copyWith(
+        isLoadingMore: false,
+        products: [...state.products, ...result.content],
+        currentPage: result.page,
+        hasNext: result.hasNext,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
+    }
+  }
+}
+
+final productsProvider = StateNotifierProvider.autoDispose
+    .family<ProductsNotifier, ProductsState, int>((ref, shopId) {
+      return ProductsNotifier(ref.watch(adminRepositoryProvider));
     });

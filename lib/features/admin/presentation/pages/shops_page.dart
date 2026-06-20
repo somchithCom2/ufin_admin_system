@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/shop_products_page.dart';
 
 class ShopsPage extends ConsumerStatefulWidget {
   const ShopsPage({super.key});
@@ -13,6 +14,7 @@ class ShopsPage extends ConsumerStatefulWidget {
 
 class _ShopsPageState extends ConsumerState<ShopsPage> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String? _statusFilter;
 
   @override
@@ -21,11 +23,20 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(shopsProvider.notifier).loadShops();
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(shopsProvider.notifier).loadMoreShops();
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -109,7 +120,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 ? _buildErrorView(shopsState.error!)
                 : shopsState.shops.isEmpty
                 ? const Center(child: Text('No shops found'))
-                : _buildShopList(shopsState.shops),
+                : _buildShopList(shopsState.shops, shopsState.isLoadingMore),
           ),
         ],
       ),
@@ -135,17 +146,30 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     );
   }
 
-  Widget _buildShopList(List<AdminShop> shops) {
+  Widget _buildShopList(List<AdminShop> shops, bool isLoadingMore) {
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(shopsProvider.notifier).loadShops();
+        await ref
+            .read(shopsProvider.notifier)
+            .loadShops(
+              search: _searchController.text.isEmpty
+                  ? null
+                  : _searchController.text,
+              status: _statusFilter,
+            );
       },
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: shops.length,
+        itemCount: shops.length + (isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
-          final shop = shops[index];
-          return _buildShopCard(shop);
+          if (index == shops.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return _buildShopCard(shops[index]);
         },
       ),
     );
@@ -159,9 +183,23 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
           backgroundColor: _getStatusColor(shop.status).withValues(alpha: 0.1),
           child: Icon(Icons.storefront, color: _getStatusColor(shop.status)),
         ),
-        title: Text(
-          shop.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                shop.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Text(
+              '#${shop.id}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,6 +233,16 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   Icon(Icons.visibility),
                   SizedBox(width: 8),
                   Text('View Details'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'products',
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('View Products'),
                 ],
               ),
             ),
@@ -262,6 +310,12 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     switch (action) {
       case 'view':
         _showShopDetails(shop);
+        break;
+      case 'products':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ShopProductsPage(shop: shop)),
+        );
         break;
       case 'suspend':
         _showStatusDialog(shop, 'suspended');
@@ -362,6 +416,23 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 _buildDetailRow('Employees', shop.employeeCount.toString()),
                 _buildDetailRow('Products', shop.productCount.toString()),
               ]),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: Text('View Products (${shop.productCount})'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      this.context,
+                      MaterialPageRoute(
+                        builder: (_) => ShopProductsPage(shop: shop),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
