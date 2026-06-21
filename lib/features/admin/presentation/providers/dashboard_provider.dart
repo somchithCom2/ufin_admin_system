@@ -170,39 +170,51 @@ final shopsProvider = StateNotifierProvider<ShopsNotifier, ShopsState>((ref) {
 // ========== Users ==========
 class UsersState {
   final bool isLoading;
+  final bool isLoadingMore;
   final String? error;
   final List<AdminUser> users;
   final int currentPage;
   final int totalPages;
+  final bool hasNext;
 
   const UsersState({
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.error,
     this.users = const [],
     this.currentPage = 0,
     this.totalPages = 0,
+    this.hasNext = false,
   });
 
   UsersState copyWith({
     bool? isLoading,
+    bool? isLoadingMore,
     String? error,
     List<AdminUser>? users,
     int? currentPage,
     int? totalPages,
+    bool? hasNext,
     bool clearError = false,
   }) {
     return UsersState(
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
       users: users ?? this.users,
       currentPage: currentPage ?? this.currentPage,
       totalPages: totalPages ?? this.totalPages,
+      hasNext: hasNext ?? this.hasNext,
     );
   }
 }
 
 class UsersNotifier extends StateNotifier<UsersState> {
   final AdminRepository _repository;
+
+  String? _search;
+  String? _status;
+  String? _userType;
 
   UsersNotifier(this._repository) : super(const UsersState());
 
@@ -213,6 +225,9 @@ class UsersNotifier extends StateNotifier<UsersState> {
     String? status,
     String? userType,
   }) async {
+    _search = search;
+    _status = status;
+    _userType = userType;
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final result = await _repository.getUsers(
@@ -227,9 +242,32 @@ class UsersNotifier extends StateNotifier<UsersState> {
         users: result.content,
         currentPage: result.page,
         totalPages: result.totalPages,
+        hasNext: result.hasNext,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMoreUsers() async {
+    if (state.isLoadingMore || !state.hasNext) return;
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final result = await _repository.getUsers(
+        page: state.currentPage + 1,
+        search: _search,
+        status: _status,
+        userType: _userType,
+      );
+      state = state.copyWith(
+        isLoadingMore: false,
+        users: [...state.users, ...result.content],
+        currentPage: result.page,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
 
@@ -241,7 +279,11 @@ class UsersNotifier extends StateNotifier<UsersState> {
     try {
       final request = UpdateUserStatusRequest(status: status, reason: reason);
       await _repository.updateUserStatus(userId, request);
-      loadUsers(); // Refresh list
+      loadUsers(
+        search: _search,
+        status: _status,
+        userType: _userType,
+      ); // Refresh list
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -337,39 +379,49 @@ final deletedUsersProvider =
 // ========== Subscriptions ==========
 class SubscriptionsState {
   final bool isLoading;
+  final bool isLoadingMore;
   final String? error;
   final List<AdminSubscription> subscriptions;
   final int currentPage;
   final int totalPages;
+  final bool hasNext;
 
   const SubscriptionsState({
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.error,
     this.subscriptions = const [],
     this.currentPage = 0,
     this.totalPages = 0,
+    this.hasNext = false,
   });
 
   SubscriptionsState copyWith({
     bool? isLoading,
+    bool? isLoadingMore,
     String? error,
     List<AdminSubscription>? subscriptions,
     int? currentPage,
     int? totalPages,
+    bool? hasNext,
     bool clearError = false,
   }) {
     return SubscriptionsState(
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
       subscriptions: subscriptions ?? this.subscriptions,
       currentPage: currentPage ?? this.currentPage,
       totalPages: totalPages ?? this.totalPages,
+      hasNext: hasNext ?? this.hasNext,
     );
   }
 }
 
 class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
   final AdminRepository _repository;
+
+  String? _status;
 
   SubscriptionsNotifier(this._repository) : super(const SubscriptionsState());
 
@@ -378,6 +430,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
     int size = 20,
     String? status,
   }) async {
+    _status = status;
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final result = await _repository.getSubscriptions(
@@ -390,9 +443,36 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         subscriptions: result.content,
         currentPage: result.page,
         totalPages: result.totalPages,
+        hasNext: result.hasNext,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadMoreSubscriptions({int size = 20}) async {
+    if (state.isLoadingMore || !state.hasNext) return;
+    state = state.copyWith(isLoadingMore: true);
+    try {
+      final nextPage = state.currentPage + 1;
+      final result = await _repository.getSubscriptions(
+        page: nextPage,
+        size: size,
+        status: _status,
+      );
+
+      // Append new subscriptions to existing list
+      final updatedSubscriptions = [...state.subscriptions, ...result.content];
+
+      state = state.copyWith(
+        isLoadingMore: false,
+        subscriptions: updatedSubscriptions,
+        currentPage: result.page,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
 
@@ -409,9 +489,10 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         reason: reason,
       );
       await _repository.extendSubscription(shopId, request);
-      loadSubscriptions(); // Refresh list
+      await loadSubscriptions(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow; // Rethrow to allow caller to handle the error
     }
   }
 
@@ -428,9 +509,10 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         reason: reason,
       );
       await _repository.reduceSubscription(shopId, request);
-      loadSubscriptions(); // Refresh list
+      await loadSubscriptions(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow; // Rethrow to allow caller to handle the error
     }
   }
 
@@ -445,9 +527,10 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         planCode,
         billingCycle: billingCycle,
       );
-      loadSubscriptions(); // Refresh list
+      await loadSubscriptions(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow; // Rethrow to allow caller to handle the error
     }
   }
 
@@ -464,9 +547,10 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         reason: reason,
         billingCycle: billingCycle,
       );
-      loadSubscriptions(); // Refresh list
+      await loadSubscriptions(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow; // Rethrow to allow caller to handle the error
     }
   }
 
@@ -487,9 +571,10 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         immediate: immediate,
       );
       await _repository.changePlan(shopId, request);
-      loadSubscriptions(); // Refresh list
+      await loadSubscriptions(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow; // Rethrow to allow caller to handle the error
     }
   }
 
@@ -508,9 +593,10 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         notes: notes,
       );
       await _repository.createSubscription(shopId, request);
-      loadSubscriptions(); // Refresh list
+      await loadSubscriptions(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow; // Rethrow to allow caller to handle the error
     }
   }
 
@@ -527,9 +613,10 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         notes: notes,
       );
       await _repository.cancelSubscription(shopId, request);
-      loadSubscriptions(); // Refresh list
+      await loadSubscriptions(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow; // Rethrow to allow caller to handle the error
     }
   }
 
@@ -546,9 +633,10 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         notes: notes,
       );
       await _repository.reactivateSubscription(shopId, request);
-      loadSubscriptions(); // Refresh list
+      await loadSubscriptions(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
+      rethrow; // Rethrow to allow caller to handle the error
     }
   }
 }

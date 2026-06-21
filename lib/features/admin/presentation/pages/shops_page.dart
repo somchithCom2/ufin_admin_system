@@ -29,7 +29,10 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      ref.read(shopsProvider.notifier).loadMoreShops();
+      final state = ref.read(shopsProvider);
+      if (!state.isLoadingMore && state.hasNext) {
+        ref.read(shopsProvider.notifier).loadMoreShops();
+      }
     }
   }
 
@@ -77,6 +80,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                       ),
                     ),
                     onSubmitted: (value) {
+                      _scrollController.jumpTo(0); // Reset scroll position
                       ref.read(shopsProvider.notifier).loadShops(search: value);
                     },
                   ),
@@ -89,6 +93,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   ),
                   onSelected: (status) {
                     setState(() => _statusFilter = status);
+                    _scrollController.jumpTo(0); // Reset scroll position
                     ref
                         .read(shopsProvider.notifier)
                         .loadShops(
@@ -147,8 +152,12 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
   }
 
   Widget _buildShopList(List<AdminShop> shops, bool isLoadingMore) {
+    final shopsState = ref.watch(shopsProvider);
+    final hasMore = shopsState.hasNext;
+
     return RefreshIndicator(
       onRefresh: () async {
+        _scrollController.jumpTo(0); // Reset scroll on refresh
         await ref
             .read(shopsProvider.notifier)
             .loadShops(
@@ -160,8 +169,11 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       },
       child: ListView.builder(
         controller: _scrollController,
+        physics:
+            const AlwaysScrollableScrollPhysics(), // Ensures scrolling works even if items don't fill screen
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: shops.length + (isLoadingMore ? 1 : 0),
+        // Only add the loader slot if there actually IS more data to load
+        itemCount: shops.length + (isLoadingMore && hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == shops.length) {
             return const Padding(

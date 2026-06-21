@@ -850,19 +850,43 @@ class AdminRepository {
     final responseData = response.data;
     if (responseData['success'] == true && responseData['data'] != null) {
       final data = responseData['data'];
+
       final content =
           (data['content'] as List?)
               ?.map((e) => fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];
+
+      // Handle page field which might be an object or int
+      int pageNumber = 0;
+      int totalPages = 1;
+      int size = content.isNotEmpty ? content.length : 20;
+      int totalElements = 0;
+
+      if (data['page'] is Map) {
+        // Page is an object with pagination details
+        final pageObj = data['page'] as Map<String, dynamic>;
+        pageNumber = pageObj['number'] as int? ?? 0;
+        totalPages = pageObj['totalPages'] as int? ?? 1;
+        size = pageObj['size'] as int? ?? size;
+        totalElements = pageObj['totalElements'] as int? ?? 0;
+      } else {
+        // Page is a simple int (page number only)
+        pageNumber = (data['page'] as int?) ?? 0;
+      }
+
+      // Calculate isLast: if we got fewer items than page size, we're on last page
+      final isLast = content.length < size;
+      final isFirst = pageNumber == 0;
+
       return PaginatedResponse(
         content: content,
-        page: data['number'] as int? ?? 0,
-        size: data['size'] as int? ?? 20,
-        totalElements: data['totalElements'] as int? ?? 0,
-        totalPages: data['totalPages'] as int? ?? 0,
-        isFirst: data['first'] as bool? ?? true,
-        isLast: data['last'] as bool? ?? true,
+        page: pageNumber,
+        size: size,
+        totalElements: totalElements,
+        totalPages: totalPages,
+        isFirst: isFirst,
+        isLast: isLast,
       );
     }
     throw ApiException(

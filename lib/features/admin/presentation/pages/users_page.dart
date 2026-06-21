@@ -13,19 +13,33 @@ class UsersPage extends ConsumerStatefulWidget {
 
 class _UsersPageState extends ConsumerState<UsersPage> {
   final _searchController = TextEditingController();
+  late ScrollController _scrollController;
   String? _statusFilter;
   String? _typeFilter;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(usersProvider.notifier).loadUsers();
     });
   }
 
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 500) {
+      final state = ref.read(usersProvider);
+      if (!state.isLoadingMore && state.hasNext) {
+        ref.read(usersProvider.notifier).loadMoreUsers();
+      }
+    }
+  }
+
   @override
   void dispose() {
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -67,6 +81,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       ),
                     ),
                     onSubmitted: (value) {
+                      _scrollController.jumpTo(0);
                       ref.read(usersProvider.notifier).loadUsers(search: value);
                     },
                   ),
@@ -89,6 +104,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                         _typeFilter = null;
                       });
                     }
+                    _scrollController.jumpTo(0);
                     ref
                         .read(usersProvider.notifier)
                         .loadUsers(
@@ -178,14 +194,26 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   }
 
   Widget _buildUserList(List<AdminUser> users) {
+    final usersState = ref.watch(usersProvider);
+    final hasMore = usersState.hasNext;
+
     return RefreshIndicator(
       onRefresh: () async {
+        _scrollController.jumpTo(0);
         await ref.read(usersProvider.notifier).loadUsers();
       },
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: users.length,
+        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: hasMore ? users.length + 1 : users.length,
         itemBuilder: (context, index) {
+          if (index == users.length && hasMore) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
           final user = users[index];
           return _buildUserCard(user);
         },

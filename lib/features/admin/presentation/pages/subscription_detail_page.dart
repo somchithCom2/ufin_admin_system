@@ -496,10 +496,11 @@ class _SubscriptionDetailPageState
   void _showExtendDialog() {
     final daysController = TextEditingController(text: '30');
     final reasonController = TextEditingController();
+    final pageContext = context; // Capture parent context
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Extend Subscription'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -525,28 +526,42 @@ class _SubscriptionDetailPageState
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
               final days = int.tryParse(daysController.text) ?? 30;
-              ref
-                  .read(subscriptionsProvider.notifier)
-                  .extendSubscription(
-                    _subscription.shopId,
-                    days: days,
-                    reason: reasonController.text.isNotEmpty
-                        ? reasonController.text
-                        : null,
+              try {
+                await ref
+                    .read(subscriptionsProvider.notifier)
+                    .extendSubscription(
+                      _subscription.shopId,
+                      days: days,
+                      reason: reasonController.text.isNotEmpty
+                          ? reasonController.text
+                          : null,
+                    );
+                if (pageContext.mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('Extended subscription by $days days'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Extended subscription by $days days'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+                  _refreshSubscription();
+                }
+              } catch (e) {
+                if (pageContext.mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to extend subscription: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('Extend'),
           ),
@@ -558,10 +573,11 @@ class _SubscriptionDetailPageState
   void _showReduceDialog() {
     final daysController = TextEditingController(text: '7');
     final reasonController = TextEditingController();
+    final pageContext = context; // Capture parent context
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
             Icon(Icons.remove_circle_outline, color: Colors.orange[700]),
@@ -616,13 +632,13 @@ class _SubscriptionDetailPageState
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               if (reasonController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(pageContext).showSnackBar(
                   const SnackBar(
                     content: Text('Please provide a reason'),
                     backgroundColor: Colors.orange,
@@ -630,21 +646,35 @@ class _SubscriptionDetailPageState
                 );
                 return;
               }
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               final days = int.tryParse(daysController.text) ?? 7;
-              ref
-                  .read(subscriptionsProvider.notifier)
-                  .reduceSubscription(
-                    _subscription.shopId,
-                    days: days,
-                    reason: reasonController.text,
+              try {
+                await ref
+                    .read(subscriptionsProvider.notifier)
+                    .reduceSubscription(
+                      _subscription.shopId,
+                      days: days,
+                      reason: reasonController.text,
+                    );
+                if (pageContext.mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('Reduced subscription by $days days'),
+                      backgroundColor: Colors.orange,
+                    ),
                   );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Reduced subscription by $days days'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
+                  _refreshSubscription();
+                }
+              } catch (e) {
+                if (pageContext.mounted) {
+                  ScaffoldMessenger.of(pageContext).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to reduce subscription: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.orange),
             child: const Text('Reduce'),

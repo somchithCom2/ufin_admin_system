@@ -17,13 +17,33 @@ class SubscriptionsListPage extends ConsumerStatefulWidget {
 
 class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
   String? _statusFilter;
+  late ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(subscriptionsProvider.notifier).loadSubscriptions();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 500) {
+      final state = ref.read(subscriptionsProvider);
+      if (!state.isLoadingMore && state.hasNext) {
+        ref.read(subscriptionsProvider.notifier).loadMoreSubscriptions();
+      }
+    }
   }
 
   @override
@@ -87,6 +107,8 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
         selected: isSelected,
         onSelected: (selected) {
           setState(() => _statusFilter = selected ? status : null);
+          // Reset scroll position and reload subscriptions
+          _scrollController.jumpTo(0);
           ref
               .read(subscriptionsProvider.notifier)
               .loadSubscriptions(status: _statusFilter);
@@ -154,16 +176,40 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
   }
 
   Widget _buildSubscriptionList(List<AdminSubscription> subscriptions) {
+    final subscriptionsState = ref.watch(subscriptionsProvider);
+    final hasMore = subscriptionsState.hasNext;
+
     return RefreshIndicator(
       onRefresh: () async {
+        _scrollController.jumpTo(0);
         await ref
             .read(subscriptionsProvider.notifier)
             .loadSubscriptions(status: _statusFilter);
       },
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: subscriptions.length,
+        itemCount: subscriptions.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
+          // Show loading indicator at the bottom
+          if (index == subscriptions.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: SizedBox(
+                  height: 40,
+                  width: 40,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+
           final subscription = subscriptions[index];
           return _buildSubscriptionCard(subscription);
         },
