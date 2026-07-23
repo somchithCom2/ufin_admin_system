@@ -112,6 +112,16 @@ class ApiConstants {
   static String businessTypeToggle(int id) => '/business-types/$id/toggle';
   static const String businessTypeStats = '/business-types/stats';
 
+  // Units
+  static const String units = '/units';
+  static String unitById(int id) => '/units/$id';
+  static String unitByCode(String code) => '/units/code/$code';
+  static String unitsByCategory(String category) => '/units/category/$category';
+  static String unitActivate(int id) => '/units/$id/activate';
+  static String unitDeactivate(int id) => '/units/$id/deactivate';
+  static String unitRestore(int id) => '/units/$id/restore';
+  static String unitSetDefault(int id) => '/units/$id/set-default';
+
   // Subscription Plans (public endpoints)
   static const String subscriptionPlans = '/subscriptions/plans';
   static String subscriptionPlanById(int id) => '/subscriptions/plans/id/$id';

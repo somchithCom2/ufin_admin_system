@@ -1013,6 +1013,245 @@ final shopTypesProvider =
       return ShopTypesNotifier(repository);
     });
 
+// ========== Units ==========
+class UnitsState {
+  final bool isLoading;
+  final String? error;
+  final List<Unit> units;
+  final int currentPage;
+  final int totalPages;
+  final int totalElements;
+  final int pageSize;
+  final bool hasNext;
+  final bool hasPrevious;
+  final String? categoryFilter;
+  final bool? isActiveFilter;
+
+  const UnitsState({
+    this.isLoading = false,
+    this.error,
+    this.units = const [],
+    this.currentPage = 0,
+    this.totalPages = 0,
+    this.totalElements = 0,
+    this.pageSize = 50,
+    this.hasNext = false,
+    this.hasPrevious = false,
+    this.categoryFilter,
+    this.isActiveFilter,
+  });
+
+  UnitsState copyWith({
+    bool? isLoading,
+    String? error,
+    List<Unit>? units,
+    int? currentPage,
+    int? totalPages,
+    int? totalElements,
+    int? pageSize,
+    bool? hasNext,
+    bool? hasPrevious,
+    String? categoryFilter,
+    bool? isActiveFilter,
+    bool clearError = false,
+  }) {
+    return UnitsState(
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : (error ?? this.error),
+      units: units ?? this.units,
+      currentPage: currentPage ?? this.currentPage,
+      totalPages: totalPages ?? this.totalPages,
+      totalElements: totalElements ?? this.totalElements,
+      pageSize: pageSize ?? this.pageSize,
+      hasNext: hasNext ?? this.hasNext,
+      hasPrevious: hasPrevious ?? this.hasPrevious,
+      categoryFilter: categoryFilter ?? this.categoryFilter,
+      isActiveFilter: isActiveFilter ?? this.isActiveFilter,
+    );
+  }
+}
+
+class UnitsNotifier extends StateNotifier<UnitsState> {
+  final AdminRepository _repository;
+
+  UnitsNotifier(this._repository) : super(const UnitsState());
+
+  Future<void> loadUnits({int page = 0, bool append = false}) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await _repository.getUnits(
+        page: page,
+        size: 50,
+        category: state.categoryFilter,
+        isActive: state.isActiveFilter,
+      );
+
+      // If this is an append and we got fewer items than pageSize, we're done
+      final hasMore = response.data.length >= response.pageSize;
+
+      final units = append
+          ? [...state.units, ...response.data]
+              .fold<Map<int, Unit>>({}, (map, unit) {
+                map[unit.id] = unit;
+                return map;
+              })
+              .values
+              .toList()
+          : response.data;
+
+      state = state.copyWith(
+        isLoading: false,
+        units: units,
+        currentPage: page,
+        totalPages: response.totalPages,
+        totalElements: response.totalElements,
+        pageSize: response.pageSize,
+        hasNext: hasMore,
+        hasPrevious: page > 0,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadNextPage() async {
+    if (!state.hasNext) return;
+    await loadUnits(page: state.currentPage + 1, append: true);
+  }
+
+  Future<void> setCategoryFilter(String? category) async {
+    state = state.copyWith(categoryFilter: category, currentPage: 0);
+    await loadUnits();
+  }
+
+  Future<void> setActiveFilter(bool? isActive) async {
+    state = state.copyWith(isActiveFilter: isActive, currentPage: 0);
+    await loadUnits();
+  }
+
+  Future<bool> createUnit(CreateUnitRequest request) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.createUnit(request);
+      await loadUnits(page: 0);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> updateUnit(int id, UpdateUnitRequest request) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.updateUnit(id, request);
+      await loadUnits(page: 0);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> activateUnit(int id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.activateUnit(id);
+      state = state.copyWith(
+        units: state.units
+            .map((u) => u.id == id ? u.copyWith(isActive: true) : u)
+            .toList(),
+        isLoading: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> deactivateUnit(int id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.deactivateUnit(id);
+      state = state.copyWith(
+        units: state.units
+            .map((u) => u.id == id ? u.copyWith(isActive: false) : u)
+            .toList(),
+        isLoading: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> deleteUnit(int id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.deleteUnit(id);
+      // Remove from list (soft deleted - hidden from queries)
+      state = state.copyWith(
+        units: state.units.where((u) => u.id != id).toList(),
+        totalElements: (state.totalElements - 1).clamp(0, double.infinity).toInt(),
+        isLoading: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> restoreUnit(int id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.restoreUnit(id);
+      // Add back to list (restored from delete)
+      final restored = await _repository.getUnitById(id);
+      state = state.copyWith(
+        units: [restored, ...state.units],
+        totalElements: state.totalElements + 1,
+        isLoading: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> setUnitDefault(int id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final updated = await _repository.setUnitDefault(id);
+      state = state.copyWith(
+        units: state.units.map((u) {
+          if (u.id == id) {
+            return u.copyWith(isDefault: true);
+          } else if (u.category == updated.category && u.isDefault) {
+            // Remove default from other units in same category
+            return u.copyWith(isDefault: false);
+          }
+          return u;
+        }).toList(),
+        isLoading: false,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
+}
+
+final unitsProvider =
+    StateNotifierProvider<UnitsNotifier, UnitsState>((ref) {
+      final repository = ref.watch(adminRepositoryProvider);
+      return UnitsNotifier(repository);
+    });
+
 // ========== Upgrade Requests ==========
 class UpgradeRequestsState {
   final bool isLoading;

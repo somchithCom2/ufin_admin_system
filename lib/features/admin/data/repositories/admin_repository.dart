@@ -807,6 +807,138 @@ class AdminRepository {
   }
 
   // ============================================================
+  // UNITS
+  // ============================================================
+
+  /// Get paginated list of units with optional filtering
+  Future<UnitsPageResponse> getUnits({
+    int page = 0,
+    int size = 50,
+    String? category,
+    bool? isActive,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.units,
+        queryParameters: {
+          'page': page,
+          'size': size,
+          if (category != null) 'category': category,
+          if (isActive != null) 'isActive': isActive,
+        },
+      );
+      return _parseUnitsPageResponse(response);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get unit by ID
+  Future<Unit> getUnitById(int id) async {
+    try {
+      final response = await _dio.get(ApiConstants.unitById(id));
+      return _parseResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get unit by code
+  Future<Unit> getUnitByCode(String code) async {
+    try {
+      final response = await _dio.get(ApiConstants.unitByCode(code));
+      return _parseResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get units by category
+  Future<List<Unit>> getUnitsByCategory(String category) async {
+    try {
+      final response = await _dio.get(ApiConstants.unitsByCategory(category));
+      return _parseListResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Create new unit
+  Future<Unit> createUnit(CreateUnitRequest request) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.units,
+        data: request.toJson(),
+      );
+      return _parseResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Update unit
+  Future<Unit> updateUnit(int id, UpdateUnitRequest request) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.unitById(id),
+        data: request.toJson(),
+      );
+      return _parseResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Activate unit (sets isActive=true, deletedAt=NULL)
+  Future<Unit> activateUnit(int id) async {
+    try {
+      final response = await _dio.patch(ApiConstants.unitActivate(id));
+      return _parseResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Deactivate unit (sets isActive=false, deletedAt=NULL - reversible)
+  Future<Unit> deactivateUnit(int id) async {
+    try {
+      final response = await _dio.patch(ApiConstants.unitDeactivate(id));
+      return _parseResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Delete unit permanently (sets isActive=false, deletedAt=now() - soft delete)
+  Future<void> deleteUnit(int id) async {
+    try {
+      await _dio.delete(ApiConstants.unitById(id));
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Restore unit from delete (sets isActive=true, deletedAt=NULL)
+  Future<Unit> restoreUnit(int id) async {
+    try {
+      final response = await _dio.patch(ApiConstants.unitRestore(id));
+      return _parseResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Set unit as default for its category
+  Future<Unit> setUnitDefault(int id) async {
+    try {
+      final response = await _dio.patch(ApiConstants.unitSetDefault(id));
+      return _parseResponse(response, Unit.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  // ============================================================
   // HELPER METHODS
   // ============================================================
 
@@ -887,6 +1019,88 @@ class AdminRepository {
         totalPages: totalPages,
         isFirst: isFirst,
         isLast: isLast,
+      );
+    }
+    throw ApiException(
+      message: responseData['message'] ?? 'Request failed',
+      statusCode: responseData['status'],
+    );
+  }
+
+  /// Parse units page response with different envelope structure
+  UnitsPageResponse _parseUnitsPageResponse(Response response) {
+    final responseData = response.data;
+    if (responseData['success'] == true && responseData['data'] != null) {
+      final data = responseData['data'];
+
+      // Check if data is a list directly (no nested 'data' key) or has 'data' key
+      final unitsList = <Unit>[];
+      int currentPage = 0;
+      int totalPages = 1;
+      int totalElements = 0;
+      int pageSize = 50;
+      bool hasNext = false;
+      bool hasPrevious = false;
+
+      if (data is List) {
+        // Response is {success, data: [...]} - simple list
+        unitsList.addAll(
+          data
+              .map((e) {
+                if (e is Map<String, dynamic>) {
+                  return Unit.fromJson(e);
+                } else if (e is Map) {
+                  return Unit.fromJson(Map<String, dynamic>.from(e));
+                }
+                throw ApiException(
+                  message: 'Invalid unit data format',
+                  statusCode: 500,
+                );
+              })
+              .toList(),
+        );
+        // For simple list responses without pagination metadata:
+        // If we got 50 items (full page), assume there might be more
+        // If we got less than 50, we're on the last page
+        pageSize = 50;
+        final itemCount = unitsList.length;
+        totalElements = itemCount;
+        hasNext = itemCount >= pageSize; // hasNext if we got a full page
+        hasPrevious = false;
+      } else if (data is Map) {
+        // Response is {success, data: {data: [...], pagination fields...}}
+        final nestedList = (data['data'] as List?)
+            ?.map((e) {
+              if (e is Map<String, dynamic>) {
+                return Unit.fromJson(e);
+              } else if (e is Map) {
+                return Unit.fromJson(Map<String, dynamic>.from(e));
+              }
+              throw ApiException(
+                message: 'Invalid unit data format',
+                statusCode: 500,
+              );
+            })
+            .toList() ??
+            [];
+        unitsList.addAll(nestedList);
+
+        currentPage = data['currentPage'] as int? ?? 0;
+        totalPages = data['totalPages'] as int? ?? 1;
+        totalElements = data['totalElements'] as int? ?? unitsList.length;
+        pageSize = data['pageSize'] as int? ?? 50;
+        hasNext = data['hasNext'] as bool? ?? false;
+        hasPrevious = data['hasPrevious'] as bool? ?? false;
+      }
+
+      return UnitsPageResponse(
+        data: unitsList,
+        currentPage: currentPage,
+        totalPages: totalPages,
+        totalElements: totalElements,
+        pageSize: pageSize,
+        hasNext: hasNext,
+        hasPrevious: hasPrevious,
       );
     }
     throw ApiException(

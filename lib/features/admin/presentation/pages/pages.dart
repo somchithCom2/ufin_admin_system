@@ -13,5 +13,6 @@ export 'statistics_page.dart';
 export 'subscription_detail_page.dart';
 export 'subscription_history_page.dart';
 export 'subscriptions_list_page.dart';
+export 'units_page.dart';
 export 'upgrade_requests_page.dart';
 export 'users_page.dart';
