@@ -32,6 +32,9 @@ dependencies:
   # Image Caching
   cached_network_image: ^3.4.1
 
+  # Device Info
+  device_info_plus: ^10.1.0
+
   # Logging
   logger: ^2.4.0
   intl: ^0.20.2

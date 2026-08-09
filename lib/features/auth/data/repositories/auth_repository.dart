@@ -55,7 +55,17 @@ class AuthRepository {
   Future<SessionResponse> getSession() async {
     try {
       final response = await _dio.get(ApiConstants.session);
-      return SessionResponse.fromJson(response.data);
+
+      // API returns wrapped response: {success: true, data: {...}}
+      final responseData = response.data;
+      if (responseData['success'] == true && responseData['data'] != null) {
+        return SessionResponse.fromJson(responseData['data']);
+      } else {
+        throw ApiException(
+          message: responseData['message'] ?? 'Failed to get session',
+          statusCode: responseData['status'],
+        );
+      }
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -71,7 +81,16 @@ class AuthRepository {
         data: {'refreshToken': refreshToken},
       );
 
-      return response.data['token'] as String;
+      // API returns wrapped response: {success: true, data: {token: ...}}
+      final responseData = response.data;
+      if (responseData['success'] == true && responseData['data'] != null) {
+        return responseData['data']['token'] as String;
+      } else {
+        throw ApiException(
+          message: responseData['message'] ?? 'Failed to refresh token',
+          statusCode: responseData['status'],
+        );
+      }
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

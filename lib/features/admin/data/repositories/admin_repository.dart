@@ -977,6 +977,220 @@ class AdminRepository {
   }
 
   // ============================================================
+  // APP RELEASES & MAINTENANCE MODE
+  // ============================================================
+
+  /// Create new app release
+  Future<AppRelease> createAppRelease(CreateAppReleaseRequest request) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.adminAppReleases,
+        data: request.toJson(),
+      );
+
+      // Handle both wrapped and unwrapped responses
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['data'] != null) {
+        return AppRelease.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      return AppRelease.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get all app releases
+  Future<List<AppRelease>> getAppReleases() async {
+    try {
+      final response = await _dio.get(ApiConstants.adminAppReleases);
+
+      // Handle both wrapped and unwrapped responses
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['data'] != null) {
+        return (data['data'] as List)
+            .map((e) => AppRelease.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return (data as List)
+          .map((e) => AppRelease.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get app release by ID
+  Future<AppRelease> getAppReleaseById(int id) async {
+    try {
+      final response = await _dio.get(ApiConstants.adminAppReleaseById(id));
+
+      // Handle both wrapped and unwrapped responses
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['data'] != null) {
+        return AppRelease.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      return AppRelease.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get releases by platform
+  Future<List<AppRelease>> getAppReleasesByPlatform(String platform) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminAppReleaseByPlatform(platform),
+      );
+
+      // Handle both wrapped and unwrapped responses
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['data'] != null) {
+        return (data['data'] as List)
+            .map((e) => AppRelease.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return (data as List)
+          .map((e) => AppRelease.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get published releases only
+  Future<List<AppRelease>> getPublishedAppReleases() async {
+    try {
+      final response = await _dio.get(ApiConstants.adminAppPublishedReleases);
+
+      // Handle both wrapped and unwrapped responses
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['data'] != null) {
+        return (data['data'] as List)
+            .map((e) => AppRelease.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return (data as List)
+          .map((e) => AppRelease.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Update app release
+  Future<AppRelease> updateAppRelease(
+    int id,
+    UpdateAppReleaseRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminAppReleaseById(id),
+        data: request.toJson(),
+      );
+
+      // Handle both wrapped and unwrapped responses
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['data'] != null) {
+        return AppRelease.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      return AppRelease.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Publish app release
+  Future<AppRelease> publishAppRelease(int id) async {
+    try {
+      final response = await _dio.patch(
+        ApiConstants.adminAppReleasePublish(id),
+      );
+
+      // Handle both wrapped and unwrapped responses
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['data'] != null) {
+        return AppRelease.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      return AppRelease.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Unpublish app release
+  Future<AppRelease> unpublishAppRelease(int id) async {
+    try {
+      final response = await _dio.patch(
+        ApiConstants.adminAppReleaseUnpublish(id),
+      );
+
+      // Handle both wrapped and unwrapped responses
+      final data = response.data;
+      if (data is Map && data['success'] == true && data['data'] != null) {
+        return AppRelease.fromJson(data['data'] as Map<String, dynamic>);
+      }
+      return AppRelease.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Delete app release
+  Future<void> deleteAppRelease(int id) async {
+    try {
+      await _dio.delete(ApiConstants.adminAppReleaseById(id));
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Get system configuration
+  Future<SystemConfiguration> getSystemConfiguration() async {
+    try {
+      final response = await _dio.get(ApiConstants.adminAppSystemConfig);
+
+      // Response is returned directly, not wrapped
+      return SystemConfiguration.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Update maintenance mode
+  Future<SystemConfiguration> updateMaintenanceMode(
+    UpdateMaintenanceModeRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminAppMaintenanceMode,
+        data: request.toJson(),
+      );
+
+      // Response is returned directly, not wrapped
+      return SystemConfiguration.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Update system configuration
+  Future<SystemConfiguration> updateSystemConfiguration(
+    UpdateSystemConfigRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminAppSystemConfig,
+        data: request.toJson(),
+      );
+
+      // Response is returned directly, not wrapped
+      return SystemConfiguration.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  // ============================================================
   // HELPER METHODS
   // ============================================================
 

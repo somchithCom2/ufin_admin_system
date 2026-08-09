@@ -130,6 +130,18 @@ class ApiConstants {
   static String subscriptionPlanByCode(String code) =>
       '/subscriptions/plans/$code';
 
+  // App Releases & Maintenance Mode
+  static const String adminAppReleases = '/admin/app/releases';
+  static String adminAppReleaseById(int id) => '/admin/app/releases/$id';
+  static String adminAppReleaseByPlatform(String platform) =>
+      '/admin/app/releases/platform/$platform';
+  static const String adminAppPublishedReleases = '/admin/app/releases/published';
+  static String adminAppReleasePublish(int id) => '/admin/app/releases/$id/publish';
+  static String adminAppReleaseUnpublish(int id) =>
+      '/admin/app/releases/$id/unpublish';
+  static const String adminAppSystemConfig = '/admin/app/system-config';
+  static const String adminAppMaintenanceMode = '/admin/app/maintenance-mode';
+
   // ============================================================
   // HELPER METHODS
   // ============================================================

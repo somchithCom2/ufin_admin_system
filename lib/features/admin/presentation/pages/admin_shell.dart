@@ -13,6 +13,8 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/shop_type_pa
 import 'package:ufin_admin_system/features/admin/presentation/pages/units_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/deleted_users_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/upgrade_requests_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/app_releases_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/system_configuration_page.dart';
 
 /// Global scaffold key for drawer access
 final adminScaffoldKey = GlobalKey<ScaffoldState>();
@@ -58,6 +60,8 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     UpgradeRequestsPage(),
     DeletedUsersPage(),
     UnitsPage(),
+    AppReleasesPage(),
+    SystemConfigurationPage(),
   ];
 
   final List<_NavItem> _navItems = const [
@@ -139,6 +143,20 @@ class _AdminShellState extends ConsumerState<AdminShell> {
       label: 'Revenue Report',
       icon: Icons.bar_chart_outlined,
       selectedIcon: Icons.bar_chart,
+    ),
+    // System
+    _NavItem(
+      index: 12,
+      label: 'App Releases',
+      icon: Icons.app_registration_outlined,
+      selectedIcon: Icons.app_registration,
+      section: 'System',
+    ),
+    _NavItem(
+      index: 13,
+      label: 'System Config',
+      icon: Icons.settings_outlined,
+      selectedIcon: Icons.settings,
     ),
   ];
 

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:ufin_admin_system/core/constants/api_constants.dart';
 import 'package:ufin_admin_system/core/services/auth_event_bus.dart';
+import 'package:ufin_admin_system/core/services/device_headers_service.dart';
 import 'package:ufin_admin_system/core/services/secure_storage_service.dart';
 
 class DioClient {
@@ -41,14 +42,18 @@ class DioClient {
   }
 }
 
-/// Interceptor to add auth token to requests
+/// Interceptor to add auth token and device headers to requests
 class _AuthInterceptor extends Interceptor {
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Skip auth header for login endpoint
+    // Add device headers to ALL requests (including login)
+    final deviceHeaders = await DeviceHeadersService.getDeviceHeaders();
+    options.headers.addAll(deviceHeaders);
+
+    // Add auth token for non-login endpoints
     if (!options.path.contains('/login')) {
       final token = await SecureStorageService.getToken();
       if (token != null) {
