@@ -50,6 +50,8 @@ class ApiConstants {
   // Products
   static String productsPaginated(int shopId, int empId) =>
       '/products/$shopId/$empId/paginated';
+  static String adminProductsByShop(int shopId) =>
+      '/admin/products/$shopId';
 
   // Subscriptions
   static const String adminSubscriptions = '/admin/subscriptions';

@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -18,7 +20,6 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
   bool? _inStockFilter;
 
   int get _shopId => widget.shop.id;
-  int get _empId => widget.shop.ownerId ?? 0;
 
   @override
   void initState() {
@@ -26,7 +27,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(productsProvider(_shopId).notifier)
-          .loadProducts(shopId: _shopId, empId: _empId);
+          .loadProducts(shopId: _shopId);
     });
     _scrollController.addListener(_onScroll);
   }
@@ -50,12 +51,18 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
         .read(productsProvider(_shopId).notifier)
         .loadProducts(
           shopId: _shopId,
-          empId: _empId,
           search: _searchController.text.isEmpty
               ? null
               : _searchController.text,
           inStockOnly: _inStockFilter,
         );
+  }
+
+  String _getFullImageUrl(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty) return '';
+    if (imagePath.startsWith('http')) return imagePath;
+    final bucketUrl = dotenv.env['BUCKET_PUBLIC_BASE_URL'] ?? '';
+    return '$bucketUrl$imagePath';
   }
 
   @override
@@ -196,18 +203,24 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
 
   Widget _buildProductCard(AdminProduct product) {
     final isOutOfStock = product.stockQuantity <= 0;
+    final thumbnailUrl = _getFullImageUrl(product.thumbnailUrl);
+    final imageUrl = _getFullImageUrl(product.imageUrl);
+    final displayUrl =
+        thumbnailUrl.isNotEmpty ? thumbnailUrl : imageUrl;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        leading: product.imageUrl != null
+        leading: displayUrl.isNotEmpty
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(6),
-                child: Image.network(
-                  product.imageUrl!,
+                child: CachedNetworkImage(
+                  imageUrl: displayUrl,
                   width: 48,
                   height: 48,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _productIcon(product),
+                  placeholder: (_, __) => _productIcon(product),
+                  errorWidget: (_, __, ___) => _productIcon(product),
                 ),
               )
             : _productIcon(product),

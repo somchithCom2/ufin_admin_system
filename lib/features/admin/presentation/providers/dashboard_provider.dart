@@ -1401,7 +1401,6 @@ class ProductsNotifier extends StateNotifier<ProductsState> {
   final AdminRepository _repository;
 
   int? _shopId;
-  int? _empId;
   String? _search;
   bool? _inStockOnly;
 
@@ -1409,20 +1408,17 @@ class ProductsNotifier extends StateNotifier<ProductsState> {
 
   Future<void> loadProducts({
     required int shopId,
-    required int empId,
     String? search,
     bool? inStockOnly,
   }) async {
     _shopId = shopId;
-    _empId = empId;
     _search = search;
     _inStockOnly = inStockOnly;
 
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final result = await _repository.getProducts(
+      final result = await _repository.getAdminProductsByShop(
         shopId: shopId,
-        empId: empId,
         page: 0,
         search: search,
         inStockOnly: inStockOnly,
@@ -1441,14 +1437,12 @@ class ProductsNotifier extends StateNotifier<ProductsState> {
   Future<void> loadMore() async {
     if (state.isLoadingMore || !state.hasNext) return;
     final shopId = _shopId;
-    final empId = _empId;
-    if (shopId == null || empId == null) return;
+    if (shopId == null) return;
 
     state = state.copyWith(isLoadingMore: true);
     try {
-      final result = await _repository.getProducts(
+      final result = await _repository.getAdminProductsByShop(
         shopId: shopId,
-        empId: empId,
         page: state.currentPage + 1,
         search: _search,
         inStockOnly: _inStockOnly,

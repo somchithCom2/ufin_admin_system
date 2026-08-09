@@ -224,6 +224,44 @@ class AdminRepository {
     }
   }
 
+  /// Get products for a shop (admin endpoint - no empId required)
+  Future<PaginatedResponse<AdminProduct>> getAdminProductsByShop({
+    required int shopId,
+    int page = 0,
+    int size = 20,
+    String? search,
+    int? categoryId,
+    bool? inStockOnly,
+    bool? includeInactive,
+    bool? includeDeleted,
+    double? minPrice,
+    double? maxPrice,
+    String sortBy = 'name',
+    String sortDirection = 'asc',
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminProductsByShop(shopId),
+        queryParameters: {
+          'page': page,
+          'size': size,
+          'sortBy': sortBy,
+          'sortDirection': sortDirection,
+          if (search != null && search.isNotEmpty) 'search': search,
+          if (categoryId != null) 'categoryId': categoryId,
+          if (inStockOnly != null) 'inStockOnly': inStockOnly,
+          if (includeInactive != null) 'include_inactive': includeInactive,
+          if (includeDeleted != null) 'include_deleted': includeDeleted,
+          if (minPrice != null) 'minPrice': minPrice,
+          if (maxPrice != null) 'maxPrice': maxPrice,
+        },
+      );
+      return _parsePaginatedResponse(response, AdminProduct.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   // ============================================================
   // SUBSCRIPTIONS
   // ============================================================
@@ -983,8 +1021,11 @@ class AdminRepository {
     if (responseData['success'] == true && responseData['data'] != null) {
       final data = responseData['data'];
 
-      final content =
-          (data['content'] as List?)
+      // Try 'content' first, then 'data' (for compatibility with different API formats)
+      List<dynamic>? contentList =
+          (data['content'] as List?) ?? (data['data'] as List?);
+
+      final content = contentList
               ?.map((e) => fromJson(e as Map<String, dynamic>))
               .toList() ??
           [];
@@ -1005,6 +1046,20 @@ class AdminRepository {
       } else {
         // Page is a simple int (page number only)
         pageNumber = (data['page'] as int?) ?? 0;
+      }
+
+      // Use direct fields if available (for new API format)
+      if (data['currentPage'] != null) {
+        pageNumber = data['currentPage'] as int;
+      }
+      if (data['totalPages'] != null) {
+        totalPages = data['totalPages'] as int;
+      }
+      if (data['pageSize'] != null) {
+        size = data['pageSize'] as int;
+      }
+      if (data['totalElements'] != null) {
+        totalElements = data['totalElements'] as int;
       }
 
       // Calculate isLast: if we got fewer items than page size, we're on last page

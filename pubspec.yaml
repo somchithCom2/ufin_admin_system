@@ -28,7 +28,10 @@ dependencies:
   
   # HTTP
   dio: ^5.5.0
-  
+
+  # Image Caching
+  cached_network_image: ^3.4.1
+
   # Logging
   logger: ^2.4.0
   intl: ^0.20.2
