@@ -144,15 +144,19 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                         ),
                         const DropdownMenuItem(
                           value: 'android',
-                          child: Text('Android'),
+                          child: Text('🤖 Android'),
                         ),
                         const DropdownMenuItem(
                           value: 'ios',
-                          child: Text('iOS'),
+                          child: Text('🍎 iOS'),
                         ),
                         const DropdownMenuItem(
-                          value: 'web',
-                          child: Text('Web'),
+                          value: 'macos',
+                          child: Text('🖥️ macOS'),
+                        ),
+                        const DropdownMenuItem(
+                          value: 'windows',
+                          child: Text('🪟 Windows'),
                         ),
                       ],
                       onChanged: (value) {
@@ -337,113 +341,139 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create New Release'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField(
-                  value: platform,
-                  items: const [
-                    DropdownMenuItem(value: 'android', child: Text('Android')),
-                    DropdownMenuItem(value: 'ios', child: Text('iOS')),
-                    DropdownMenuItem(value: 'web', child: Text('Web')),
-                  ],
-                  onChanged: (value) => platform = value ?? 'android',
-                  decoration: const InputDecoration(labelText: 'Platform'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          insetPadding: const EdgeInsets.all(8),
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Create New Release'),
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                  DropdownButtonFormField(
+                    initialValue: platform,
+                    items: const [
+                      DropdownMenuItem(value: 'android', child: Text('🤖 Android')),
+                      DropdownMenuItem(value: 'ios', child: Text('🍎 iOS')),
+                      DropdownMenuItem(value: 'macos', child: Text('🖥️ macOS')),
+                      DropdownMenuItem(value: 'windows', child: Text('🪟 Windows')),
+                    ],
+                    onChanged: (value) => platform = value ?? 'android',
+                    decoration: const InputDecoration(labelText: 'Platform'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: versionNameCtrl,
+                    decoration: const InputDecoration(labelText: 'Version Name (e.g. 1.0.0)'),
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: versionCodeCtrl,
+                    decoration: const InputDecoration(labelText: 'Version Code'),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: titleCtrl,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: changelogCtrl,
+                    decoration: const InputDecoration(labelText: 'Changelog'),
+                    maxLines: 3,
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: downloadUrlCtrl,
+                    decoration: const InputDecoration(labelText: 'Download URL'),
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    value: isMandatory,
+                    onChanged: (v) =>
+                        setDialogState(() => isMandatory = v ?? false),
+                    title: const Text('Mandatory Update'),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
                 ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: versionNameCtrl,
-                  decoration: const InputDecoration(labelText: 'Version Name (e.g. 1.0.0)'),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: versionCodeCtrl,
-                  decoration: const InputDecoration(labelText: 'Version Code'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: 'Title'),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: changelogCtrl,
-                  decoration: const InputDecoration(labelText: 'Changelog'),
-                  maxLines: 3,
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: downloadUrlCtrl,
-                  decoration: const InputDecoration(labelText: 'Download URL'),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                CheckboxListTile(
-                  value: isMandatory,
-                  onChanged: (v) =>
-                      setState(() => isMandatory = v ?? false),
-                  title: const Text('Mandatory Update'),
-                ),
-              ],
+              ),
+            ),
+            bottomNavigationBar: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (!formKey.currentState!.validate()) return;
+
+                        // Save scaffold messenger reference before async operation
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(context);
+
+                        try {
+                          final request = CreateAppReleaseRequest(
+                            versionName: versionNameCtrl.text,
+                            versionCode: int.parse(versionCodeCtrl.text),
+                            platform: platform,
+                            title: titleCtrl.text,
+                            changelog: changelogCtrl.text,
+                            downloadUrl: downloadUrlCtrl.text,
+                            isMandatory: isMandatory,
+                          );
+
+                          await _repository.createAppRelease(request);
+                          unawaited(ref.refresh(appReleasesProvider.future));
+
+                          navigator.pop();
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('✅ Release created successfully'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text('❌ Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Create'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-
-              // Save scaffold messenger reference before async operation
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              final navigator = Navigator.of(context);
-
-              try {
-                final request = CreateAppReleaseRequest(
-                  versionName: versionNameCtrl.text,
-                  versionCode: int.parse(versionCodeCtrl.text),
-                  platform: platform,
-                  title: titleCtrl.text,
-                  changelog: changelogCtrl.text,
-                  downloadUrl: downloadUrlCtrl.text,
-                  isMandatory: isMandatory,
-                );
-
-                await _repository.createAppRelease(request);
-                await ref.refresh(appReleasesProvider.future);
-
-                navigator.pop();
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ Release created successfully'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (e) {
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text('❌ Error: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text('Create'),
-          ),
-        ],
       ),
     );
   }
@@ -457,90 +487,112 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
     final changelogCtrl = TextEditingController(text: release.changelog);
     final downloadUrlCtrl =
         TextEditingController(text: release.downloadUrl);
-    late bool isMandatory = release.isMandatory;
+    bool isMandatory = release.isMandatory;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Release'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: 'Title'),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Dialog(
+          insetPadding: const EdgeInsets.all(8),
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Edit Release'),
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            body: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: titleCtrl,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: changelogCtrl,
+                    decoration: const InputDecoration(labelText: 'Changelog'),
+                    maxLines: 3,
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: downloadUrlCtrl,
+                    decoration: const InputDecoration(labelText: 'Download URL'),
+                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    value: isMandatory,
+                    onChanged: (v) =>
+                        setDialogState(() => isMandatory = v ?? false),
+                    title: const Text('Mandatory Update'),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
                 ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: changelogCtrl,
-                  decoration: const InputDecoration(labelText: 'Changelog'),
-                  maxLines: 3,
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: downloadUrlCtrl,
-                  decoration: const InputDecoration(labelText: 'Download URL'),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                CheckboxListTile(
-                  value: isMandatory,
-                  onChanged: (v) =>
-                      setState(() => isMandatory = v ?? false),
-                  title: const Text('Mandatory Update'),
-                ),
-              ],
+              ),
+            bottomNavigationBar: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (!formKey.currentState!.validate()) return;
+
+                        // Save scaffold messenger reference before async operation
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(context);
+
+                        try {
+                          final request = UpdateAppReleaseRequest(
+                            title: titleCtrl.text,
+                            changelog: changelogCtrl.text,
+                            downloadUrl: downloadUrlCtrl.text,
+                            isMandatory: isMandatory,
+                          );
+
+                          await _repository.updateAppRelease(release.id, request);
+                          unawaited(ref.refresh(appReleasesProvider.future));
+
+                          navigator.pop();
+                          scaffoldMessenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('✅ Release updated successfully'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text('❌ Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Update'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-
-              // Save scaffold messenger reference before async operation
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              final navigator = Navigator.of(context);
-
-              try {
-                final request = UpdateAppReleaseRequest(
-                  title: titleCtrl.text,
-                  changelog: changelogCtrl.text,
-                  downloadUrl: downloadUrlCtrl.text,
-                  isMandatory: isMandatory,
-                );
-
-                await _repository.updateAppRelease(release.id, request);
-                unawaited(ref.refresh(appReleasesProvider.future));
-
-                navigator.pop();
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ Release updated successfully'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (e) {
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text('❌ Error: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text('Update'),
-          ),
-        ],
       ),
     );
   }

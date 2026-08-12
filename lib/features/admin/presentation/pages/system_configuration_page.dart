@@ -78,6 +78,51 @@ class _SystemConfigurationPageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Force Update Status Alert
+              if (config.forceUpdateRequired == true)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    border: Border.all(color: Colors.red, width: 2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.red.shade700,
+                        size: 32,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Force Update Required',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Colors.red.shade700,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'All users must update to the latest version',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.red.shade600,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (config.forceUpdateRequired == true)
+                const SizedBox(height: 16),
+
               // Maintenance Mode Section
               Card(
                 child: Padding(
@@ -192,6 +237,22 @@ class _SystemConfigurationPageState
                       const SizedBox(height: 12),
                       _buildVersionCard(
                         context,
+                        'Windows',
+                        config.minSupportedWindowsVersion,
+                        Icons.desktop_mac,
+                        Colors.blue,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildVersionCard(
+                        context,
+                        'macOS',
+                        config.minSupportedMacosVersion,
+                        Icons.laptop_mac,
+                        Colors.grey,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildVersionCard(
+                        context,
                         'Web',
                         config.minSupportedWebVersion,
                         Icons.language,
@@ -212,6 +273,35 @@ class _SystemConfigurationPageState
                 ),
               ),
               const SizedBox(height: 24),
+              // Update Status
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Update Status',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildStatusRow(
+                        'Update Available',
+                        config.updateAvailable == true ? '✅ Yes' : '❌ No',
+                        config.updateAvailable == true ? Colors.green : Colors.grey,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildStatusRow(
+                        'Force Update Required',
+                        config.forceUpdateRequired == true ? '⚠️ Yes' : '✅ No',
+                        config.forceUpdateRequired == true ? Colors.red : Colors.green,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Configuration Info
               Card(
                 child: Padding(
@@ -294,6 +384,35 @@ class _SystemConfigurationPageState
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
+    );
+  }
+
+  Widget _buildStatusRow(String label, String status, Color statusColor) {
+    return Container(
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        border: Border.all(color: statusColor.withAlpha(100)),
+        borderRadius: BorderRadius.circular(8),
+        color: statusColor.withAlpha(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          Text(
+            status,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -433,6 +552,10 @@ class _SystemConfigurationPageState
         TextEditingController(text: config.minSupportedAndroidVersion);
     final iosCtrl =
         TextEditingController(text: config.minSupportedIosVersion);
+    final windowsCtrl =
+        TextEditingController(text: config.minSupportedWindowsVersion);
+    final macosCtrl =
+        TextEditingController(text: config.minSupportedMacosVersion);
     final webCtrl =
         TextEditingController(text: config.minSupportedWebVersion);
 
@@ -465,6 +588,24 @@ class _SystemConfigurationPageState
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
+                  controller: windowsCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Minimum Windows Version',
+                    hintText: '10.0',
+                  ),
+                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: macosCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Minimum macOS Version',
+                    hintText: '10.15',
+                  ),
+                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
                   controller: webCtrl,
                   decoration: const InputDecoration(
                     labelText: 'Minimum Web Version',
@@ -489,6 +630,8 @@ class _SystemConfigurationPageState
                 final request = UpdateSystemConfigRequest(
                   minSupportedAndroidVersion: androidCtrl.text,
                   minSupportedIosVersion: iosCtrl.text,
+                  minSupportedWindowsVersion: windowsCtrl.text,
+                  minSupportedMacosVersion: macosCtrl.text,
                   minSupportedWebVersion: webCtrl.text,
                 );
 
@@ -499,13 +642,17 @@ class _SystemConfigurationPageState
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Version requirements updated successfully'),
+                    content: Text('✅ Version requirements updated successfully'),
+                    backgroundColor: Colors.green,
                   ),
                 );
               } catch (e) {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')),
+                  SnackBar(
+                    content: Text('❌ Error: $e'),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             },
