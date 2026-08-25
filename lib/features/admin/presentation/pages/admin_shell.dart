@@ -9,6 +9,7 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/plans_page.d
 import 'package:ufin_admin_system/features/admin/presentation/pages/payments_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/statistics_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/revenue_report_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/daily_sales_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_type_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/units_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/deleted_users_page.dart';
@@ -62,6 +63,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     UnitsPage(),
     AppReleasesPage(),
     SystemConfigurationPage(),
+    DailySalesPage(),
   ];
 
   final List<_NavItem> _navItems = const [
@@ -143,6 +145,12 @@ class _AdminShellState extends ConsumerState<AdminShell> {
       label: 'Revenue Report',
       icon: Icons.bar_chart_outlined,
       selectedIcon: Icons.bar_chart,
+    ),
+    _NavItem(
+      index: 14,
+      label: 'Daily Sales',
+      icon: Icons.trending_up_outlined,
+      selectedIcon: Icons.trending_up,
     ),
     // System
     _NavItem(

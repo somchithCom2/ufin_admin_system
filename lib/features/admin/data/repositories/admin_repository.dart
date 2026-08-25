@@ -608,6 +608,26 @@ class AdminRepository {
     }
   }
 
+  /// Get daily sales report
+  Future<DailySalesData> getDailySales({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminDailySales,
+        queryParameters: {
+          'startDate': startDate.toIso8601String().split('T')[0],
+          'endDate': endDate.toIso8601String().split('T')[0],
+        },
+      );
+      final salesResponse = DailySalesResponse.fromJson(response.data);
+      return salesResponse.data;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   // ============================================================
   // PLANS
   // ============================================================

@@ -22,6 +22,9 @@ class SessionResponse {
         role: json['role'] as String?,
       );
 
-  /// Check if the user has admin role
-  bool get isAdmin => role?.toUpperCase() == 'ADMIN';
+  /// Check if the user has admin role (ADMIN or SYSTEM_ADMIN)
+  bool get isAdmin {
+    final r = role?.toUpperCase();
+    return r == 'ADMIN' || r == 'SYSTEM_ADMIN';
+  }
 }

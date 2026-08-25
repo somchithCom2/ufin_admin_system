@@ -136,34 +136,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         // Validate that user is admin (ADMIN or SYSTEM_ADMIN)
         final roleUpper = role.toUpperCase();
         if (roleUpper == 'ADMIN' || roleUpper == 'SYSTEM_ADMIN') {
-          // Optionally verify session with server
-          try {
-            final session = await _repository.getSession();
-            if (session.isAdmin) {
-              state = state.copyWith(
-                isAuthenticated: true,
-                isInitializing: false,
-                token: token,
-                userId: session.userId,
-                username: session.username,
-                role: session.role,
-              );
-            } else {
-              await _clearAndLogout(
-                'Access denied. Admin privileges required.',
-              );
-            }
-          } catch (e) {
-            // If session check fails, use stored data (offline mode)
-            state = state.copyWith(
-              isAuthenticated: true,
-              isInitializing: false,
-              token: token,
-              userId: int.tryParse(userId),
-              username: username,
-              role: role,
-            );
-          }
+          // Trust the locally stored session. No server round-trip here:
+          // the Dio interceptor already validates the token on every
+          // subsequent request and triggers logout on a real 401.
+          state = state.copyWith(
+            isAuthenticated: true,
+            isInitializing: false,
+            token: token,
+            userId: int.tryParse(userId),
+            username: username,
+            role: role,
+          );
         } else {
           await _clearAndLogout('Access denied. Admin privileges required.');
         }

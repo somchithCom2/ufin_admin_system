@@ -91,6 +91,7 @@ class ApiConstants {
 
   // Reports
   static const String adminRevenueReport = '/admin/reports/revenue';
+  static const String adminDailySales = '/admin/reports/daily-sales';
 
   // Plans
   static const String adminPlans = '/admin/plans';

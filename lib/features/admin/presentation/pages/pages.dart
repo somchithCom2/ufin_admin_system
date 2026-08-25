@@ -1,6 +1,7 @@
 // Admin pages exports
 export 'admin_shell.dart';
 export 'change_plan_page.dart';
+export 'daily_sales_page.dart';
 export 'dashboard_page.dart';
 export 'deleted_users_page.dart';
 export 'payments_page.dart';

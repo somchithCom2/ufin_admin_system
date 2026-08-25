@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 
@@ -205,8 +206,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
     final isOutOfStock = product.stockQuantity <= 0;
     final thumbnailUrl = _getFullImageUrl(product.thumbnailUrl);
     final imageUrl = _getFullImageUrl(product.imageUrl);
-    final displayUrl =
-        thumbnailUrl.isNotEmpty ? thumbnailUrl : imageUrl;
+    final displayUrl = thumbnailUrl.isNotEmpty ? thumbnailUrl : imageUrl;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -300,11 +300,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
   }
 
   String _formatPrice(double price) {
-    if (price >= 1000000) {
-      return '₭${(price / 1000000).toStringAsFixed(1)}M';
-    } else if (price >= 1000) {
-      return '₭${(price / 1000).toStringAsFixed(0)}K';
-    }
-    return '₭${price.toStringAsFixed(0)}';
+    final formatter = NumberFormat('#,##0.00');
+    return formatter.format(price);
   }
 }
