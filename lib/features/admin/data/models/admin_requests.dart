@@ -270,6 +270,11 @@ class ReactivateSubscriptionRequest {
 /// Manual payments are recorded against the shop's current subscription.
 class RecordPaymentRequest {
   final double amount;
+
+  /// Calendar day the money was received, for back-filling old records.
+  /// Sent as `yyyy-MM-dd`. The backend stores past days at 12:00 and treats
+  /// today (or omitted) as "now".
+  final DateTime? paymentDate;
   final String currency;
   final String paymentMethod;
   final String? transactionId;
@@ -277,6 +282,7 @@ class RecordPaymentRequest {
   final String? notes;
   const RecordPaymentRequest({
     required this.amount,
+    this.paymentDate,
     this.currency = 'LAK',
     required this.paymentMethod,
     this.transactionId,
@@ -290,8 +296,15 @@ class RecordPaymentRequest {
     if (transactionId != null) 'transactionId': transactionId,
     if (gateway != null) 'gateway': gateway,
     if (notes != null) 'notes': notes,
+    if (paymentDate != null) 'paymentDate': formatIsoDate(paymentDate!),
   };
 }
+
+/// `yyyy-MM-dd` for a calendar date, ignoring time and time zone.
+String formatIsoDate(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
 
 /// Request to update payment status
 class UpdatePaymentStatusRequest {

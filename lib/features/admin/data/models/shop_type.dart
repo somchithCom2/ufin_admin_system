@@ -4,6 +4,11 @@ class ShopType {
   final String code;
   final String name;
   final String? description;
+
+  /// All translations as sent by the server (e.g. `{en: ..., lo: ...}`).
+  /// Edit forms must round-trip these, or saving drops non-English text.
+  final Map<String, String> nameI18n;
+  final Map<String, String> descriptionI18n;
   final String? iconName;
   final List<String> features;
   final bool enabled;
@@ -26,11 +31,25 @@ class ShopType {
     return value.toString();
   }
 
+  static Map<String, String> _translations(dynamic value) {
+    if (value is Map) {
+      return {
+        for (final e in value.entries)
+          if (e.value != null && e.value.toString().isNotEmpty)
+            e.key.toString(): e.value.toString(),
+      };
+    }
+    if (value is String && value.isNotEmpty) return {'en': value};
+    return const {};
+  }
+
   const ShopType({
     required this.id,
     required this.code,
     required this.name,
     this.description,
+    this.nameI18n = const {},
+    this.descriptionI18n = const {},
     this.iconName,
     this.features = const [],
     this.enabled = true,
@@ -46,6 +65,8 @@ class ShopType {
       code: json['code'] as String? ?? '',
       name: _localized(json['name']) ?? '',
       description: _localized(json['description']),
+      nameI18n: _translations(json['name']),
+      descriptionI18n: _translations(json['description']),
       iconName: json['iconName'] as String?,
       features: (json['features'] as List<dynamic>?)?.cast<String>() ?? [],
       enabled: (json['enabled'] ?? json['isActive']) as bool? ?? true,
@@ -63,8 +84,8 @@ class ShopType {
   Map<String, dynamic> toJson() => {
     'id': id,
     'code': code,
-    'name': name,
-    'description': description,
+    'name': nameI18n.isEmpty ? name : nameI18n,
+    'description': descriptionI18n.isEmpty ? description : descriptionI18n,
     'iconName': iconName,
     'features': features,
     'enabled': enabled,
@@ -92,6 +113,8 @@ class ShopType {
       code: code ?? this.code,
       name: name ?? this.name,
       description: description ?? this.description,
+      nameI18n: nameI18n,
+      descriptionI18n: descriptionI18n,
       iconName: iconName ?? this.iconName,
       features: features ?? this.features,
       enabled: enabled ?? this.enabled,

@@ -733,9 +733,8 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
   Future<void> _showRecordPaymentDialog() {
     // The dialog owns its controllers, so they're disposed only after the
     // route (including its close animation) is gone.
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
+    return showAppFormModal<void>(
+      context,
       builder: (_) => const _RecordPaymentDialog(),
     );
   }
@@ -796,6 +795,7 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
   final _notes = TextEditingController();
   ShopSelection? _shop;
   String _paymentMethod = 'cash';
+  DateTime _paymentDate = DateUtils.dateOnly(DateTime.now());
   bool _saving = false;
   String? _error;
 
@@ -805,6 +805,19 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
     _reference.dispose();
     _notes.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _paymentDate,
+      firstDate: DateTime(2020),
+      // Payments can't be received in the future.
+      lastDate: today,
+      helpText: 'Date payment was received',
+    );
+    if (picked != null && mounted) setState(() => _paymentDate = picked);
   }
 
   Future<void> _submit() async {
@@ -817,6 +830,7 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
     final notes = _notes.text.trim();
     final request = RecordPaymentRequest(
       amount: double.parse(_amount.text.trim()),
+      paymentDate: _paymentDate,
       paymentMethod: _paymentMethod,
       transactionId: reference.isEmpty ? null : reference,
       notes: notes.isEmpty ? null : notes,
@@ -824,11 +838,29 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref
+      final saved = await ref
           .read(paymentsProvider.notifier)
           .recordPayment(_shop!.id, request);
       navigator.pop();
-      messenger.showSuccess('Payment recorded for "${_shop!.name}"');
+      final savedDay = DateUtils.dateOnly(saved.paymentDate.toLocal());
+      final backdated = _paymentDate.isBefore(
+        DateUtils.dateOnly(DateTime.now()),
+      );
+      // Only back-dated records are checked: for "today" the server stamps its
+      // own clock (UTC), which can legitimately fall on the previous day.
+      if (backdated && !DateUtils.isSameDay(savedDay, _paymentDate)) {
+        // The server ignored the requested date (an older backend without
+        // back-dating support). Say so instead of silently storing it wrong.
+        messenger.showWarning(
+          'Payment recorded for "${_shop!.name}", but the server dated it '
+          '${_dateLabel(savedDay)} instead of ${_dateLabel(_paymentDate)}. '
+          'The backend needs updating to accept past dates.',
+        );
+      } else {
+        messenger.showSuccess(
+          'Payment recorded for "${_shop!.name}" on ${_dateLabel(_paymentDate)}',
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       // Keep the dialog open so the admin can fix the input.
@@ -841,121 +873,107 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = context.colors;
-    return PopScope(
-      canPop: !_saving,
-      child: AlertDialog(
-        title: const Text('Record payment'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_error != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: scheme.errorContainer,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusSm,
-                        ),
-                      ),
-                      child: Text(
-                        _error!,
-                        style: TextStyle(color: scheme.onErrorContainer),
-                      ),
+    final backdated = !DateUtils.isSameDay(_paymentDate, DateTime.now());
+    return AppFormModal(
+      formKey: _formKey,
+      icon: Icons.payments_outlined,
+      title: 'Record payment',
+      subtitle: 'Log money received from a shop',
+      submitLabel: 'Save payment',
+      onSubmit: _submit,
+      saving: _saving,
+      error: _error,
+      children: [
+        FormSection(
+          title: 'Payment',
+          children: [
+            ShopPickerField(
+              enabled: !_saving,
+              onChanged: (shop) => _shop = shop,
+            ),
+            FormRow(
+              children: [
+                TextFormField(
+                  controller: _amount,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount',
+                    prefixText: '₭ ',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (v) {
+                    final text = v?.trim() ?? '';
+                    final amount = double.tryParse(text);
+                    return amount == null ||
+                            !amount.isFinite ||
+                            amount <= 0 ||
+                            amount >= 10000000000000 ||
+                            !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)
+                        ? 'Enter a positive amount with at most 2 decimals'
+                        : null;
+                  },
+                ),
+                DropdownButtonFormField<String>(
+                  initialValue: _paymentMethod,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'Method'),
+                  items: const [
+                    DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                    DropdownMenuItem(
+                      value: 'bank_transfer',
+                      child: Text('Bank transfer'),
                     ),
-                    const SizedBox(height: 12),
+                    DropdownMenuItem(value: 'qr_code', child: Text('QR code')),
+                    DropdownMenuItem(value: 'card', child: Text('Card')),
                   ],
-                  ShopPickerField(
-                    enabled: !_saving,
-                    onChanged: (shop) => _shop = shop,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _amount,
-                    enabled: !_saving,
-                    decoration: const InputDecoration(
-                      labelText: 'Amount',
-                      prefixText: '₭ ',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    textInputAction: TextInputAction.next,
-                    validator: (v) {
-                      final text = v?.trim() ?? '';
-                      final amount = double.tryParse(text);
-                      return amount == null ||
-                              !amount.isFinite ||
-                              amount <= 0 ||
-                              amount >= 10000000000000 ||
-                              !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)
-                          ? 'Enter a positive amount with at most 2 decimals'
-                          : null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _paymentMethod,
-                    decoration: const InputDecoration(
-                      labelText: 'Payment method',
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                      DropdownMenuItem(
-                        value: 'bank_transfer',
-                        child: Text('Bank Transfer'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'qr_code',
-                        child: Text('QR Code'),
-                      ),
-                      DropdownMenuItem(value: 'card', child: Text('Card')),
-                    ],
-                    onChanged: _saving
-                        ? null
-                        : (v) => setState(() => _paymentMethod = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _reference,
-                    enabled: !_saving,
-                    maxLength: 255,
-                    decoration: const InputDecoration(
-                      labelText: 'Transaction reference (optional)',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _notes,
-                    enabled: !_saving,
-                    maxLength: 4000,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes (optional)',
-                    ),
-                  ),
-                ],
+                  onChanged: (v) => setState(() => _paymentMethod = v!),
+                ),
+              ],
+            ),
+            InkWell(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              onTap: _saving ? null : _pickDate,
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Payment date',
+                  prefixIcon: const Icon(Icons.event_outlined, size: 20),
+                  suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
+                  helperText: backdated ? 'Back-dated record' : null,
+                ),
+                child: Text(_dateLabel(_paymentDate)),
               ),
             ),
-          ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: _saving ? null : _submit,
-            child: Text(_saving ? 'Recording…' : 'Record'),
-          ),
-        ],
-      ),
+        FormSection(
+          title: 'Reference',
+          hint: 'Optional. Helps match this payment to a bank statement.',
+          children: [
+            TextFormField(
+              controller: _reference,
+              maxLength: 255,
+              decoration: const InputDecoration(
+                labelText: 'Transaction reference',
+              ),
+            ),
+            TextFormField(
+              controller: _notes,
+              maxLength: 4000,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Notes',
+                alignLabelWithHint: true,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
+
+String _dateLabel(DateTime d) => DateUtils.isSameDay(d, DateTime.now())
+    ? 'Today, ${DateFormat('d MMM y').format(d)}'
+    : DateFormat('EEE, d MMM y').format(d);

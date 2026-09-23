@@ -4,6 +4,7 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_type_form.dart';
 
 class ShopTypePage extends ConsumerStatefulWidget {
   const ShopTypePage({super.key});
@@ -201,40 +202,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
     );
   }
 
-  IconData _getIconData(String? iconName) {
-    switch (iconName?.toLowerCase()) {
-      case 'restaurant':
-        return Icons.restaurant;
-      case 'store':
-        return Icons.store;
-      case 'shopping_cart':
-        return Icons.shopping_cart;
-      case 'local_cafe':
-        return Icons.local_cafe;
-      case 'local_bar':
-        return Icons.local_bar;
-      case 'local_grocery_store':
-        return Icons.local_grocery_store;
-      case 'local_mall':
-        return Icons.local_mall;
-      case 'local_pharmacy':
-        return Icons.local_pharmacy;
-      case 'local_hospital':
-        return Icons.local_hospital;
-      case 'local_laundry_service':
-        return Icons.local_laundry_service;
-      case 'spa':
-        return Icons.spa;
-      case 'fitness_center':
-        return Icons.fitness_center;
-      case 'hotel':
-        return Icons.hotel;
-      case 'car_repair':
-        return Icons.car_repair;
-      default:
-        return Icons.storefront;
-    }
-  }
+  IconData _getIconData(String? iconName) => shopTypeIcon(iconName);
 
   void _handleAction(ShopType shopType, String action) {
     switch (action) {
@@ -428,288 +396,29 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
     );
   }
 
-  void _showCreateDialog() {
-    final codeController = TextEditingController();
-    final nameEnController = TextEditingController();
-    final nameLoController = TextEditingController();
-    final descEnController = TextEditingController();
-    final descLoController = TextEditingController();
-    final orderController = TextEditingController(text: '0');
-    String? selectedIcon;
+  void _showCreateDialog() => _openForm();
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Create Shop Type'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: codeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Code *',
-                    hintText: 'e.g., RESTAURANT',
-                  ),
-                  textCapitalization: TextCapitalization.characters,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameEnController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name (EN) *',
-                    hintText: 'e.g., Restaurant',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameLoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name (LO)',
-                    hintText: 'e.g., ຮ້ານອາຫານ',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descEnController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (EN)',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descLoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (LO)',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: selectedIcon,
-                  decoration: const InputDecoration(labelText: 'Icon'),
-                  items: _iconOptions
-                      .map(
-                        (icon) => DropdownMenuItem(
-                          value: icon,
-                          child: Row(
-                            children: [
-                              Icon(_getIconData(icon), size: 20),
-                              const SizedBox(width: 8),
-                              Text(icon),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    setDialogState(() => selectedIcon = value);
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: orderController,
-                  decoration: const InputDecoration(labelText: 'Display Order'),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                if (codeController.text.isEmpty ||
-                    nameEnController.text.isEmpty) {
-                  AppFeedback.warning(
-                    context,
-                    'Code and Name (EN) are required',
-                  );
-                  return;
-                }
-                Navigator.pop(context);
-                final nameMap = <String, dynamic>{
-                  'en': nameEnController.text,
-                  if (nameLoController.text.isNotEmpty)
-                    'lo': nameLoController.text,
-                };
-                final descMap = <String, dynamic>{
-                  if (descEnController.text.isNotEmpty)
-                    'en': descEnController.text,
-                  if (descLoController.text.isNotEmpty)
-                    'lo': descLoController.text,
-                };
-                final request = CreateShopTypeRequest(
-                  code: codeController.text.toUpperCase(),
-                  name: nameMap,
-                  description: descMap.isNotEmpty ? descMap : null,
-                  iconName: selectedIcon,
-                  displayOrder: int.tryParse(orderController.text),
-                );
-                final messenger = ScaffoldMessenger.of(context);
-                final notifier = ref.read(shopTypesProvider.notifier);
-                final success = await notifier.createShopType(request);
-                if (success) {
-                  messenger.showSuccess('Shop type created');
-                } else {
-                  messenger.showError(
-                    'Could not create shop type: '
-                    '${friendlyError(ref.read(shopTypesProvider).error)}',
-                  );
-                }
-              },
-              child: const Text('Create'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  void _showEditDialog(ShopType shopType) => _openForm(shopType);
 
-  void _showEditDialog(ShopType shopType) {
-    final codeController = TextEditingController(text: shopType.code);
-    final nameEnController = TextEditingController(text: shopType.name);
-    final nameLoController = TextEditingController();
-    final descEnController = TextEditingController(
-      text: shopType.description ?? '',
+  Future<void> _openForm([ShopType? existing]) async {
+    final notifier = ref.read(shopTypesProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+    final saved = await showShopTypeForm(
+      context,
+      existing: existing,
+      save: (create, update) async {
+        final ok = create != null
+            ? await notifier.createShopType(create)
+            : await notifier.updateShopType(existing!.id, update!);
+        // The notifier reports failures via state; surface them to the form.
+        if (!ok) throw Exception(ref.read(shopTypesProvider).error);
+      },
     );
-    final descLoController = TextEditingController();
-    final orderController = TextEditingController(
-      text: shopType.displayOrder.toString(),
-    );
-    String? selectedIcon = shopType.iconName;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Edit Shop Type'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: codeController,
-                  decoration: const InputDecoration(labelText: 'Code *'),
-                  textCapitalization: TextCapitalization.characters,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameEnController,
-                  decoration: const InputDecoration(labelText: 'Name (EN) *'),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameLoController,
-                  decoration: const InputDecoration(labelText: 'Name (LO)'),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descEnController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (EN)',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descLoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (LO)',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: selectedIcon,
-                  decoration: const InputDecoration(labelText: 'Icon'),
-                  items: _iconOptions
-                      .map(
-                        (icon) => DropdownMenuItem(
-                          value: icon,
-                          child: Row(
-                            children: [
-                              Icon(_getIconData(icon), size: 20),
-                              const SizedBox(width: 8),
-                              Text(icon),
-                            ],
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    setDialogState(() => selectedIcon = value);
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: orderController,
-                  decoration: const InputDecoration(labelText: 'Display Order'),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                if (codeController.text.isEmpty ||
-                    nameEnController.text.isEmpty) {
-                  AppFeedback.warning(
-                    context,
-                    'Code and Name (EN) are required',
-                  );
-                  return;
-                }
-                Navigator.pop(context);
-                final nameMap = <String, dynamic>{
-                  'en': nameEnController.text,
-                  if (nameLoController.text.isNotEmpty)
-                    'lo': nameLoController.text,
-                };
-                final descMap = <String, dynamic>{
-                  if (descEnController.text.isNotEmpty)
-                    'en': descEnController.text,
-                  if (descLoController.text.isNotEmpty)
-                    'lo': descLoController.text,
-                };
-                final request = UpdateShopTypeRequest(
-                  code: codeController.text.toUpperCase(),
-                  name: nameMap,
-                  description: descMap.isNotEmpty ? descMap : null,
-                  iconName: selectedIcon,
-                  displayOrder: int.tryParse(orderController.text),
-                );
-                final messenger = ScaffoldMessenger.of(context);
-                final notifier = ref.read(shopTypesProvider.notifier);
-                final success = await notifier.updateShopType(
-                  shopType.id,
-                  request,
-                );
-                if (success) {
-                  messenger.showSuccess('Shop type updated');
-                } else {
-                  messenger.showError(
-                    'Could not update shop type: '
-                    '${friendlyError(ref.read(shopTypesProvider).error)}',
-                  );
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    );
+    if (saved) {
+      messenger.showSuccess(
+        existing == null ? 'Shop type created' : 'Shop type updated',
+      );
+    }
   }
 
   void _showDeleteDialog(ShopType shopType) {
@@ -750,21 +459,4 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
       ),
     );
   }
-
-  static const List<String> _iconOptions = [
-    'restaurant',
-    'store',
-    'shopping_cart',
-    'local_cafe',
-    'local_bar',
-    'local_grocery_store',
-    'local_mall',
-    'local_pharmacy',
-    'local_hospital',
-    'local_laundry_service',
-    'spa',
-    'fitness_center',
-    'hotel',
-    'car_repair',
-  ];
 }
