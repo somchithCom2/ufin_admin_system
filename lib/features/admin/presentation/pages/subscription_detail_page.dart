@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'subscription_action_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
@@ -26,9 +27,29 @@ class _SubscriptionDetailPageState
     _subscription = widget.subscription;
   }
 
-  void _refreshSubscription() {
-    // Re-fetch subscriptions to get updated data
-    ref.read(subscriptionsProvider.notifier).loadSubscriptions();
+  Future<void> _refreshSubscription() async {
+    try {
+      final value = await ref
+          .read(adminRepositoryProvider)
+          .getSubscriptionByShop(_subscription.shopId);
+      if (mounted) setState(() => _subscription = value);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  Future<void> _manageSubscription(SubscriptionAction action) async {
+    final result = await Navigator.of(context).push<AdminSubscription>(
+      MaterialPageRoute(
+        builder: (_) =>
+            SubscriptionActionPage(action: action, subscription: _subscription),
+      ),
+    );
+    if (mounted && result != null) setState(() => _subscription = result);
   }
 
   @override
@@ -38,19 +59,6 @@ class _SubscriptionDetailPageState
       decimalDigits: 0,
     );
     final dateFormat = DateFormat('MMM d, yyyy');
-
-    // Listen for subscription changes
-    ref.listen<SubscriptionsState>(subscriptionsProvider, (previous, next) {
-      if (!next.isLoading && next.subscriptions.isNotEmpty) {
-        final updated = next.subscriptions.firstWhere(
-          (s) => s.shopId == _subscription.shopId,
-          orElse: () => _subscription,
-        );
-        if (mounted) {
-          setState(() => _subscription = updated);
-        }
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(
@@ -90,6 +98,22 @@ class _SubscriptionDetailPageState
 
             // Management Actions
             _buildManagementActions(),
+            const SizedBox(height: 16),
+            if (_subscription.status == 'active' ||
+                _subscription.status == 'trial')
+              OutlinedButton.icon(
+                onPressed: () => _manageSubscription(SubscriptionAction.cancel),
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Cancel Subscription'),
+              ),
+            if (_subscription.status == 'expired' ||
+                _subscription.status == 'cancelled')
+              FilledButton.icon(
+                onPressed: () =>
+                    _manageSubscription(SubscriptionAction.reactivate),
+                icon: const Icon(Icons.restore),
+                label: const Text('Reactivate Subscription'),
+              ),
           ],
         ),
       ),
@@ -289,9 +313,13 @@ class _SubscriptionDetailPageState
     );
   }
 
-  Widget _buildUsageRow(String label, int current, int max, IconData icon) {
-    final isUnlimited = max == 0;
-    final percentage = isUnlimited ? 0.0 : (current / max).clamp(0.0, 1.0);
+  Widget _buildUsageRow(String label, int current, int? max, IconData icon) {
+    final isUnlimited = max == null;
+    final percentage = max == null
+        ? 0.0
+        : max == 0
+        ? (current > 0 ? 1.0 : 0.0)
+        : (current / max).clamp(0.0, 1.0);
     final isNearLimit = percentage > 0.8;
 
     return Column(

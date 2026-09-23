@@ -3,6 +3,8 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 
+const _unchangedFilter = Object();
+
 // ========== Payments ==========
 class PaymentsState {
   final bool isLoading;
@@ -38,11 +40,11 @@ class PaymentsState {
     int? currentPage,
     int? totalPages,
     int? totalElements,
-    String? statusFilter,
-    String? paymentMethodFilter,
-    int? shopIdFilter,
-    DateTime? startDateFilter,
-    DateTime? endDateFilter,
+    Object? statusFilter = _unchangedFilter,
+    Object? paymentMethodFilter = _unchangedFilter,
+    Object? shopIdFilter = _unchangedFilter,
+    Object? startDateFilter = _unchangedFilter,
+    Object? endDateFilter = _unchangedFilter,
     bool clearError = false,
     bool clearFilters = false,
   }) {
@@ -53,23 +55,38 @@ class PaymentsState {
       currentPage: currentPage ?? this.currentPage,
       totalPages: totalPages ?? this.totalPages,
       totalElements: totalElements ?? this.totalElements,
-      statusFilter: clearFilters ? null : (statusFilter ?? this.statusFilter),
+      statusFilter: clearFilters
+          ? null
+          : (identical(statusFilter, _unchangedFilter)
+                ? this.statusFilter
+                : statusFilter as String?),
       paymentMethodFilter: clearFilters
           ? null
-          : (paymentMethodFilter ?? this.paymentMethodFilter),
-      shopIdFilter: clearFilters ? null : (shopIdFilter ?? this.shopIdFilter),
+          : (identical(paymentMethodFilter, _unchangedFilter)
+                ? this.paymentMethodFilter
+                : paymentMethodFilter as String?),
+      shopIdFilter: clearFilters
+          ? null
+          : (identical(shopIdFilter, _unchangedFilter)
+                ? this.shopIdFilter
+                : shopIdFilter as int?),
       startDateFilter: clearFilters
           ? null
-          : (startDateFilter ?? this.startDateFilter),
+          : (identical(startDateFilter, _unchangedFilter)
+                ? this.startDateFilter
+                : startDateFilter as DateTime?),
       endDateFilter: clearFilters
           ? null
-          : (endDateFilter ?? this.endDateFilter),
+          : (identical(endDateFilter, _unchangedFilter)
+                ? this.endDateFilter
+                : endDateFilter as DateTime?),
     );
   }
 }
 
 class PaymentsNotifier extends StateNotifier<PaymentsState> {
   final AdminRepository _repository;
+  int _generation = 0;
 
   PaymentsNotifier(this._repository) : super(const PaymentsState());
 
@@ -82,14 +99,15 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
+    final generation = ++_generation;
     state = state.copyWith(
       isLoading: true,
       clearError: true,
-      statusFilter: status,
-      paymentMethodFilter: paymentMethod,
-      shopIdFilter: shopId,
-      startDateFilter: startDate,
-      endDateFilter: endDate,
+      statusFilter: status ?? state.statusFilter,
+      paymentMethodFilter: paymentMethod ?? state.paymentMethodFilter,
+      shopIdFilter: shopId ?? state.shopIdFilter,
+      startDateFilter: startDate ?? state.startDateFilter,
+      endDateFilter: endDate ?? state.endDateFilter,
     );
     try {
       final response = await _repository.getPayments(
@@ -101,6 +119,7 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
         startDate: startDate ?? state.startDateFilter,
         endDate: endDate ?? state.endDateFilter,
       );
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(
         isLoading: false,
         payments: response.content,
@@ -109,6 +128,7 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
         totalElements: response.totalElements,
       );
     } catch (e) {
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -126,15 +146,18 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
   }
 
   void setStatusFilter(String? status) {
-    loadPayments(page: 0, status: status);
+    state = state.copyWith(statusFilter: status);
+    loadPayments(page: 0);
   }
 
   void setPaymentMethodFilter(String? paymentMethod) {
-    loadPayments(page: 0, paymentMethod: paymentMethod);
+    state = state.copyWith(paymentMethodFilter: paymentMethod);
+    loadPayments(page: 0);
   }
 
   void setDateRangeFilter(DateTime? startDate, DateTime? endDate) {
-    loadPayments(page: 0, startDate: startDate, endDate: endDate);
+    state = state.copyWith(startDateFilter: startDate, endDateFilter: endDate);
+    loadPayments(page: 0);
   }
 
   void clearFilters() {
@@ -162,11 +185,7 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
   ) async {
     try {
       final payment = await _repository.updatePaymentStatus(paymentId, request);
-      // Update the payment in the list
-      final updatedPayments = state.payments.map((p) {
-        return p.id == paymentId ? payment : p;
-      }).toList();
-      state = state.copyWith(payments: updatedPayments);
+      await loadPayments(page: 0);
       return payment;
     } catch (e) {
       state = state.copyWith(error: e.toString());

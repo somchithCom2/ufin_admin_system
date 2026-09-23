@@ -95,6 +95,8 @@ class ShopsState {
 
 class ShopsNotifier extends StateNotifier<ShopsState> {
   final AdminRepository _repository;
+  int _generation = 0;
+  int _pageSize = 20;
 
   String? _search;
   String? _status;
@@ -106,9 +108,15 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
     String? search,
     String? status,
   }) async {
+    final generation = ++_generation;
+    _pageSize = size;
     _search = search;
     _status = status;
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(
+      isLoading: true,
+      isLoadingMore: false,
+      clearError: true,
+    );
     try {
       final result = await _repository.getShops(
         page: 0,
@@ -116,6 +124,7 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
         search: search,
         status: status,
       );
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(
         isLoading: false,
         shops: result.content,
@@ -123,19 +132,23 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
         hasNext: result.hasNext,
       );
     } catch (e) {
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   Future<void> loadMoreShops() async {
-    if (state.isLoadingMore || !state.hasNext) return;
+    if (state.isLoading || state.isLoadingMore || !state.hasNext) return;
+    final generation = _generation;
     state = state.copyWith(isLoadingMore: true);
     try {
       final result = await _repository.getShops(
         page: state.currentPage + 1,
+        size: _pageSize,
         search: _search,
         status: _status,
       );
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(
         isLoadingMore: false,
         shops: [...state.shops, ...result.content],
@@ -143,6 +156,7 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
         hasNext: result.hasNext,
       );
     } catch (e) {
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
@@ -211,6 +225,8 @@ class UsersState {
 
 class UsersNotifier extends StateNotifier<UsersState> {
   final AdminRepository _repository;
+  int _generation = 0;
+  int _pageSize = 20;
 
   String? _search;
   String? _status;
@@ -225,10 +241,16 @@ class UsersNotifier extends StateNotifier<UsersState> {
     String? status,
     String? userType,
   }) async {
+    final generation = ++_generation;
+    _pageSize = size;
     _search = search;
     _status = status;
     _userType = userType;
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(
+      isLoading: true,
+      isLoadingMore: false,
+      clearError: true,
+    );
     try {
       final result = await _repository.getUsers(
         page: page,
@@ -237,6 +259,7 @@ class UsersNotifier extends StateNotifier<UsersState> {
         status: status,
         userType: userType,
       );
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(
         isLoading: false,
         users: result.content,
@@ -245,20 +268,24 @@ class UsersNotifier extends StateNotifier<UsersState> {
         hasNext: result.hasNext,
       );
     } catch (e) {
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   Future<void> loadMoreUsers() async {
-    if (state.isLoadingMore || !state.hasNext) return;
+    if (state.isLoading || state.isLoadingMore || !state.hasNext) return;
+    final generation = _generation;
     state = state.copyWith(isLoadingMore: true);
     try {
       final result = await _repository.getUsers(
         page: state.currentPage + 1,
+        size: _pageSize,
         search: _search,
         status: _status,
         userType: _userType,
       );
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(
         isLoadingMore: false,
         users: [...state.users, ...result.content],
@@ -267,6 +294,7 @@ class UsersNotifier extends StateNotifier<UsersState> {
         hasNext: result.hasNext,
       );
     } catch (e) {
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
@@ -278,7 +306,11 @@ class UsersNotifier extends StateNotifier<UsersState> {
   ) async {
     try {
       final request = UpdateUserStatusRequest(status: status, reason: reason);
-      await _repository.updateUserStatus(userId, request);
+      if (status == 'deleted') {
+        await _repository.deleteUser(userId);
+      } else {
+        await _repository.updateUserStatus(userId, request);
+      }
       loadUsers(
         search: _search,
         status: _status,
@@ -420,6 +452,8 @@ class SubscriptionsState {
 
 class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
   final AdminRepository _repository;
+  int _generation = 0;
+  int _pageSize = 20;
 
   String? _status;
 
@@ -430,14 +464,21 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
     int size = 20,
     String? status,
   }) async {
+    final generation = ++_generation;
+    _pageSize = size;
     _status = status;
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(
+      isLoading: true,
+      isLoadingMore: false,
+      clearError: true,
+    );
     try {
       final result = await _repository.getSubscriptions(
         page: page,
         size: size,
         status: status,
       );
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(
         isLoading: false,
         subscriptions: result.content,
@@ -446,24 +487,27 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         hasNext: result.hasNext,
       );
     } catch (e) {
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   Future<void> loadMoreSubscriptions({int size = 20}) async {
-    if (state.isLoadingMore || !state.hasNext) return;
+    if (state.isLoading || state.isLoadingMore || !state.hasNext) return;
+    final generation = _generation;
     state = state.copyWith(isLoadingMore: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repository.getSubscriptions(
         page: nextPage,
-        size: size,
+        size: _pageSize,
         status: _status,
       );
 
       // Append new subscriptions to existing list
       final updatedSubscriptions = [...state.subscriptions, ...result.content];
 
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(
         isLoadingMore: false,
         subscriptions: updatedSubscriptions,
@@ -472,9 +516,12 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         hasNext: result.hasNext,
       );
     } catch (e) {
+      if (!mounted || generation != _generation) return;
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
+
+  Future<void> refresh() => loadSubscriptions(size: _pageSize, status: _status);
 
   Future<void> extendSubscription(
     int shopId, {
@@ -489,7 +536,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         reason: reason,
       );
       await _repository.extendSubscription(shopId, request);
-      await loadSubscriptions(); // Refresh list and wait for completion
+      await refresh(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
@@ -509,7 +556,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         reason: reason,
       );
       await _repository.reduceSubscription(shopId, request);
-      await loadSubscriptions(); // Refresh list and wait for completion
+      await refresh(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
@@ -527,7 +574,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         planCode,
         billingCycle: billingCycle,
       );
-      await loadSubscriptions(); // Refresh list and wait for completion
+      await refresh(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
@@ -547,7 +594,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         reason: reason,
         billingCycle: billingCycle,
       );
-      await loadSubscriptions(); // Refresh list and wait for completion
+      await refresh(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
@@ -571,7 +618,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         immediate: immediate,
       );
       await _repository.changePlan(shopId, request);
-      await loadSubscriptions(); // Refresh list and wait for completion
+      await refresh(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
@@ -582,18 +629,18 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
     int shopId, {
     required String planCode,
     required String billingCycle,
-    int? trialDays,
+    bool startAsTrial = false,
     String? notes,
   }) async {
     try {
       final request = CreateSubscriptionRequest(
         planCode: planCode,
         billingCycle: billingCycle,
-        trialDays: trialDays,
+        startAsTrial: startAsTrial,
         notes: notes,
       );
       await _repository.createSubscription(shopId, request);
-      await loadSubscriptions(); // Refresh list and wait for completion
+      await refresh(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
@@ -613,7 +660,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         notes: notes,
       );
       await _repository.cancelSubscription(shopId, request);
-      await loadSubscriptions(); // Refresh list and wait for completion
+      await refresh(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
@@ -629,11 +676,11 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
     try {
       final request = ReactivateSubscriptionRequest(
         planCode: planCode,
-        billingCycle: billingCycle,
+        billingCycle: billingCycle ?? 'monthly',
         notes: notes,
       );
       await _repository.reactivateSubscription(shopId, request);
-      await loadSubscriptions(); // Refresh list and wait for completion
+      await refresh(); // Refresh list and wait for completion
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
@@ -860,7 +907,7 @@ class PlanDetailNotifier extends StateNotifier<PlanDetailState> {
   Future<void> loadPlan(int planId) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final plan = await _repository.getSubscriptionPlanById(planId);
+      final plan = await _repository.getPlanById(planId);
       state = state.copyWith(isLoading: false, plan: plan);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -1091,12 +1138,12 @@ class UnitsNotifier extends StateNotifier<UnitsState> {
 
       final units = append
           ? [...state.units, ...response.data]
-              .fold<Map<int, Unit>>({}, (map, unit) {
-                map[unit.id] = unit;
-                return map;
-              })
-              .values
-              .toList()
+                .fold<Map<int, Unit>>({}, (map, unit) {
+                  map[unit.id] = unit;
+                  return map;
+                })
+                .values
+                .toList()
           : response.data;
 
       state = state.copyWith(
@@ -1194,7 +1241,9 @@ class UnitsNotifier extends StateNotifier<UnitsState> {
       // Remove from list (soft deleted - hidden from queries)
       state = state.copyWith(
         units: state.units.where((u) => u.id != id).toList(),
-        totalElements: (state.totalElements - 1).clamp(0, double.infinity).toInt(),
+        totalElements: (state.totalElements - 1)
+            .clamp(0, double.infinity)
+            .toInt(),
         isLoading: false,
       );
       return true;
@@ -1246,11 +1295,10 @@ class UnitsNotifier extends StateNotifier<UnitsState> {
   }
 }
 
-final unitsProvider =
-    StateNotifierProvider<UnitsNotifier, UnitsState>((ref) {
-      final repository = ref.watch(adminRepositoryProvider);
-      return UnitsNotifier(repository);
-    });
+final unitsProvider = StateNotifierProvider<UnitsNotifier, UnitsState>((ref) {
+  final repository = ref.watch(adminRepositoryProvider);
+  return UnitsNotifier(repository);
+});
 
 // ========== Upgrade Requests ==========
 class UpgradeRequestsState {

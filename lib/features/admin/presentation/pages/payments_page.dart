@@ -700,115 +700,163 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
     );
   }
 
-  void _showRecordPaymentDialog() {
+  Future<void> _showRecordPaymentDialog() async {
     final formKey = GlobalKey<FormState>();
     final shopIdController = TextEditingController();
     final amountController = TextEditingController();
     final referenceController = TextEditingController();
     final notesController = TextEditingController();
     String paymentMethod = 'cash';
+    bool saving = false;
+    String? error;
 
-    showDialog(
+    await showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Record Payment'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: shopIdController,
-                    decoration: const InputDecoration(labelText: 'Shop ID'),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v?.isEmpty == true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: amountController,
-                    decoration: const InputDecoration(
-                      labelText: 'Amount',
-                      prefixText: '₭ ',
+        builder: (context, setState) => PopScope(
+          canPop: !saving,
+          child: AlertDialog(
+            title: const Text('Record Payment'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (error != null)
+                      Text(error!, style: const TextStyle(color: Colors.red)),
+                    TextFormField(
+                      controller: shopIdController,
+                      decoration: const InputDecoration(labelText: 'Shop ID'),
+                      keyboardType: TextInputType.number,
+                      validator: (v) {
+                        final id = int.tryParse(v?.trim() ?? '');
+                        return id == null || id < 1
+                            ? 'Enter a positive shop ID'
+                            : null;
+                      },
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v?.isEmpty == true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: paymentMethod,
-                    decoration: const InputDecoration(
-                      labelText: 'Payment Method',
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                      DropdownMenuItem(
-                        value: 'bank_transfer',
-                        child: Text('Bank Transfer'),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: amountController,
+                      decoration: const InputDecoration(
+                        labelText: 'Amount',
+                        prefixText: '₭ ',
                       ),
-                      DropdownMenuItem(
-                        value: 'qr_code',
-                        child: Text('QR Code'),
+                      keyboardType: TextInputType.number,
+                      validator: (v) {
+                        final amount = double.tryParse(v?.trim() ?? '');
+                        return amount == null ||
+                                !amount.isFinite ||
+                                amount <= 0 ||
+                                amount >= 10000000000000 ||
+                                !RegExp(
+                                  r'^\d+(\.\d{1,2})?$',
+                                ).hasMatch(v!.trim())
+                            ? 'Enter a positive amount with at most 2 decimals'
+                            : null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: paymentMethod,
+                      decoration: const InputDecoration(
+                        labelText: 'Payment Method',
                       ),
-                      DropdownMenuItem(value: 'card', child: Text('Card')),
-                    ],
-                    onChanged: (v) => setState(() => paymentMethod = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: referenceController,
-                    decoration: const InputDecoration(
-                      labelText: 'Reference (optional)',
+                      items: const [
+                        DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                        DropdownMenuItem(
+                          value: 'bank_transfer',
+                          child: Text('Bank Transfer'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'qr_code',
+                          child: Text('QR Code'),
+                        ),
+                        DropdownMenuItem(value: 'card', child: Text('Card')),
+                      ],
+                      onChanged: (v) => setState(() => paymentMethod = v!),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes (optional)',
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: referenceController,
+                      maxLength: 255,
+                      decoration: const InputDecoration(
+                        labelText: 'Transaction reference (optional)',
+                      ),
                     ),
-                    maxLines: 2,
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: notesController,
+                      maxLength: 4000,
+                      decoration: const InputDecoration(
+                        labelText: 'Notes (optional)',
+                      ),
+                      maxLines: 2,
+                    ),
+                  ],
+                ),
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: saving ? null : () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        if (formKey.currentState?.validate() == true) {
+                          setState(() {
+                            saving = true;
+                            error = null;
+                          });
+                          final request = RecordPaymentRequest(
+                            amount: double.parse(amountController.text),
+                            paymentMethod: paymentMethod,
+                            transactionId:
+                                referenceController.text.trim().isNotEmpty
+                                ? referenceController.text.trim()
+                                : null,
+                            notes: notesController.text.isNotEmpty
+                                ? notesController.text
+                                : null,
+                          );
+                          final result = await ref
+                              .read(paymentsProvider.notifier)
+                              .recordPayment(
+                                int.parse(shopIdController.text),
+                                request,
+                              );
+                          if (!context.mounted) return;
+                          setState(() => saving = false);
+                          if (result != null) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Payment recorded')),
+                            );
+                          } else {
+                            setState(
+                              () => error =
+                                  ref.read(paymentsProvider).error ??
+                                  'Failed to record payment',
+                            );
+                          }
+                        }
+                      },
+                child: Text(saving ? 'Recording…' : 'Record'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (formKey.currentState?.validate() == true) {
-                  final request = RecordPaymentRequest(
-                    amount: double.parse(amountController.text),
-                    paymentMethod: paymentMethod,
-                    referenceNumber: referenceController.text.isNotEmpty
-                        ? referenceController.text
-                        : null,
-                    notes: notesController.text.isNotEmpty
-                        ? notesController.text
-                        : null,
-                  );
-                  Navigator.pop(context);
-                  final result = await ref
-                      .read(paymentsProvider.notifier)
-                      .recordPayment(int.parse(shopIdController.text), request);
-                  if (result != null && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Payment recorded')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Record'),
-            ),
-          ],
         ),
       ),
     );
+    shopIdController.dispose();
+    amountController.dispose();
+    referenceController.dispose();
+    notesController.dispose();
   }
 
   Future<void> _updatePaymentStatus(AdminPayment payment, String status) async {

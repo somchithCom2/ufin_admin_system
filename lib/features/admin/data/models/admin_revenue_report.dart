@@ -28,37 +28,96 @@ class AdminRevenueReport {
     required this.revenueByPaymentMethod,
   });
 
-  factory AdminRevenueReport.fromJson(Map<String, dynamic> json) {
+  factory AdminRevenueReport.fromJson(
+    Map<String, dynamic> json, {
+    String groupBy = 'day',
+  }) {
+    final total = (json['totalRevenue'] as num?)?.toDouble() ?? 0;
+    final successful =
+        (json['successfulTransactions'] ?? json['successfulPayments'] ?? 0)
+            as int;
+    final planData = json['revenueByPlan'];
+    final methodData = json['revenueByPaymentMethod'];
+    final periods = <String, RevenueByPeriod>{};
+    for (final item
+        in (json['revenueByPeriod'] ?? json['dailyRevenue'] ?? []) as List) {
+      final dateText = (item['period'] ?? item['date']) as String;
+      final date = DateTime.parse(dateText);
+      final key = groupBy == 'month'
+          ? dateText.substring(0, 7)
+          : groupBy == 'week'
+          ? date
+                .subtract(Duration(days: date.weekday - 1))
+                .toIso8601String()
+                .split('T')
+                .first
+          : dateText;
+      final previous = periods[key];
+      periods[key] = RevenueByPeriod(
+        period: key,
+        revenue: (previous?.revenue ?? 0) + (item['revenue'] as num).toDouble(),
+        transactionCount:
+            (previous?.transactionCount ?? 0) +
+            ((item['transactionCount'] ?? item['paymentCount'] ?? 0) as int),
+      );
+    }
+    final orderedPeriods = periods.values.toList()
+      ..sort((a, b) => a.period.compareTo(b.period));
     return AdminRevenueReport(
       startDate: DateTime.parse(json['startDate'] as String),
       endDate: DateTime.parse(json['endDate'] as String),
       totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0.0,
       subscriptionRevenue:
-          (json['subscriptionRevenue'] as num?)?.toDouble() ?? 0.0,
+          (json['subscriptionRevenue'] as num?)?.toDouble() ?? total,
       otherRevenue: (json['otherRevenue'] as num?)?.toDouble() ?? 0.0,
-      totalTransactions: json['totalTransactions'] as int? ?? 0,
-      successfulTransactions: json['successfulTransactions'] as int? ?? 0,
-      failedTransactions: json['failedTransactions'] as int? ?? 0,
+      totalTransactions:
+          (json['totalTransactions'] ?? json['paymentCount']) as int? ?? 0,
+      successfulTransactions: successful,
+      failedTransactions:
+          (json['failedTransactions'] ?? json['failedPayments']) as int? ?? 0,
       averageTransactionValue:
-          (json['averageTransactionValue'] as num?)?.toDouble() ?? 0.0,
-      revenueByPeriod:
-          (json['revenueByPeriod'] as List<dynamic>?)
-              ?.map((e) => RevenueByPeriod.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      revenueByPlan:
-          (json['revenueByPlan'] as List<dynamic>?)
-              ?.map((e) => RevenueByPlan.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      revenueByPaymentMethod:
-          (json['revenueByPaymentMethod'] as List<dynamic>?)
-              ?.map(
-                (e) =>
-                    RevenueByPaymentMethod.fromJson(e as Map<String, dynamic>),
-              )
-              .toList() ??
-          [],
+          (json['averageTransactionValue'] as num?)?.toDouble() ??
+          (successful == 0 ? 0 : total / successful),
+      revenueByPeriod: orderedPeriods,
+      revenueByPlan: planData is Map
+          ? planData.entries
+                .map(
+                  (entry) => RevenueByPlan(
+                    planCode: entry.key as String,
+                    planName: entry.key as String,
+                    revenue: (entry.value as num).toDouble(),
+                    subscriptionCount:
+                        (json['paymentCountByPlan']?[entry.key] as int?) ?? 0,
+                    percentage: total == 0
+                        ? 0
+                        : (entry.value as num) / total * 100,
+                  ),
+                )
+                .toList()
+          : (planData as List? ?? [])
+                .map((e) => RevenueByPlan.fromJson(e as Map<String, dynamic>))
+                .toList(),
+      revenueByPaymentMethod: methodData is Map
+          ? methodData.entries
+                .map(
+                  (entry) => RevenueByPaymentMethod(
+                    paymentMethod: entry.key as String,
+                    revenue: (entry.value as num).toDouble(),
+                    transactionCount:
+                        (json['paymentCountByMethod']?[entry.key] as int?) ?? 0,
+                    percentage: total == 0
+                        ? 0
+                        : (entry.value as num) / total * 100,
+                  ),
+                )
+                .toList()
+          : (methodData as List? ?? [])
+                .map(
+                  (e) => RevenueByPaymentMethod.fromJson(
+                    e as Map<String, dynamic>,
+                  ),
+                )
+                .toList(),
     );
   }
 

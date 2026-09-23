@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'edit_plan_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
@@ -307,9 +308,8 @@ class _PlansPageState extends ConsumerState<PlansPage> {
   }
 
   void _showCreatePlanDialog() {
-    // TODO: Implement create plan dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Create plan feature coming soon')),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<bool>(builder: (_) => const EditPlanPage()));
   }
 }

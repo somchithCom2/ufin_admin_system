@@ -32,9 +32,9 @@ class AdminSubscription {
 
   // Usage
   final int currentEmployees;
-  final int maxEmployees;
+  final int? maxEmployees;
   final int currentProducts;
-  final int maxProducts;
+  final int? maxProducts;
 
   // Computed
   final int daysUntilExpiry;
@@ -63,9 +63,9 @@ class AdminSubscription {
     this.autoRenew = false,
     this.nextBillingDate,
     this.currentEmployees = 0,
-    this.maxEmployees = 0,
+    this.maxEmployees,
     this.currentProducts = 0,
-    this.maxProducts = 0,
+    this.maxProducts,
     this.daysUntilExpiry = 0,
     this.isExpiringSoon = false,
     this.createdAt,
@@ -74,7 +74,7 @@ class AdminSubscription {
 
   factory AdminSubscription.fromJson(Map<String, dynamic> json) {
     // planName may be a plain String or a localized map {"en":…, "lo":…}
-    String? _parsePlanName(dynamic raw) {
+    String? parsePlanName(dynamic raw) {
       if (raw == null) return null;
       if (raw is String) return raw;
       if (raw is Map) {
@@ -90,7 +90,7 @@ class AdminSubscription {
       shopOwnerEmail: json['shopOwnerEmail'] as String?,
       planId: json['planId'] as int?,
       planCode: json['planCode'] as String?,
-      planName: _parsePlanName(json['planName']),
+      planName: parsePlanName(json['planName']),
       status: json['status'] as String? ?? 'active',
       billingCycle: json['billingCycle'] as String?,
       startedAt: json['startedAt'] != null
@@ -112,9 +112,9 @@ class AdminSubscription {
           ? DateTime.tryParse(json['nextBillingDate'] as String)
           : null,
       currentEmployees: json['currentEmployees'] as int? ?? 0,
-      maxEmployees: json['maxEmployees'] as int? ?? 0,
+      maxEmployees: json['maxEmployees'] as int?,
       currentProducts: json['currentProducts'] as int? ?? 0,
-      maxProducts: json['maxProducts'] as int? ?? 0,
+      maxProducts: json['maxProducts'] as int?,
       daysUntilExpiry: json['daysUntilExpiry'] as int? ?? 0,
       isExpiringSoon: json['isExpiringSoon'] as bool? ?? false,
       createdAt: json['createdAt'] != null

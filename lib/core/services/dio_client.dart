@@ -84,11 +84,8 @@ class _LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     debugPrint('┌─────────────────────────────────────────────────────────');
-    debugPrint('│ 🌐 REQUEST: ${options.method} ${options.uri}');
-    debugPrint('│ Headers: ${options.headers}');
-    if (options.data != null) {
-      debugPrint('│ Body: ${options.data}');
-    }
+    debugPrint('│ 🌐 REQUEST: ${options.method} ${options.path}');
+
     debugPrint('└─────────────────────────────────────────────────────────');
     handler.next(options);
   }
@@ -97,9 +94,9 @@ class _LoggingInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     debugPrint('┌─────────────────────────────────────────────────────────');
     debugPrint(
-      '│ ✅ RESPONSE: ${response.statusCode} ${response.requestOptions.uri}',
+      '│ ✅ RESPONSE: ${response.statusCode} ${response.requestOptions.path}',
     );
-    debugPrint('│ Data: ${response.data}');
+
     debugPrint('└─────────────────────────────────────────────────────────');
     handler.next(response);
   }
@@ -108,10 +105,10 @@ class _LoggingInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     debugPrint('┌─────────────────────────────────────────────────────────');
     debugPrint(
-      '│ ❌ ERROR: ${err.response?.statusCode} ${err.requestOptions.uri}',
+      '│ ❌ ERROR: ${err.response?.statusCode} ${err.requestOptions.path}',
     );
     debugPrint('│ Message: ${err.message}');
-    debugPrint('│ Response: ${err.response?.data}');
+
     debugPrint('└─────────────────────────────────────────────────────────');
     handler.next(err);
   }
@@ -161,9 +158,7 @@ class ApiException implements Exception {
     if (data == null) return null;
     if (data is String) return data;
     if (data is Map) {
-      return data['message'] as String? ??
-          data['error'] as String? ??
-          data['msg'] as String?;
+      return (data['message'] ?? data['error'] ?? data['msg'])?.toString();
     }
     return null;
   }

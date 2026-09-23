@@ -1,3 +1,5 @@
+import 'admin_plan.dart';
+
 /// Admin Subscription Statistics model
 class AdminSubscriptionStats {
   final int totalSubscriptions;
@@ -95,10 +97,11 @@ class ExpiringSubscription {
       shopId: json['shopId'] as int,
       shopName: json['shopName'] as String? ?? '',
       planCode: json['planCode'] as String? ?? '',
-      planName: json['planName'] as String? ?? '',
+      planName: AdminPlan.fromJson({'id': 0, 'name': json['planName']}).name,
       status: json['status'] as String? ?? '',
-      endDate: DateTime.parse(json['endDate'] as String),
-      daysUntilExpiry: json['daysUntilExpiry'] as int? ?? 0,
+      endDate: DateTime.parse((json['endDate'] ?? json['expiresAt']) as String),
+      daysUntilExpiry:
+          (json['daysUntilExpiry'] ?? json['daysRemaining']) as int? ?? 0,
     );
   }
 

@@ -188,7 +188,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Total Revenue',
+                  'Total Revenue (LAK)',
                   style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
@@ -305,7 +305,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
 
           // Revenue by Plan
           if (report.revenueByPlan.isNotEmpty) ...[
-            _buildSectionTitle('Revenue by Plan'),
+            _buildSectionTitle('Revenue by Current Plan'),
             const SizedBox(height: 12),
             ...report.revenueByPlan.map(_buildPlanRevenueCard),
           ],
@@ -458,7 +458,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  '${plan.subscriptionCount} subscriptions',
+                  '${plan.subscriptionCount} payments',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],

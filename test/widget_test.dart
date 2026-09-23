@@ -1,18 +1,25 @@
 // UFin Admin System Widget Tests
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ufin_admin_system/core/core.dart';
 import 'package:ufin_admin_system/features/auth/presentation/pages/login_page.dart';
 
 void main() {
+  setUp(() {
+    dotenv.testLoad(fileInput: 'API_BASE_URL=http://localhost');
+    FlutterSecureStorage.setMockInitialValues({});
+  });
   group('Auth Tests', () {
     testWidgets('Login page renders correctly', (WidgetTester tester) async {
       await tester.pumpWidget(
         const ProviderScope(child: MaterialApp(home: LoginPage())),
       );
 
+      await tester.pumpAndSettle();
       // Verify login page elements
       expect(find.text('UFin Admin System'), findsOneWidget);
       expect(find.text('Login'), findsWidgets); // AppBar title and/or button
@@ -26,6 +33,7 @@ void main() {
         const ProviderScope(child: MaterialApp(home: LoginPage())),
       );
 
+      await tester.pumpAndSettle();
       // Verify text fields exist
       expect(find.text('Email'), findsOneWidget);
       expect(find.text('Password'), findsOneWidget);

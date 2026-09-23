@@ -18,7 +18,10 @@ class AdminRepository {
   Future<AdminDashboardStats> getDashboardStats() async {
     try {
       final response = await _dio.get(ApiConstants.adminDashboard);
-      return _parseResponse(response, AdminDashboardStats.fromJson);
+      return _parseResponse<AdminDashboardStats>(
+        response,
+        AdminDashboardStats.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -55,7 +58,7 @@ class AdminRepository {
   Future<AdminShop> getShopById(int id) async {
     try {
       final response = await _dio.get(ApiConstants.adminShopById(id));
-      return _parseResponse(response, AdminShop.fromJson);
+      return _parseResponse<AdminShop>(response, AdminShop.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -71,7 +74,7 @@ class AdminRepository {
         ApiConstants.adminShopStatus(id),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminShop.fromJson);
+      return _parseResponse<AdminShop>(response, AdminShop.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -80,7 +83,7 @@ class AdminRepository {
   /// Soft delete shop
   Future<void> deleteShop(int id) async {
     try {
-      await _dio.delete(ApiConstants.adminShopById(id));
+      _ensureSuccess(await _dio.delete(ApiConstants.adminShopById(id)));
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -119,7 +122,7 @@ class AdminRepository {
   Future<AdminUser> getUserById(int id) async {
     try {
       final response = await _dio.get(ApiConstants.adminUserById(id));
-      return _parseResponse(response, AdminUser.fromJson);
+      return _parseResponse<AdminUser>(response, AdminUser.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -135,7 +138,15 @@ class AdminRepository {
         ApiConstants.adminUserStatus(id),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminUser.fromJson);
+      return _parseResponse<AdminUser>(response, AdminUser.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  Future<void> deleteUser(int id) async {
+    try {
+      _ensureSuccess(await _dio.delete(ApiConstants.adminUserById(id)));
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -175,7 +186,7 @@ class AdminRepository {
   /// Restore a soft-deleted user
   Future<void> restoreUser(int id) async {
     try {
-      await _dio.put(ApiConstants.adminUserRestore(id));
+      _ensureSuccess(await _dio.put(ApiConstants.adminUserRestore(id)));
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -293,7 +304,10 @@ class AdminRepository {
       final response = await _dio.get(
         ApiConstants.adminSubscriptionByShop(shopId),
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -309,7 +323,10 @@ class AdminRepository {
         ApiConstants.adminSubscriptionExtend(shopId),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -325,7 +342,10 @@ class AdminRepository {
         ApiConstants.adminSubscriptionReduce(shopId),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -350,7 +370,10 @@ class AdminRepository {
         ApiConstants.adminSubscriptionUpgrade(shopId, planCode),
         queryParameters: queryParams,
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -377,7 +400,10 @@ class AdminRepository {
         ApiConstants.adminSubscriptionDowngrade(shopId, newPlanCode),
         queryParameters: queryParams,
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -394,7 +420,10 @@ class AdminRepository {
         ApiConstants.adminSubscriptionChangePlan(shopId),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -445,7 +474,10 @@ class AdminRepository {
         ApiConstants.adminSubscriptionCreate(shopId),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -461,7 +493,10 @@ class AdminRepository {
         ApiConstants.adminSubscriptionCancel(shopId),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -477,7 +512,10 @@ class AdminRepository {
         ApiConstants.adminSubscriptionReactivate(shopId),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminSubscription.fromJson);
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -487,7 +525,10 @@ class AdminRepository {
   Future<AdminSubscriptionStats> getSubscriptionStatistics() async {
     try {
       final response = await _dio.get(ApiConstants.adminSubscriptionStatistics);
-      return _parseResponse(response, AdminSubscriptionStats.fromJson);
+      return _parseResponse<AdminSubscriptionStats>(
+        response,
+        AdminSubscriptionStats.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -532,7 +573,12 @@ class AdminRepository {
           if (paymentMethod != null) 'paymentMethod': paymentMethod,
           if (shopId != null) 'shopId': shopId,
           if (startDate != null) 'startDate': startDate.toIso8601String(),
-          if (endDate != null) 'endDate': endDate.toIso8601String(),
+          if (endDate != null)
+            'endDate': DateTime(
+              endDate.year,
+              endDate.month,
+              endDate.day + 1,
+            ).toIso8601String(),
         },
       );
       return _parsePaginatedResponse(response, AdminPayment.fromJson);
@@ -545,7 +591,7 @@ class AdminRepository {
   Future<AdminPayment> getPaymentById(int paymentId) async {
     try {
       final response = await _dio.get(ApiConstants.adminPaymentById(paymentId));
-      return _parseResponse(response, AdminPayment.fromJson);
+      return _parseResponse<AdminPayment>(response, AdminPayment.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -561,7 +607,7 @@ class AdminRepository {
         ApiConstants.adminPaymentRecord(shopId),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminPayment.fromJson);
+      return _parseResponse<AdminPayment>(response, AdminPayment.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -577,7 +623,7 @@ class AdminRepository {
         ApiConstants.adminPaymentStatus(paymentId),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminPayment.fromJson);
+      return _parseResponse<AdminPayment>(response, AdminPayment.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -602,7 +648,10 @@ class AdminRepository {
           if (groupBy != null) 'groupBy': groupBy,
         },
       );
-      return _parseResponse(response, AdminRevenueReport.fromJson);
+      return _parseResponse<AdminRevenueReport>(
+        response,
+        (json) => AdminRevenueReport.fromJson(json, groupBy: groupBy ?? 'day'),
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -646,7 +695,7 @@ class AdminRepository {
   Future<AdminPlan> getPlanById(int id) async {
     try {
       final response = await _dio.get(ApiConstants.adminPlanById(id));
-      return _parseResponse(response, AdminPlan.fromJson);
+      return _parseResponse<AdminPlan>(response, AdminPlan.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -656,7 +705,7 @@ class AdminRepository {
   Future<AdminPlan> getSubscriptionPlanById(int id) async {
     try {
       final response = await _dio.get(ApiConstants.subscriptionPlanById(id));
-      return _parseResponse(response, AdminPlan.fromJson);
+      return _parseResponse<AdminPlan>(response, AdminPlan.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -669,7 +718,7 @@ class AdminRepository {
         ApiConstants.adminPlans,
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminPlan.fromJson);
+      return _parseResponse<AdminPlan>(response, AdminPlan.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -682,27 +731,27 @@ class AdminRepository {
         ApiConstants.adminPlanById(id),
         data: request.toJson(),
       );
-      return _parseResponse(response, AdminPlan.fromJson);
+      return _parseResponse<AdminPlan>(response, AdminPlan.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
   }
 
   /// Activate plan
-  Future<AdminPlan> activatePlan(int id) async {
+  Future<void> activatePlan(int id) async {
     try {
       final response = await _dio.put(ApiConstants.adminPlanActivate(id));
-      return _parseResponse(response, AdminPlan.fromJson);
+      _ensureSuccess(response);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
   }
 
   /// Deactivate plan
-  Future<AdminPlan> deactivatePlan(int id) async {
+  Future<void> deactivatePlan(int id) async {
     try {
       final response = await _dio.put(ApiConstants.adminPlanDeactivate(id));
-      return _parseResponse(response, AdminPlan.fromJson);
+      _ensureSuccess(response);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -743,7 +792,10 @@ class AdminRepository {
         ApiConstants.adminUpgradeRequestApprove(requestId),
         data: body.toJson(),
       );
-      return _parseResponse(response, UpgradeRequestDto.fromJson);
+      return _parseResponse<UpgradeRequestDto>(
+        response,
+        UpgradeRequestDto.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -759,7 +811,10 @@ class AdminRepository {
         ApiConstants.adminUpgradeRequestReject(requestId),
         data: body.toJson(),
       );
-      return _parseResponse(response, UpgradeRequestDto.fromJson);
+      return _parseResponse<UpgradeRequestDto>(
+        response,
+        UpgradeRequestDto.fromJson,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -793,7 +848,7 @@ class AdminRepository {
   Future<ShopType> getShopTypeById(int id) async {
     try {
       final response = await _dio.get(ApiConstants.businessTypeById(id));
-      return _parseResponse(response, ShopType.fromJson);
+      return _parseResponse<ShopType>(response, ShopType.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -803,7 +858,7 @@ class AdminRepository {
   Future<ShopType> getShopTypeByCode(String code) async {
     try {
       final response = await _dio.get(ApiConstants.businessTypeByCode(code));
-      return _parseResponse(response, ShopType.fromJson);
+      return _parseResponse<ShopType>(response, ShopType.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -826,7 +881,7 @@ class AdminRepository {
         ApiConstants.businessTypes,
         data: request.toJson(),
       );
-      return _parseResponse(response, ShopType.fromJson);
+      return _parseResponse<ShopType>(response, ShopType.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -839,7 +894,7 @@ class AdminRepository {
         ApiConstants.businessTypeById(id),
         data: request.toJson(),
       );
-      return _parseResponse(response, ShopType.fromJson);
+      return _parseResponse<ShopType>(response, ShopType.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -858,7 +913,7 @@ class AdminRepository {
   Future<ShopType> toggleShopType(int id) async {
     try {
       final response = await _dio.patch(ApiConstants.businessTypeToggle(id));
-      return _parseResponse(response, ShopType.fromJson);
+      return _parseResponse<ShopType>(response, ShopType.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -895,7 +950,7 @@ class AdminRepository {
   Future<Unit> getUnitById(int id) async {
     try {
       final response = await _dio.get(ApiConstants.unitById(id));
-      return _parseResponse(response, Unit.fromJson);
+      return _parseResponse<Unit>(response, Unit.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -905,7 +960,7 @@ class AdminRepository {
   Future<Unit> getUnitByCode(String code) async {
     try {
       final response = await _dio.get(ApiConstants.unitByCode(code));
-      return _parseResponse(response, Unit.fromJson);
+      return _parseResponse<Unit>(response, Unit.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -928,7 +983,7 @@ class AdminRepository {
         ApiConstants.units,
         data: request.toJson(),
       );
-      return _parseResponse(response, Unit.fromJson);
+      return _parseResponse<Unit>(response, Unit.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -941,7 +996,7 @@ class AdminRepository {
         ApiConstants.unitById(id),
         data: request.toJson(),
       );
-      return _parseResponse(response, Unit.fromJson);
+      return _parseResponse<Unit>(response, Unit.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -951,7 +1006,7 @@ class AdminRepository {
   Future<Unit> activateUnit(int id) async {
     try {
       final response = await _dio.patch(ApiConstants.unitActivate(id));
-      return _parseResponse(response, Unit.fromJson);
+      return _parseResponse<Unit>(response, Unit.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -961,7 +1016,7 @@ class AdminRepository {
   Future<Unit> deactivateUnit(int id) async {
     try {
       final response = await _dio.patch(ApiConstants.unitDeactivate(id));
-      return _parseResponse(response, Unit.fromJson);
+      return _parseResponse<Unit>(response, Unit.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -980,7 +1035,7 @@ class AdminRepository {
   Future<Unit> restoreUnit(int id) async {
     try {
       final response = await _dio.patch(ApiConstants.unitRestore(id));
-      return _parseResponse(response, Unit.fromJson);
+      return _parseResponse<Unit>(response, Unit.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -990,7 +1045,7 @@ class AdminRepository {
   Future<Unit> setUnitDefault(int id) async {
     try {
       final response = await _dio.patch(ApiConstants.unitSetDefault(id));
-      return _parseResponse(response, Unit.fromJson);
+      return _parseResponse<Unit>(response, Unit.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -1170,7 +1225,9 @@ class AdminRepository {
       final response = await _dio.get(ApiConstants.adminAppSystemConfig);
 
       // Response is returned directly, not wrapped
-      return SystemConfiguration.fromJson(response.data as Map<String, dynamic>);
+      return SystemConfiguration.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -1187,7 +1244,9 @@ class AdminRepository {
       );
 
       // Response is returned directly, not wrapped
-      return SystemConfiguration.fromJson(response.data as Map<String, dynamic>);
+      return SystemConfiguration.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -1204,7 +1263,9 @@ class AdminRepository {
       );
 
       // Response is returned directly, not wrapped
-      return SystemConfiguration.fromJson(response.data as Map<String, dynamic>);
+      return SystemConfiguration.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }
@@ -1214,105 +1275,91 @@ class AdminRepository {
   // HELPER METHODS
   // ============================================================
 
-  /// Parse wrapped API response: {success: true, data: {...}}
   T _parseResponse<T>(
     Response response,
     T Function(Map<String, dynamic>) fromJson,
   ) {
-    final responseData = response.data;
-    if (responseData['success'] == true && responseData['data'] != null) {
-      return fromJson(responseData['data'] as Map<String, dynamic>);
+    _ensureSuccess(response);
+    final data = response.data['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException(
+        message: 'Invalid server response',
+        statusCode: response.statusCode,
+      );
     }
-    throw ApiException(
-      message: responseData['message'] ?? 'Request failed',
-      statusCode: responseData['status'],
-    );
+    return fromJson(data);
   }
 
-  /// Parse wrapped list response: {success: true, data: [...]}
   List<T> _parseListResponse<T>(
     Response response,
     T Function(Map<String, dynamic>) fromJson,
   ) {
-    final responseData = response.data;
-    if (responseData['success'] == true && responseData['data'] != null) {
-      return (responseData['data'] as List)
-          .map((e) => fromJson(e as Map<String, dynamic>))
-          .toList();
+    _ensureSuccess(response);
+    final data = response.data['data'];
+    if (data is! List || data.any((item) => item is! Map<String, dynamic>)) {
+      throw ApiException(
+        message: 'Invalid server list response',
+        statusCode: response.statusCode,
+      );
+    }
+    return data.map((item) => fromJson(item as Map<String, dynamic>)).toList();
+  }
+
+  void _ensureSuccess(Response response) {
+    final data = response.data;
+    if (response.statusCode == 204 ||
+        (data is Map && data['success'] == true)) {
+      return;
     }
     throw ApiException(
-      message: responseData['message'] ?? 'Request failed',
-      statusCode: responseData['status'],
+      message: data is Map
+          ? (data['message']?.toString() ?? 'Request failed')
+          : 'Invalid server response',
+      statusCode: response.statusCode,
     );
   }
 
-  /// Parse paginated response
+  /// Supports Spring Page, Spring PagedModel, and PagedResponseDto.
   PaginatedResponse<T> _parsePaginatedResponse<T>(
     Response response,
     T Function(Map<String, dynamic>) fromJson,
   ) {
-    final responseData = response.data;
-    if (responseData['success'] == true && responseData['data'] != null) {
-      final data = responseData['data'];
-
-      // Try 'content' first, then 'data' (for compatibility with different API formats)
-      List<dynamic>? contentList =
-          (data['content'] as List?) ?? (data['data'] as List?);
-
-      final content = contentList
-              ?.map((e) => fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-
-      // Handle page field which might be an object or int
-      int pageNumber = 0;
-      int totalPages = 1;
-      int size = content.isNotEmpty ? content.length : 20;
-      int totalElements = 0;
-
-      if (data['page'] is Map) {
-        // Page is an object with pagination details
-        final pageObj = data['page'] as Map<String, dynamic>;
-        pageNumber = pageObj['number'] as int? ?? 0;
-        totalPages = pageObj['totalPages'] as int? ?? 1;
-        size = pageObj['size'] as int? ?? size;
-        totalElements = pageObj['totalElements'] as int? ?? 0;
-      } else {
-        // Page is a simple int (page number only)
-        pageNumber = (data['page'] as int?) ?? 0;
-      }
-
-      // Use direct fields if available (for new API format)
-      if (data['currentPage'] != null) {
-        pageNumber = data['currentPage'] as int;
-      }
-      if (data['totalPages'] != null) {
-        totalPages = data['totalPages'] as int;
-      }
-      if (data['pageSize'] != null) {
-        size = data['pageSize'] as int;
-      }
-      if (data['totalElements'] != null) {
-        totalElements = data['totalElements'] as int;
-      }
-
-      // Calculate isLast: if we got fewer items than page size, we're on last page
-      final isLast = content.length < size;
-      final isFirst = pageNumber == 0;
-
-      return PaginatedResponse(
-        content: content,
-        page: pageNumber,
-        size: size,
-        totalElements: totalElements,
-        totalPages: totalPages,
-        isFirst: isFirst,
-        isLast: isLast,
-      );
+    _ensureSuccess(response);
+    final data = response.data['data'];
+    if (data is! Map<String, dynamic>) {
+      throw ApiException(message: 'Invalid page response');
     }
-    throw ApiException(
-      message: responseData['message'] ?? 'Request failed',
-      statusCode: responseData['status'],
+    final items = data['content'] ?? data['data'];
+    if (items is! List) throw ApiException(message: 'Invalid page content');
+    final content = items
+        .map((e) => fromJson(e as Map<String, dynamic>))
+        .toList();
+    final metadata = data['page'] is Map ? data['page'] as Map : data;
+    final page =
+        (metadata['number'] ??
+                data['currentPage'] ??
+                (data['page'] is int ? data['page'] : null) ??
+                0)
+            as int;
+    final size = (metadata['size'] ?? data['pageSize'] ?? 20) as int;
+    final totalElements = (metadata['totalElements'] ?? content.length) as int;
+    final totalPages =
+        (metadata['totalPages'] ??
+                (size > 0 ? (totalElements / size).ceil() : 0))
+            as int;
+    final isLast =
+        data['last'] as bool? ??
+        (data['hasNext'] is bool
+            ? !(data['hasNext'] as bool)
+            : page + 1 >= totalPages);
+    return PaginatedResponse(
+      content: content,
+      page: page,
+      size: size,
+      totalElements: totalElements,
+      totalPages: totalPages,
+      isFirst: data['first'] as bool? ?? page == 0,
+      isLast: isLast,
     );
   }
 
@@ -1334,19 +1381,17 @@ class AdminRepository {
       if (data is List) {
         // Response is {success, data: [...]} - simple list
         unitsList.addAll(
-          data
-              .map((e) {
-                if (e is Map<String, dynamic>) {
-                  return Unit.fromJson(e);
-                } else if (e is Map) {
-                  return Unit.fromJson(Map<String, dynamic>.from(e));
-                }
-                throw ApiException(
-                  message: 'Invalid unit data format',
-                  statusCode: 500,
-                );
-              })
-              .toList(),
+          data.map((e) {
+            if (e is Map<String, dynamic>) {
+              return Unit.fromJson(e);
+            } else if (e is Map) {
+              return Unit.fromJson(Map<String, dynamic>.from(e));
+            }
+            throw ApiException(
+              message: 'Invalid unit data format',
+              statusCode: 500,
+            );
+          }).toList(),
         );
         // For simple list responses without pagination metadata:
         // If we got 50 items (full page), assume there might be more
@@ -1358,8 +1403,8 @@ class AdminRepository {
         hasPrevious = false;
       } else if (data is Map) {
         // Response is {success, data: {data: [...], pagination fields...}}
-        final nestedList = (data['data'] as List?)
-            ?.map((e) {
+        final nestedList =
+            (data['data'] as List?)?.map((e) {
               if (e is Map<String, dynamic>) {
                 return Unit.fromJson(e);
               } else if (e is Map) {
@@ -1369,8 +1414,7 @@ class AdminRepository {
                 message: 'Invalid unit data format',
                 statusCode: 500,
               );
-            })
-            .toList() ??
+            }).toList() ??
             [];
         unitsList.addAll(nestedList);
 

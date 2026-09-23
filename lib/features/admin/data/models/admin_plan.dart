@@ -4,6 +4,8 @@ class AdminPlan {
   final String code;
   final String name;
   final String? description;
+  final Map<String, String> localizedNames;
+  final Map<String, String> localizedDescriptions;
 
   // Pricing
   final double priceMonthly;
@@ -43,6 +45,8 @@ class AdminPlan {
     required this.code,
     required this.name,
     this.description,
+    this.localizedNames = const {},
+    this.localizedDescriptions = const {},
     this.priceMonthly = 0,
     this.priceYearly = 0,
     this.currency = 'LAK',
@@ -83,6 +87,8 @@ class AdminPlan {
       code: json['code'] as String? ?? '',
       name: _localized(json['name']) ?? '',
       description: _localized(json['description']),
+      localizedNames: _translations(json['name']),
+      localizedDescriptions: _translations(json['description']),
       priceMonthly: (json['priceMonthly'] as num?)?.toDouble() ?? 0,
       priceYearly: (json['priceYearly'] as num?)?.toDouble() ?? 0,
       currency: json['currency'] as String? ?? 'LAK',
@@ -105,6 +111,12 @@ class AdminPlan {
           ? DateTime.tryParse(json['updatedAt'] as String)
           : null,
     );
+  }
+
+  static Map<String, String> _translations(dynamic value) {
+    if (value is String) return {'en': value};
+    if (value is Map) return Map<String, String>.from(value);
+    return {};
   }
 
   Map<String, dynamic> toJson() => {

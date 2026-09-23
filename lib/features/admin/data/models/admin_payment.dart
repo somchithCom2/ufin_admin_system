@@ -49,10 +49,13 @@ class AdminPayment {
       paymentMethod: json['paymentMethod'] as String? ?? 'unknown',
       status: json['status'] as String? ?? 'pending',
       transactionId: json['transactionId'] as String?,
-      referenceNumber: json['referenceNumber'] as String?,
+      referenceNumber:
+          (json['referenceNumber'] ?? json['invoiceNumber']) as String?,
       description: json['description'] as String?,
       notes: json['notes'] as String?,
-      paymentDate: DateTime.parse(json['paymentDate'] as String),
+      paymentDate: DateTime.parse(
+        (json['paymentDate'] ?? json['paidAt'] ?? json['createdAt']) as String,
+      ),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)

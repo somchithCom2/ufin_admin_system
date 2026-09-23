@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'subscription_action_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
@@ -26,7 +27,9 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(subscriptionsProvider.notifier).loadSubscriptions();
+      ref
+          .read(subscriptionsProvider.notifier)
+          .loadSubscriptions(status: _statusFilter);
     });
   }
 
@@ -62,10 +65,21 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                ref.read(subscriptionsProvider.notifier).loadSubscriptions(),
+            onPressed: () => ref
+                .read(subscriptionsProvider.notifier)
+                .loadSubscriptions(status: _statusFilter),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<AdminSubscription>(
+            builder: (_) =>
+                const SubscriptionActionPage(action: SubscriptionAction.create),
+          ),
+        ),
+        icon: const Icon(Icons.add),
+        label: const Text('Create Subscription'),
       ),
       body: Column(
         children: [
@@ -79,7 +93,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                 _buildFilterChip('Active', 'active'),
                 _buildFilterChip('Trial', 'trial'),
                 _buildFilterChip('Expired', 'expired'),
-                _buildFilterChip('Expiring Soon', 'expiring'),
+                _buildFilterChip('Cancelled', 'cancelled'),
               ],
             ),
           ),
@@ -108,7 +122,9 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
         onSelected: (selected) {
           setState(() => _statusFilter = selected ? status : null);
           // Reset scroll position and reload subscriptions
-          _scrollController.jumpTo(0);
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(0);
+          }
           ref
               .read(subscriptionsProvider.notifier)
               .loadSubscriptions(status: _statusFilter);
@@ -138,8 +154,9 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
-              onPressed: () =>
-                  ref.read(subscriptionsProvider.notifier).loadSubscriptions(),
+              onPressed: () => ref
+                  .read(subscriptionsProvider.notifier)
+                  .loadSubscriptions(status: _statusFilter),
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
             ),
@@ -165,7 +182,9 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
             TextButton(
               onPressed: () {
                 setState(() => _statusFilter = null);
-                ref.read(subscriptionsProvider.notifier).loadSubscriptions();
+                ref
+                    .read(subscriptionsProvider.notifier)
+                    .loadSubscriptions(status: _statusFilter);
               },
               child: const Text('Clear filter'),
             ),
@@ -181,7 +200,9 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        _scrollController.jumpTo(0);
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
         await ref
             .read(subscriptionsProvider.notifier)
             .loadSubscriptions(status: _statusFilter);

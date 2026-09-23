@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
@@ -36,7 +34,8 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
   Future<void> _publishRelease(AppRelease release) async {
     try {
       await _repository.publishAppRelease(release.id);
-      await ref.refresh(appReleasesProvider.future);
+      ref.invalidate(appReleasesProvider);
+      ref.invalidate(appReleasesByPlatformProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Release published successfully')),
@@ -52,7 +51,8 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
   Future<void> _unpublishRelease(AppRelease release) async {
     try {
       await _repository.unpublishAppRelease(release.id);
-      await ref.refresh(appReleasesProvider.future);
+      ref.invalidate(appReleasesProvider);
+      ref.invalidate(appReleasesByPlatformProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Release unpublished successfully')),
@@ -89,7 +89,8 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
 
     try {
       await _repository.deleteAppRelease(release.id);
-      await ref.refresh(appReleasesProvider.future);
+      ref.invalidate(appReleasesProvider);
+      ref.invalidate(appReleasesByPlatformProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Release deleted successfully')),
@@ -448,7 +449,8 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                           );
 
                           await _repository.createAppRelease(request);
-                          unawaited(ref.refresh(appReleasesProvider.future));
+                          ref.invalidate(appReleasesProvider);
+                          ref.invalidate(appReleasesByPlatformProvider);
 
                           navigator.pop();
                           scaffoldMessenger.showSnackBar(
@@ -567,7 +569,8 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                           );
 
                           await _repository.updateAppRelease(release.id, request);
-                          unawaited(ref.refresh(appReleasesProvider.future));
+                          ref.invalidate(appReleasesProvider);
+                          ref.invalidate(appReleasesByPlatformProvider);
 
                           navigator.pop();
                           scaffoldMessenger.showSnackBar(

@@ -23,7 +23,13 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(usersProvider.notifier).loadUsers();
+      ref
+          .read(usersProvider.notifier)
+          .loadUsers(
+            search: _searchController.text,
+            status: _statusFilter,
+            userType: _typeFilter,
+          );
     });
   }
 
@@ -55,7 +61,13 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read(usersProvider.notifier).loadUsers(),
+            onPressed: () => ref
+                .read(usersProvider.notifier)
+                .loadUsers(
+                  search: _searchController.text,
+                  status: _statusFilter,
+                  userType: _typeFilter,
+                ),
           ),
         ],
       ),
@@ -81,8 +93,16 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       ),
                     ),
                     onSubmitted: (value) {
-                      _scrollController.jumpTo(0);
-                      ref.read(usersProvider.notifier).loadUsers(search: value);
+                      if (_scrollController.hasClients) {
+                        _scrollController.jumpTo(0);
+                      }
+                      ref
+                          .read(usersProvider.notifier)
+                          .loadUsers(
+                            search: value,
+                            status: _statusFilter,
+                            userType: _typeFilter,
+                          );
                     },
                   ),
                 ),
@@ -104,7 +124,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                         _typeFilter = null;
                       });
                     }
-                    _scrollController.jumpTo(0);
+                    if (_scrollController.hasClients) {
+                      _scrollController.jumpTo(0);
+                    }
                     ref
                         .read(usersProvider.notifier)
                         .loadUsers(
@@ -115,7 +137,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   },
                   itemBuilder: (context) => [
                     const PopupMenuItem(
-                      value: null,
+                      value: 'clear',
                       child: Text('Clear Filters'),
                     ),
                     const PopupMenuDivider(),
@@ -147,11 +169,11 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       ),
                     ),
                     const PopupMenuItem(
-                      value: 'type:SHOP_OWNER',
+                      value: 'type:CLIENT',
                       child: Text('  Shop Owner'),
                     ),
                     const PopupMenuItem(
-                      value: 'type:EMPLOYEE',
+                      value: 'type:STAFF',
                       child: Text('  Employee'),
                     ),
                   ],
@@ -184,7 +206,13 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           Text(error),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: () => ref.read(usersProvider.notifier).loadUsers(),
+            onPressed: () => ref
+                .read(usersProvider.notifier)
+                .loadUsers(
+                  search: _searchController.text,
+                  status: _statusFilter,
+                  userType: _typeFilter,
+                ),
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
           ),
@@ -199,8 +227,16 @@ class _UsersPageState extends ConsumerState<UsersPage> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        _scrollController.jumpTo(0);
-        await ref.read(usersProvider.notifier).loadUsers();
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+        await ref
+            .read(usersProvider.notifier)
+            .loadUsers(
+              search: _searchController.text,
+              status: _statusFilter,
+              userType: _typeFilter,
+            );
       },
       child: ListView.builder(
         controller: _scrollController,
@@ -237,7 +273,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 : null,
             child: user.avatarUrl == null
                 ? Text(
-                    user.username.substring(0, 1).toUpperCase(),
+                    (user.username.isEmpty
+                        ? '?'
+                        : user.username.substring(0, 1).toUpperCase()),
                     style: TextStyle(color: _getStatusColor(user.status)),
                   )
                 : null,
@@ -275,7 +313,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   ],
                 ),
               ),
-              if (user.status != 'suspended')
+              if (!isDeleted &&
+                  user.userType != 'ADMIN' &&
+                  user.status != 'suspended')
                 const PopupMenuItem(
                   value: 'suspend',
                   child: Row(
@@ -286,7 +326,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     ],
                   ),
                 ),
-              if (user.status == 'suspended')
+              if (!isDeleted && user.status != 'active')
                 const PopupMenuItem(
                   value: 'activate',
                   child: Row(
@@ -297,7 +337,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     ],
                   ),
                 ),
-              if (user.status != 'deleted')
+              if (!isDeleted && user.userType != 'ADMIN')
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
@@ -308,16 +348,17 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     ],
                   ),
                 ),
-              const PopupMenuItem(
-                value: 'reset_password',
-                child: Row(
-                  children: [
-                    Icon(Icons.lock_reset, color: Colors.purple),
-                    SizedBox(width: 8),
-                    Text('Reset Password'),
-                  ],
+              if (!isDeleted)
+                const PopupMenuItem(
+                  value: 'reset_password',
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock_reset, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text('Reset Password'),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
           onTap: () => _showUserDetails(user),
@@ -438,7 +479,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                         : null,
                     child: user.avatarUrl == null
                         ? Text(
-                            user.username.substring(0, 1).toUpperCase(),
+                            (user.username.isEmpty
+                                ? '?'
+                                : user.username.substring(0, 1).toUpperCase()),
                             style: TextStyle(
                               fontSize: 24,
                               color: _getStatusColor(user.status),

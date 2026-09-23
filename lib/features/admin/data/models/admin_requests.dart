@@ -73,8 +73,8 @@ class ExtendSubscriptionRequest {
 /// Request to create a new plan
 class CreatePlanRequest {
   final String code;
-  final String name;
-  final String? description;
+  final Map<String, String> name;
+  final Map<String, String>? description;
 
   // Pricing
   final double priceMonthly;
@@ -137,8 +137,9 @@ class CreatePlanRequest {
 
 /// Request to update an existing plan
 class UpdatePlanRequest {
-  final String? name;
-  final String? description;
+  final Map<String, String>? name;
+  final Map<String, String>? description;
+  final bool replaceLimits;
 
   // Pricing
   final double? priceMonthly;
@@ -166,6 +167,7 @@ class UpdatePlanRequest {
   final bool? isActive;
 
   const UpdatePlanRequest({
+    this.replaceLimits = false,
     this.name,
     this.description,
     this.priceMonthly,
@@ -190,10 +192,16 @@ class UpdatePlanRequest {
     if (priceMonthly != null) map['priceMonthly'] = priceMonthly;
     if (priceYearly != null) map['priceYearly'] = priceYearly;
     if (currency != null) map['currency'] = currency;
-    if (maxEmployees != null) map['maxEmployees'] = maxEmployees;
-    if (maxProducts != null) map['maxProducts'] = maxProducts;
-    if (maxOrdersPerMonth != null) map['maxOrdersPerMonth'] = maxOrdersPerMonth;
-    if (maxStorageMb != null) map['maxStorageMb'] = maxStorageMb;
+    if (replaceLimits || maxEmployees != null) {
+      map['maxEmployees'] = maxEmployees;
+    }
+    if (replaceLimits || maxProducts != null) map['maxProducts'] = maxProducts;
+    if (replaceLimits || maxOrdersPerMonth != null) {
+      map['maxOrdersPerMonth'] = maxOrdersPerMonth;
+    }
+    if (replaceLimits || maxStorageMb != null) {
+      map['maxStorageMb'] = maxStorageMb;
+    }
     if (features != null) map['features'] = features;
     if (isTrialAvailable != null) map['isTrialAvailable'] = isTrialAvailable;
     if (trialDays != null) map['trialDays'] = trialDays;
@@ -204,158 +212,85 @@ class UpdatePlanRequest {
   }
 }
 
-/// Request to create a new subscription
+/// Admin subscription creation uses the trial duration configured on the plan.
 class CreateSubscriptionRequest {
   final String planCode;
-  final String billingCycle; // 'monthly' or 'annual'
-  final int? trialDays;
-  final double? pricePaid;
-  final String? paymentMethod;
+  final String billingCycle;
+  final bool startAsTrial;
   final String? notes;
-
   const CreateSubscriptionRequest({
     required this.planCode,
     required this.billingCycle,
-    this.trialDays,
-    this.pricePaid,
-    this.paymentMethod,
+    this.startAsTrial = false,
     this.notes,
   });
-
   Map<String, dynamic> toJson() => {
     'planCode': planCode,
     'billingCycle': billingCycle,
-    if (trialDays != null) 'trialDays': trialDays,
-    if (pricePaid != null) 'pricePaid': pricePaid,
-    if (paymentMethod != null) 'paymentMethod': paymentMethod,
+    'startAsTrial': startAsTrial,
     if (notes != null) 'notes': notes,
   };
-
-  factory CreateSubscriptionRequest.fromJson(Map<String, dynamic> json) {
-    return CreateSubscriptionRequest(
-      planCode: json['planCode'] as String,
-      billingCycle: json['billingCycle'] as String,
-      trialDays: json['trialDays'] as int?,
-      pricePaid: (json['pricePaid'] as num?)?.toDouble(),
-      paymentMethod: json['paymentMethod'] as String?,
-      notes: json['notes'] as String?,
-    );
-  }
 }
 
-/// Request to cancel a subscription
 class CancelSubscriptionRequest {
   final String reason;
-  final bool immediate; // true = cancel now, false = cancel at end of period
+  final bool immediate;
   final String? notes;
-
   const CancelSubscriptionRequest({
     required this.reason,
     this.immediate = false,
     this.notes,
   });
-
   Map<String, dynamic> toJson() => {
     'reason': reason,
-    'immediate': immediate,
+    'immediateEffect': immediate,
     if (notes != null) 'notes': notes,
   };
-
-  factory CancelSubscriptionRequest.fromJson(Map<String, dynamic> json) {
-    return CancelSubscriptionRequest(
-      reason: json['reason'] as String,
-      immediate: json['immediate'] as bool? ?? false,
-      notes: json['notes'] as String?,
-    );
-  }
 }
 
-/// Request to reactivate a subscription
 class ReactivateSubscriptionRequest {
-  final String? planCode; // optional, keep current plan if null
-  final String? billingCycle;
-  final double? pricePaid;
-  final String? paymentMethod;
+  final String? planCode;
+  final String billingCycle;
+  final String? reason;
   final String? notes;
-
   const ReactivateSubscriptionRequest({
     this.planCode,
-    this.billingCycle,
-    this.pricePaid,
-    this.paymentMethod,
+    required this.billingCycle,
+    this.reason,
     this.notes,
   });
-
   Map<String, dynamic> toJson() => {
     if (planCode != null) 'planCode': planCode,
-    if (billingCycle != null) 'billingCycle': billingCycle,
-    if (pricePaid != null) 'pricePaid': pricePaid,
-    if (paymentMethod != null) 'paymentMethod': paymentMethod,
+    'billingCycle': billingCycle,
+    if (reason != null) 'reason': reason,
     if (notes != null) 'notes': notes,
   };
-
-  factory ReactivateSubscriptionRequest.fromJson(Map<String, dynamic> json) {
-    return ReactivateSubscriptionRequest(
-      planCode: json['planCode'] as String?,
-      billingCycle: json['billingCycle'] as String?,
-      pricePaid: (json['pricePaid'] as num?)?.toDouble(),
-      paymentMethod: json['paymentMethod'] as String?,
-      notes: json['notes'] as String?,
-    );
-  }
 }
 
-/// Request to record a manual payment
+/// Manual payments are recorded against the shop's current subscription.
 class RecordPaymentRequest {
   final double amount;
   final String currency;
-  final String paymentMethod; // cash, bank_transfer, qr_code, card
-  final int? subscriptionId;
+  final String paymentMethod;
   final String? transactionId;
-  final String? referenceNumber;
-  final String? description;
+  final String? gateway;
   final String? notes;
-  final DateTime? paymentDate;
-
   const RecordPaymentRequest({
     required this.amount,
     this.currency = 'LAK',
     required this.paymentMethod,
-    this.subscriptionId,
     this.transactionId,
-    this.referenceNumber,
-    this.description,
+    this.gateway,
     this.notes,
-    this.paymentDate,
   });
-
   Map<String, dynamic> toJson() => {
     'amount': amount,
     'currency': currency,
     'paymentMethod': paymentMethod,
-    if (subscriptionId != null) 'subscriptionId': subscriptionId,
     if (transactionId != null) 'transactionId': transactionId,
-    if (referenceNumber != null) 'referenceNumber': referenceNumber,
-    if (description != null) 'description': description,
+    if (gateway != null) 'gateway': gateway,
     if (notes != null) 'notes': notes,
-    if (paymentDate != null) 'paymentDate': paymentDate!.toIso8601String(),
   };
-
-  factory RecordPaymentRequest.fromJson(Map<String, dynamic> json) {
-    return RecordPaymentRequest(
-      amount: (json['amount'] as num).toDouble(),
-      currency: json['currency'] as String? ?? 'LAK',
-      paymentMethod: json['paymentMethod'] as String,
-      subscriptionId: json['subscriptionId'] as int?,
-      transactionId: json['transactionId'] as String?,
-      referenceNumber: json['referenceNumber'] as String?,
-      description: json['description'] as String?,
-      notes: json['notes'] as String?,
-      paymentDate: json['paymentDate'] != null
-          ? DateTime.parse(json['paymentDate'] as String)
-          : null,
-    );
-  }
 }
 
 /// Request to update payment status

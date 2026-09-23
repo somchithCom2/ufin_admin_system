@@ -5,433 +5,380 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 
 class EditPlanPage extends ConsumerStatefulWidget {
-  final AdminPlan plan;
-
-  const EditPlanPage({super.key, required this.plan});
-
+  final AdminPlan? plan;
+  const EditPlanPage({super.key, this.plan});
   @override
   ConsumerState<EditPlanPage> createState() => _EditPlanPageState();
 }
 
 class _EditPlanPageState extends ConsumerState<EditPlanPage> {
   final _formKey = GlobalKey<FormState>();
-
-  late TextEditingController _nameController;
-  late TextEditingController _descriptionController;
-  late TextEditingController _priceMonthlyController;
-  late TextEditingController _priceYearlyController;
-  late TextEditingController _maxEmployeesController;
-  late TextEditingController _maxProductsController;
-  late TextEditingController _maxOrdersController;
-  late TextEditingController _maxStorageController;
-  late TextEditingController _trialDaysController;
-  late TextEditingController _displayOrderController;
-  late TextEditingController _badgeTextController;
-
-  late bool _isTrialAvailable;
-  late bool _isActive;
+  final _code = TextEditingController();
+  final _currency = TextEditingController();
+  final _monthly = TextEditingController();
+  final _yearly = TextEditingController();
+  final _trialDays = TextEditingController();
+  final _order = TextEditingController();
+  final _badge = TextEditingController();
+  final _names = <String, TextEditingController>{};
+  final _descriptions = <String, TextEditingController>{};
+  final _limits = <String, TextEditingController>{};
   Map<String, dynamic> _features = {};
-
+  bool _trial = false;
+  bool _active = true;
+  int _featureRevision = 0;
   bool _isSaving = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.plan.name);
-    _descriptionController = TextEditingController(
-      text: widget.plan.description ?? '',
-    );
-    _priceMonthlyController = TextEditingController(
-      text: widget.plan.priceMonthly.toStringAsFixed(0),
-    );
-    _priceYearlyController = TextEditingController(
-      text: widget.plan.priceYearly.toStringAsFixed(0),
-    );
-    _maxEmployeesController = TextEditingController(
-      text: widget.plan.maxEmployees?.toString() ?? '',
-    );
-    _maxProductsController = TextEditingController(
-      text: widget.plan.maxProducts?.toString() ?? '',
-    );
-    _maxOrdersController = TextEditingController(
-      text: widget.plan.maxOrdersPerMonth?.toString() ?? '',
-    );
-    _maxStorageController = TextEditingController(
-      text: widget.plan.maxStorageMb?.toString() ?? '',
-    );
-    _trialDaysController = TextEditingController(
-      text: widget.plan.trialDays.toString(),
-    );
-    _displayOrderController = TextEditingController(
-      text: widget.plan.displayOrder.toString(),
-    );
-    _badgeTextController = TextEditingController(
-      text: widget.plan.badgeText ?? '',
-    );
-    _isTrialAvailable = widget.plan.isTrialAvailable;
-    _isActive = widget.plan.isActive;
-    _features = Map<String, dynamic>.from(widget.plan.features);
+    final plan = widget.plan;
+    _code.text = plan?.code ?? '';
+    _currency.text = plan?.currency ?? 'LAK';
+    _monthly.text = plan?.priceMonthly.toString() ?? '0';
+    _yearly.text = plan?.priceYearly.toString() ?? '0';
+    _trialDays.text = plan?.trialDays.toString() ?? '14';
+    _order.text = plan?.displayOrder.toString() ?? '0';
+    _badge.text = plan?.badgeText ?? '';
+    _trial = plan?.isTrialAvailable ?? false;
+    _active = plan?.isActive ?? true;
+    final names = plan?.localizedNames ?? const <String, String>{};
+    final descriptions =
+        plan?.localizedDescriptions ?? const <String, String>{};
+    for (final locale in {
+      'en',
+      'lo',
+      'th',
+      ...names.keys,
+      ...descriptions.keys,
+    }) {
+      _names[locale] = TextEditingController(
+        text:
+            names[locale] ??
+            (locale == 'en' && names.isEmpty ? plan?.name : null),
+      );
+      _descriptions[locale] = TextEditingController(
+        text:
+            descriptions[locale] ??
+            (locale == 'en' && descriptions.isEmpty ? plan?.description : null),
+      );
+    }
+    for (final entry in <String, int?>{
+      'Max Employees': plan?.maxEmployees,
+      'Max Products': plan?.maxProducts,
+      'Max Orders/Month': plan?.maxOrdersPerMonth,
+      'Max Storage (MB)': plan?.maxStorageMb,
+    }.entries) {
+      _limits[entry.key] = TextEditingController(
+        text: entry.value?.toString() ?? '',
+      );
+    }
+    _features = Map<String, dynamic>.from(plan?.features ?? {});
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _priceMonthlyController.dispose();
-    _priceYearlyController.dispose();
-    _maxEmployeesController.dispose();
-    _maxProductsController.dispose();
-    _maxOrdersController.dispose();
-    _maxStorageController.dispose();
-    _trialDaysController.dispose();
-    _displayOrderController.dispose();
-    _badgeTextController.dispose();
+    for (final controller in [
+      _code,
+      _currency,
+      _monthly,
+      _yearly,
+      _trialDays,
+      _order,
+      _badge,
+      ..._names.values,
+      ..._descriptions.values,
+      ..._limits.values,
+    ]) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
+  String? _integerError(
+    String? text, {
+    bool optional = false,
+    int minimum = 0,
+  }) {
+    if (optional && (text == null || text.trim().isEmpty)) return null;
+    final value = int.tryParse(text?.trim() ?? '');
+    if (value == null || value < minimum || value > 2147483647) {
+      return 'Enter a whole number from $minimum to 2147483647';
+    }
+    return null;
+  }
+
+  String? _priceError(String? text) {
+    final value = double.tryParse(text?.trim() ?? '');
+    if (value == null ||
+        !value.isFinite ||
+        value < 0 ||
+        value >= 10000000000000 ||
+        !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text!.trim())) {
+      return 'Enter a nonnegative price with at most 2 decimals';
+    }
+    return null;
+  }
+
+  Map<String, String> _translations(
+    Map<String, TextEditingController> controllers,
+  ) => {
+    for (final entry in controllers.entries)
+      if (entry.value.text.trim().isNotEmpty)
+        entry.key: entry.value.text.trim(),
+  };
+
   Future<void> _savePlan() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSaving = true);
-
-    final request = UpdatePlanRequest(
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      priceMonthly: double.tryParse(_priceMonthlyController.text) ?? 0,
-      priceYearly: double.tryParse(_priceYearlyController.text) ?? 0,
-      maxEmployees: int.tryParse(_maxEmployeesController.text),
-      maxProducts: int.tryParse(_maxProductsController.text),
-      maxOrdersPerMonth: int.tryParse(_maxOrdersController.text),
-      maxStorageMb: int.tryParse(_maxStorageController.text),
-      isTrialAvailable: _isTrialAvailable,
-      trialDays: int.tryParse(_trialDaysController.text) ?? 0,
-      displayOrder: int.tryParse(_displayOrderController.text) ?? 0,
-      badgeText: _badgeTextController.text.trim().isEmpty
-          ? null
-          : _badgeTextController.text.trim(),
-      isActive: _isActive,
-      features: _features,
-    );
-
-    final success = await ref
-        .read(planDetailProvider.notifier)
-        .updatePlan(widget.plan.id, request);
-
-    setState(() => _isSaving = false);
-
-    if (success && mounted) {
+    if (_isSaving || !_formKey.currentState!.validate()) return;
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+    try {
+      final repository = ref.read(adminRepositoryProvider);
+      final names = _translations(_names);
+      final descriptions = _translations(_descriptions);
+      final limits = _limits.values
+          .map((c) => int.tryParse(c.text.trim()))
+          .toList();
+      if (widget.plan == null) {
+        await repository.createPlan(
+          CreatePlanRequest(
+            code: _code.text.trim(),
+            name: names,
+            description: descriptions,
+            currency: _currency.text.trim().toUpperCase(),
+            priceMonthly: double.parse(_monthly.text.trim()),
+            priceYearly: double.parse(_yearly.text.trim()),
+            maxEmployees: limits[0],
+            maxProducts: limits[1],
+            maxOrdersPerMonth: limits[2],
+            maxStorageMb: limits[3],
+            features: _features,
+            isTrialAvailable: _trial,
+            trialDays: _trial ? int.parse(_trialDays.text) : 0,
+            displayOrder: int.parse(_order.text),
+            badgeText: _badge.text.trim(),
+          ),
+        );
+      } else {
+        await repository.updatePlan(
+          widget.plan!.id,
+          UpdatePlanRequest(
+            name: names,
+            description: descriptions,
+            currency: _currency.text.trim().toUpperCase(),
+            priceMonthly: double.parse(_monthly.text.trim()),
+            priceYearly: double.parse(_yearly.text.trim()),
+            replaceLimits: true,
+            maxEmployees: limits[0],
+            maxProducts: limits[1],
+            maxOrdersPerMonth: limits[2],
+            maxStorageMb: limits[3],
+            features: _features,
+            isTrialAvailable: _trial,
+            trialDays: _trial ? int.parse(_trialDays.text) : 0,
+            displayOrder: int.parse(_order.text),
+            badgeText: _badge.text.trim(),
+            isActive: _active,
+          ),
+        );
+      }
+      if (!mounted) return;
+      ref.read(plansProvider.notifier).loadPlans();
+      if (widget.plan != null) {
+        ref.read(planDetailProvider.notifier).loadPlan(widget.plan!.id);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Plan updated successfully'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Text(
+            widget.plan == null
+                ? 'Plan created successfully'
+                : 'Plan updated successfully',
+          ),
         ),
       );
       Navigator.of(context).pop(true);
-    } else if (mounted) {
-      final error = ref.read(planDetailProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Failed to update plan'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Plan'),
-        actions: [
-          TextButton.icon(
-            onPressed: _isSaving ? null : _savePlan,
-            icon: _isSaving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save),
-            label: const Text('Save'),
-          ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // Basic Info Section
-            _buildSectionTitle('Basic Information'),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Plan Name *',
-                        hintText: 'e.g., Premium Plan',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Plan name is required';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                        hintText: 'Plan description...',
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _displayOrderController,
-                            decoration: const InputDecoration(
-                              labelText: 'Display Order',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _badgeTextController,
-                            decoration: const InputDecoration(
-                              labelText: 'Badge Text',
-                              hintText: 'e.g., POPULAR',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+    return PopScope(
+      canPop: !_isSaving,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.plan == null ? 'Create Plan' : 'Edit Plan'),
+          actions: [
+            TextButton.icon(
+              onPressed: _isSaving ? null : _savePlan,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save),
+              label: const Text('Save'),
             ),
-            const SizedBox(height: 16),
-
-            // Pricing Section
-            _buildSectionTitle('Pricing'),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _priceMonthlyController,
-                        decoration: const InputDecoration(
-                          labelText: 'Monthly Price (₭)',
-                          prefixText: '₭ ',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Required';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _priceYearlyController,
-                        decoration: const InputDecoration(
-                          labelText: 'Yearly Price (₭)',
-                          prefixText: '₭ ',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Required';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Limits Section
-            _buildSectionTitle('Limits (leave empty for unlimited)'),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _maxEmployeesController,
-                            decoration: const InputDecoration(
-                              labelText: 'Max Employees',
-                              hintText: 'Unlimited',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _maxProductsController,
-                            decoration: const InputDecoration(
-                              labelText: 'Max Products',
-                              hintText: 'Unlimited',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _maxOrdersController,
-                            decoration: const InputDecoration(
-                              labelText: 'Max Orders/Month',
-                              hintText: 'Unlimited',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _maxStorageController,
-                            decoration: const InputDecoration(
-                              labelText: 'Max Storage (MB)',
-                              hintText: 'Unlimited',
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Trial Section
-            _buildSectionTitle('Trial Settings'),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Trial Available'),
-                      subtitle: const Text('Allow trial period for this plan'),
-                      value: _isTrialAvailable,
-                      onChanged: (value) {
-                        setState(() => _isTrialAvailable = value);
-                      },
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    if (_isTrialAvailable) ...[
-                      const Divider(),
-                      TextFormField(
-                        controller: _trialDaysController,
-                        decoration: const InputDecoration(
-                          labelText: 'Trial Days',
-                          suffixText: 'days',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Features Section
-            _buildSectionTitle('Features'),
-            const SizedBox(height: 8),
-            _buildFeaturesCard(),
-            const SizedBox(height: 16),
-
-            // Status Section
-            _buildSectionTitle('Status'),
-            const SizedBox(height: 8),
-            Card(
-              child: SwitchListTile(
-                title: const Text('Active'),
-                subtitle: Text(
-                  _isActive
-                      ? 'Plan is visible and can be subscribed to'
-                      : 'Plan is hidden from subscription options',
-                ),
-                value: _isActive,
-                onChanged: (value) {
-                  setState(() => _isActive = value);
-                },
-              ),
-            ),
-            const SizedBox(height: 32),
           ],
+        ),
+        body: AbsorbPointer(
+          absorbing: _isSaving,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  TextFormField(
+                    controller: _code,
+                    enabled: widget.plan == null,
+                    maxLength: 50,
+                    decoration: const InputDecoration(labelText: 'Plan Code *'),
+                    validator: (v) =>
+                        v == null ||
+                            !RegExp(r'^[A-Za-z0-9_-]{1,50}$').hasMatch(v.trim())
+                        ? 'Use letters, numbers, underscores or hyphens'
+                        : null,
+                  ),
+                  for (final locale in _names.keys) ...[
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _names[locale],
+                      decoration: InputDecoration(
+                        labelText: 'Plan Name ($locale)',
+                      ),
+                      validator: (_) => _translations(_names).isEmpty
+                          ? 'Enter a name in at least one language'
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _descriptions[locale],
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: 'Description ($locale)',
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _currency,
+                    maxLength: 3,
+                    decoration: const InputDecoration(labelText: 'Currency'),
+                    validator: (v) =>
+                        RegExp(r'^[A-Za-z]{3}$').hasMatch(v?.trim() ?? '')
+                        ? null
+                        : 'Enter a 3-letter currency code',
+                  ),
+                  _numberField('Monthly Price', _monthly, _priceError),
+                  _numberField('Yearly Price', _yearly, _priceError),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text('Limits (leave empty for unlimited)'),
+                  ),
+                  for (final entry in _limits.entries)
+                    _numberField(
+                      entry.key,
+                      entry.value,
+                      (v) => _integerError(v, optional: true),
+                    ),
+                  _numberField('Display Order', _order, _integerError),
+                  TextFormField(
+                    controller: _badge,
+                    maxLength: 50,
+                    decoration: const InputDecoration(labelText: 'Badge Text'),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Trial Available'),
+                    value: _trial,
+                    onChanged: (v) => setState(() => _trial = v),
+                  ),
+                  if (_trial)
+                    _numberField(
+                      'Trial Days',
+                      _trialDays,
+                      (v) => _integerError(v, minimum: 1),
+                    ),
+                  const SizedBox(height: 12),
+                  _buildFeaturesCard(),
+                  if (widget.plan == null &&
+                      ref.watch(plansProvider).plans.isNotEmpty)
+                    DropdownButtonFormField<int>(
+                      decoration: const InputDecoration(
+                        labelText: 'Copy features from an existing plan',
+                      ),
+                      items: ref
+                          .watch(plansProvider)
+                          .plans
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (id) {
+                        final source = ref
+                            .read(plansProvider)
+                            .plans
+                            .firstWhere((p) => p.id == id);
+                        setState(() {
+                          _features = Map<String, dynamic>.from(
+                            source.features,
+                          );
+                          _featureRevision++;
+                        });
+                      },
+                    ),
+                  if (widget.plan != null)
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Active'),
+                      value: _active,
+                      onChanged: (v) => setState(() => _active = v),
+                    ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: Theme.of(
-        context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-    );
-  }
+  Widget _numberField(
+    String label,
+    TextEditingController controller,
+    String? Function(String?) validator,
+  ) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: TextFormField(
+      controller: controller,
+      decoration: InputDecoration(labelText: label),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      validator: validator,
+    ),
+  );
 
   Widget _buildFeaturesCard() {
     // Group features by category
@@ -450,6 +397,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
     }
 
     return Card(
+      key: ValueKey(_featureRevision),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -558,6 +506,8 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                         flex: 3,
                         child: TextFormField(
                           initialValue: entry.value?.toString() ?? '',
+                          validator: (value) =>
+                              _integerError(value, optional: true),
                           decoration: const InputDecoration(
                             isDense: true,
                             hintText: 'Unlimited',
