@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_picker.dart';
 
 enum SubscriptionAction { create, cancel, reactivate }
 
@@ -21,7 +23,7 @@ class SubscriptionActionPage extends ConsumerStatefulWidget {
 class _SubscriptionActionPageState
     extends ConsumerState<SubscriptionActionPage> {
   final _form = GlobalKey<FormState>();
-  final _shopId = TextEditingController();
+  ShopSelection? _shop;
   final _reason = TextEditingController();
   final _notes = TextEditingController();
   List<AdminPlan> _plans = [];
@@ -42,7 +44,10 @@ class _SubscriptionActionPageState
   @override
   void initState() {
     super.initState();
-    _shopId.text = widget.subscription?.shopId.toString() ?? '';
+    final sub = widget.subscription;
+    if (sub != null) {
+      _shop = ShopSelection(id: sub.shopId, name: sub.shopName);
+    }
     _cycle = widget.subscription?.billingCycle == 'yearly'
         ? 'yearly'
         : 'monthly';
@@ -79,7 +84,7 @@ class _SubscriptionActionPageState
     });
     try {
       final repository = ref.read(adminRepositoryProvider);
-      final shopId = int.parse(_shopId.text.trim());
+      final shopId = _shop!.id;
       final notes = _notes.text.trim().isEmpty ? null : _notes.text.trim();
       final result = switch (widget.action) {
         SubscriptionAction.create => await repository.createSubscription(
@@ -123,7 +128,6 @@ class _SubscriptionActionPageState
 
   @override
   void dispose() {
-    _shopId.dispose();
     _reason.dispose();
     _notes.dispose();
     super.dispose();
@@ -137,7 +141,7 @@ class _SubscriptionActionPageState
       child: Scaffold(
         appBar: AppBar(title: Text(_title)),
         body: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const AppLoadingView()
             : AbsorbPointer(
                 absorbing: _saving,
                 child: SingleChildScrollView(
@@ -162,17 +166,11 @@ class _SubscriptionActionPageState
                             ),
                           const SizedBox(height: 16),
                         ],
-                        TextFormField(
-                          controller: _shopId,
-                          readOnly: widget.subscription != null,
-                          decoration: const InputDecoration(
-                            labelText: 'Shop ID',
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (v) =>
-                              (int.tryParse(v?.trim() ?? '') ?? 0) > 0
-                              ? null
-                              : 'Enter a positive shop ID',
+                        ShopPickerField(
+                          initialValue: _shop,
+                          locked: widget.subscription != null,
+                          enabled: !_saving,
+                          onChanged: (shop) => _shop = shop,
                         ),
                         const SizedBox(height: 16),
                         if (widget.action != SubscriptionAction.cancel) ...[

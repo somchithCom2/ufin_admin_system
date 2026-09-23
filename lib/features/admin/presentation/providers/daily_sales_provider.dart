@@ -9,11 +9,7 @@ class DailySalesState {
   final String? error;
   final DailySalesData? data;
 
-  const DailySalesState({
-    this.isLoading = false,
-    this.error,
-    this.data,
-  });
+  const DailySalesState({this.isLoading = false, this.error, this.data});
 
   DailySalesState copyWith({
     bool? isLoading,
@@ -32,8 +28,7 @@ class DailySalesState {
 class DailySalesNotifier extends StateNotifier<DailySalesState> {
   final AdminRepository _repository;
 
-  DailySalesNotifier(this._repository)
-    : super(const DailySalesState());
+  DailySalesNotifier(this._repository) : super(const DailySalesState());
 
   Future<void> loadDailySales({
     required DateTime startDate,
@@ -62,9 +57,7 @@ class DailySalesNotifier extends StateNotifier<DailySalesState> {
 }
 
 final dailySalesProvider =
-    StateNotifierProvider<DailySalesNotifier, DailySalesState>((
-      ref,
-    ) {
+    StateNotifierProvider<DailySalesNotifier, DailySalesState>((ref) {
       final repository = ref.watch(adminRepositoryProvider);
       return DailySalesNotifier(repository);
     });

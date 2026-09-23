@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ufin_admin_system/config/theme/app_theme.dart';
 import 'package:ufin_admin_system/core/core.dart';
 import 'package:ufin_admin_system/features/auth/presentation/pages/login_page.dart';
 
@@ -14,39 +15,73 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
   });
   group('Auth Tests', () {
-    testWidgets('Login page renders correctly', (WidgetTester tester) async {
+    Future<void> pumpLogin(WidgetTester tester) async {
       await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: LoginPage())),
+        ProviderScope(
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const LoginPage(),
+          ),
+        ),
       );
-
       await tester.pumpAndSettle();
-      // Verify login page elements
-      expect(find.text('UFin Admin System'), findsOneWidget);
-      expect(find.text('Login'), findsWidgets); // AppBar title and/or button
-      expect(find.byType(TextField), findsNWidgets(2)); // Email & Password
+    }
+
+    testWidgets('Login page renders correctly', (WidgetTester tester) async {
+      await pumpLogin(tester);
+
+      expect(find.text('Welcome back'), findsOneWidget);
+      expect(find.text('Sign in'), findsOneWidget);
+      expect(find.byType(TextFormField), findsNWidgets(2));
     });
 
-    testWidgets('Login page has email and password fields', (
+    testWidgets('Login page has username and password fields', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: LoginPage())),
-      );
+      await pumpLogin(tester);
 
-      await tester.pumpAndSettle();
-      // Verify text fields exist
-      expect(find.text('Email'), findsOneWidget);
+      expect(find.text('Username'), findsOneWidget);
       expect(find.text('Password'), findsOneWidget);
+    });
+
+    testWidgets('Login validates empty fields before submitting', (
+      WidgetTester tester,
+    ) async {
+      await pumpLogin(tester);
+
+      await tester.enterText(find.byType(TextFormField).at(0), '');
+      await tester.enterText(find.byType(TextFormField).at(1), '');
+      await tester.tap(find.text('Sign in'));
+      await tester.pump();
+
+      expect(find.text('Please enter your username'), findsOneWidget);
+      expect(find.text('Please enter your password'), findsOneWidget);
+    });
+
+    testWidgets('Password visibility toggles', (WidgetTester tester) async {
+      await pumpLogin(tester);
+
+      EditableText password() => tester.widget<EditableText>(
+        find.descendant(
+          of: find.byType(TextFormField).at(1),
+          matching: find.byType(EditableText),
+        ),
+      );
+      expect(password().obscureText, isTrue);
+      await tester.tap(find.byTooltip('Show password'));
+      await tester.pump();
+      expect(password().obscureText, isFalse);
     });
   });
 
   group('Splash Screen Tests', () {
     testWidgets('Splash screen renders correctly', (WidgetTester tester) async {
-      await tester.pumpWidget(const MaterialApp(home: SplashScreen()));
+      await tester.pumpWidget(
+        MaterialApp(theme: AppTheme.lightTheme, home: const SplashScreen()),
+      );
 
-      // Verify splash screen elements
-      expect(find.byIcon(Icons.admin_panel_settings), findsOneWidget);
-      expect(find.text('UFin Admin System'), findsOneWidget);
+      expect(find.byType(AppLogo), findsOneWidget);
+      expect(find.text('UFin Admin'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
   });

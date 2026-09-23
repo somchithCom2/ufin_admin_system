@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class ShopProductsPage extends ConsumerStatefulWidget {
   final AdminShop shop;
@@ -74,7 +75,11 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
       appBar: AppBar(
         title: Text('${widget.shop.name} — Products'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _applyFilters),
+          IconButton(
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _applyFilters,
+          ),
         ],
       ),
       body: Column(
@@ -85,19 +90,9 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
+                  child: AppSearchField(
                     controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search products...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
+                    hintText: 'Search products…',
                     onSubmitted: (_) => _applyFilters(),
                   ),
                 ),
@@ -135,13 +130,19 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                 children: [
                   Text(
                     '${state.products.length} product${state.products.length == 1 ? '' : 's'} loaded',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: TextStyle(
+                      color: context.colors.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
                   if (state.hasNext) ...[
                     const SizedBox(width: 4),
                     Text(
                       '• more available',
-                      style: TextStyle(color: Colors.blue[400], fontSize: 12),
+                      style: TextStyle(
+                        color: context.status.info,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ],
@@ -151,11 +152,15 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
           // Product list
           Expanded(
             child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
+                ? const AppLoadingView()
+                : state.error != null && state.products.isEmpty
                 ? _buildError(state.error!)
                 : state.products.isEmpty
-                ? const Center(child: Text('No products found'))
+                ? const AppEmptyView(
+                    icon: Icons.inventory_outlined,
+                    title: 'No products found',
+                    message: 'This shop has no products matching the filters.',
+                  )
                 : _buildList(state.products, state.isLoadingMore),
           ),
         ],
@@ -164,22 +169,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
   }
 
   Widget _buildError(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(error),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _applyFilters,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
+    return AppErrorView(error: error, onRetry: _applyFilters);
   }
 
   Widget _buildList(List<AdminProduct> products, bool isLoadingMore) {
@@ -191,10 +181,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
         itemCount: products.length + (isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == products.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const LoadMoreIndicator();
           }
           return _buildProductCard(products[index]);
         },
@@ -234,7 +221,10 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
             ),
             Text(
               '#${product.id}',
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(
+                fontSize: 11,
+                color: context.colors.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -244,40 +234,45 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
             if (product.sku != null)
               Text(
                 'SKU: ${product.sku}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.colors.onSurfaceVariant,
+                ),
               ),
             Row(
               children: [
                 Text(
                   _formatPrice(product.price),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.green,
+                    color: context.status.success,
                   ),
                 ),
                 const SizedBox(width: 8),
                 if (product.categoryName != null)
-                  _chip(product.categoryName!, Colors.blue),
+                  _chip(product.categoryName!, context.status.info),
                 const SizedBox(width: 4),
                 _chip(
                   isOutOfStock
                       ? 'Out of Stock'
                       : 'Qty: ${product.stockQuantity}',
-                  isOutOfStock ? Colors.red : Colors.green,
+                  isOutOfStock ? context.colors.error : context.status.success,
                 ),
               ],
             ),
           ],
         ),
-        trailing: !product.isActive ? _chip('Inactive', Colors.grey) : null,
+        trailing: !product.isActive
+            ? _chip('Inactive', context.status.neutral)
+            : null,
       ),
     );
   }
 
   Widget _productIcon(AdminProduct product) {
     return CircleAvatar(
-      backgroundColor: Colors.blue.withValues(alpha: 0.1),
-      child: const Icon(Icons.inventory_2, color: Colors.blue),
+      backgroundColor: context.status.info.withValues(alpha: 0.1),
+      child: Icon(Icons.inventory_2, color: context.status.info),
     );
   }
 

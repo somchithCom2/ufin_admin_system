@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/edit_plan_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class PlanDetailPage extends ConsumerStatefulWidget {
   final String planId;
@@ -15,6 +16,37 @@ class PlanDetailPage extends ConsumerStatefulWidget {
 }
 
 class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
+  Future<void> _setPlanActive(AdminPlan plan, bool active) async {
+    if (!active) {
+      final ok = await AppDialogs.confirm(
+        context,
+        title: 'Deactivate plan?',
+        message:
+            '"${plan.name}" will no longer be offered to shops. Existing subscriptions are not affected.',
+        confirmLabel: 'Deactivate',
+        destructive: true,
+        icon: Icons.pause_circle_outline_rounded,
+      );
+      if (!ok || !mounted) return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(planDetailProvider.notifier);
+    try {
+      if (active) {
+        await notifier.activatePlan(plan.id);
+      } else {
+        await notifier.deactivatePlan(plan.id);
+      }
+      messenger.showSuccess(
+        '"${plan.name}" ${active ? 'activated' : 'deactivated'}',
+      );
+    } catch (e) {
+      messenger.showError(
+        'Could not update "${plan.name}": ${friendlyError(e)}',
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -37,33 +69,21 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     if (state.isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Plan Details')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const AppLoadingView(),
       );
     }
 
     if (state.error != null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Plan Details')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(state.error!),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  final id = int.tryParse(widget.planId);
-                  if (id != null) {
-                    ref.read(planDetailProvider.notifier).loadPlan(id);
-                  }
-                },
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
+        body: AppErrorView(
+          error: state.error,
+          onRetry: () {
+            final id = int.tryParse(widget.planId);
+            if (id != null) {
+              ref.read(planDetailProvider.notifier).loadPlan(id);
+            }
+          },
         ),
       );
     }
@@ -72,7 +92,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     if (plan == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Plan Details')),
-        body: const Center(child: Text('Plan not found')),
+        body: const AppEmptyView(
+          icon: Icons.inventory_2_outlined,
+          title: 'Plan not found',
+          message: 'It may have been deleted or the link is invalid.',
+        ),
       );
     }
 
@@ -81,20 +105,15 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         title: Text(plan.name),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
               ref.read(planDetailProvider.notifier).loadPlan(plan.id);
             },
           ),
           Switch(
             value: plan.isActive,
-            onChanged: (value) {
-              if (value) {
-                ref.read(planDetailProvider.notifier).activatePlan(plan.id);
-              } else {
-                ref.read(planDetailProvider.notifier).deactivatePlan(plan.id);
-              }
-            },
+            onChanged: (value) => _setPlanActive(plan, value),
           ),
         ],
       ),
@@ -137,7 +156,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.orange,
+                                      color: context.status.warning,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
@@ -155,7 +174,9 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                             const SizedBox(height: 4),
                             Text(
                               plan.code,
-                              style: TextStyle(color: Colors.grey[600]),
+                              style: TextStyle(
+                                color: context.colors.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),
@@ -166,7 +187,9 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: plan.isActive ? Colors.green : Colors.grey,
+                          color: plan.isActive
+                              ? context.status.success
+                              : context.status.neutral,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -303,7 +326,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),

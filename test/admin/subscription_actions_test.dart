@@ -11,6 +11,8 @@ class LifecycleRepository extends AdminRepository {
   LifecycleRepository() : super(dio: Dio());
   CreateSubscriptionRequest? created;
   CancelSubscriptionRequest? cancelled;
+  int? createdForShop;
+  int? cancelledForShop;
   final subscription = const AdminSubscription(
     id: 1,
     shopId: 5,
@@ -32,6 +34,7 @@ class LifecycleRepository extends AdminRepository {
     int shopId,
     CreateSubscriptionRequest request,
   ) async {
+    createdForShop = shopId;
     created = request;
     return subscription;
   }
@@ -41,9 +44,26 @@ class LifecycleRepository extends AdminRepository {
     int shopId,
     CancelSubscriptionRequest request,
   ) async {
+    cancelledForShop = shopId;
     cancelled = request;
     return subscription;
   }
+
+  @override
+  Future<PaginatedResponse<AdminShop>> getShops({
+    int page = 0,
+    int size = 20,
+    String? search,
+    String? status,
+  }) async => const PaginatedResponse(
+    content: [AdminShop(id: 5, name: 'Mekong Mart', status: 'active')],
+    page: 0,
+    size: 20,
+    totalElements: 1,
+    totalPages: 1,
+    isFirst: true,
+    isLast: true,
+  );
 
   @override
   Future<AdminDashboardStats> getDashboardStats() async =>
@@ -103,10 +123,10 @@ void main() {
     (tester) async {
       final repository = LifecycleRepository();
       await open(tester, repository, SubscriptionAction.create);
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Shop ID'),
-        '5',
-      );
+      await tester.tap(find.text('Shop'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mekong Mart'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Start with 7 trial days'));
       await tester.ensureVisible(
         find.widgetWithText(FilledButton, 'Create Subscription'),
@@ -115,6 +135,7 @@ void main() {
         find.widgetWithText(FilledButton, 'Create Subscription'),
       );
       await tester.pumpAndSettle();
+      expect(repository.createdForShop, 5);
       expect(repository.created?.planCode, 'PRO');
       expect(repository.created?.startAsTrial, true);
       expect(repository.created?.billingCycle, 'monthly');
@@ -141,5 +162,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(repository.cancelled?.toJson()['immediateEffect'], true);
     expect(repository.cancelled?.reason, 'Owner request');
+    expect(repository.cancelledForShop, 5);
+  });
+
+  testWidgets('existing subscription shows its shop locked', (tester) async {
+    final repository = LifecycleRepository();
+    await open(tester, repository, SubscriptionAction.cancel);
+    // Label "Shop" plus the pre-filled shop name ("Shop" in this fixture).
+    expect(find.text('Shop'), findsNWidgets(2));
+    expect(find.text('#5'), findsOneWidget);
+    expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+
+    await tester.tap(find.text('#5'));
+    await tester.pumpAndSettle();
+    expect(find.text('Select shop'), findsNothing);
   });
 }

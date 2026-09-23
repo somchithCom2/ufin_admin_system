@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 
 final systemConfigProvider = FutureProvider<SystemConfiguration>((ref) async {
   final repository = AdminRepository();
@@ -41,291 +43,286 @@ class _SystemConfigurationPageState
 
     return Scaffold(
       appBar: AppBar(
+        leading: buildAdminMenuButton(context),
         title: const Text('System Configuration'),
       ),
-      body: configAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  'Failed to load configuration',
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  error.toString(),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => ref.refresh(systemConfigProvider),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+      body: ContentWidth(
+        child: configAsync.when(
+          loading: () => const AppLoadingView(),
+          error: (error, stack) => AppErrorView(
+            error: error,
+            title: 'Failed to load configuration',
+            onRetry: () => ref.invalidate(systemConfigProvider),
           ),
-        ),
-        data: (config) => SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Force Update Status Alert
-              if (config.forceUpdateRequired == true)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    border: Border.all(color: Colors.red, width: 2),
-                    borderRadius: BorderRadius.circular(8),
+          data: (config) => SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Force Update Status Alert
+                if (config.forceUpdateRequired == true)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16.0),
+                    decoration: BoxDecoration(
+                      color: context.colors.errorContainer,
+                      border: Border.all(color: context.colors.error, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: context.colors.error,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Force Update Required',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      color: context.colors.error,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'All users must update to the latest version',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: context.colors.error),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.red.shade700,
-                        size: 32,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                if (config.forceUpdateRequired == true)
+                  const SizedBox(height: 16),
+
+                // Maintenance Mode Section
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Maintenance Mode',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
                           children: [
-                            Text(
-                              'Force Update Required',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Colors.red.shade700,
-                                    fontWeight: FontWeight.bold,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    config.isMaintenanceMode
+                                        ? 'Status: ACTIVE'
+                                        : 'Status: INACTIVE',
+                                    style: Theme.of(context).textTheme.bodyLarge
+                                        ?.copyWith(
+                                          color: config.isMaintenanceMode
+                                              ? context.colors.error
+                                              : context.status.success,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
+                                  if (config.isMaintenanceMode) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      config.maintenanceTitle ??
+                                          'No title provided',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      config.maintenanceMessage ??
+                                          'No message provided',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (config.expectedCompletionTime !=
+                                        null) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Expected completion: ${config.expectedCompletionTime}',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ],
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'All users must update to the latest version',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.red.shade600,
-                                  ),
+                            ElevatedButton.icon(
+                              onPressed: () =>
+                                  _showMaintenanceModeDialog(context, config),
+                              icon: Icon(
+                                config.isMaintenanceMode
+                                    ? Icons.stop
+                                    : Icons.play_arrow,
+                              ),
+                              label: Text(
+                                config.isMaintenanceMode ? 'Disable' : 'Enable',
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: config.isMaintenanceMode
+                                    ? context.colors.error
+                                    : context.status.warning,
+                              ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              if (config.forceUpdateRequired == true)
+                const SizedBox(height: 24),
+                // Version Requirements Section
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Minimum Version Requirements',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildVersionCard(
+                          context,
+                          'Android',
+                          config.minSupportedAndroidVersion,
+                          Icons.android,
+                          context.status.success,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildVersionCard(
+                          context,
+                          'iOS',
+                          config.minSupportedIosVersion,
+                          Icons.apple,
+                          context.colors.onSurface,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildVersionCard(
+                          context,
+                          'Windows',
+                          config.minSupportedWindowsVersion,
+                          Icons.desktop_mac,
+                          context.status.info,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildVersionCard(
+                          context,
+                          'macOS',
+                          config.minSupportedMacosVersion,
+                          Icons.laptop_mac,
+                          context.status.neutral,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildVersionCard(
+                          context,
+                          'Web',
+                          config.minSupportedWebVersion,
+                          Icons.language,
+                          context.status.info,
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () =>
+                                _showUpdateVersionDialog(context, config),
+                            icon: const Icon(Icons.edit),
+                            label: const Text('Update Versions'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Update Status
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Update Status',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildStatusRow(
+                          'Update Available',
+                          config.updateAvailable == true ? '✅ Yes' : '❌ No',
+                          config.updateAvailable == true
+                              ? context.status.success
+                              : context.status.neutral,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildStatusRow(
+                          'Force Update Required',
+                          config.forceUpdateRequired == true
+                              ? '⚠️ Yes'
+                              : '✅ No',
+                          config.forceUpdateRequired == true
+                              ? context.colors.error
+                              : context.status.success,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
 
-              // Maintenance Mode Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Maintenance Mode',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  config.isMaintenanceMode
-                                      ? 'Status: ACTIVE'
-                                      : 'Status: INACTIVE',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                        color: config.isMaintenanceMode
-                                            ? Colors.red
-                                            : Colors.green,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                if (config.isMaintenanceMode) ...[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    config.maintenanceTitle ??
-                                        'No title provided',
-                                    style:
-                                        Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    config.maintenanceMessage ??
-                                        'No message provided',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (config.expectedCompletionTime != null) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Expected completion: ${config.expectedCompletionTime}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
-                                    ),
-                                  ],
-                                ],
-                              ],
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () =>
-                                _showMaintenanceModeDialog(context, config),
-                            icon: Icon(config.isMaintenanceMode
-                                ? Icons.stop
-                                : Icons.play_arrow),
-                            label: Text(config.isMaintenanceMode
-                                ? 'Disable'
-                                : 'Enable'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: config.isMaintenanceMode
-                                  ? Colors.red
-                                  : Colors.orange,
-                            ),
+                // Configuration Info
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Configuration Info',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildInfoRow('Created', config.createdAt.toString()),
+                        const SizedBox(height: 8),
+                        _buildInfoRow(
+                          'Last Updated',
+                          config.updatedAt.toString(),
+                        ),
+                        if (config.updatedBy != null) ...[
+                          const SizedBox(height: 8),
+                          _buildInfoRow(
+                            'Updated By',
+                            config.updatedBy ?? 'N/A',
                           ),
                         ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Version Requirements Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Minimum Version Requirements',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildVersionCard(
-                        context,
-                        'Android',
-                        config.minSupportedAndroidVersion,
-                        Icons.android,
-                        Colors.green,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildVersionCard(
-                        context,
-                        'iOS',
-                        config.minSupportedIosVersion,
-                        Icons.apple,
-                        Colors.black,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildVersionCard(
-                        context,
-                        'Windows',
-                        config.minSupportedWindowsVersion,
-                        Icons.desktop_mac,
-                        Colors.blue,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildVersionCard(
-                        context,
-                        'macOS',
-                        config.minSupportedMacosVersion,
-                        Icons.laptop_mac,
-                        Colors.grey,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildVersionCard(
-                        context,
-                        'Web',
-                        config.minSupportedWebVersion,
-                        Icons.language,
-                        Colors.blue,
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () =>
-                              _showUpdateVersionDialog(context, config),
-                          icon: const Icon(Icons.edit),
-                          label: const Text('Update Versions'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Update Status
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Update Status',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildStatusRow(
-                        'Update Available',
-                        config.updateAvailable == true ? '✅ Yes' : '❌ No',
-                        config.updateAvailable == true ? Colors.green : Colors.grey,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildStatusRow(
-                        'Force Update Required',
-                        config.forceUpdateRequired == true ? '⚠️ Yes' : '✅ No',
-                        config.forceUpdateRequired == true ? Colors.red : Colors.green,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Configuration Info
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Configuration Info',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildInfoRow('Created', config.createdAt.toString()),
-                      const SizedBox(height: 8),
-                      _buildInfoRow('Last Updated', config.updatedAt.toString()),
-                      if (config.updatedBy != null) ...[
-                        const SizedBox(height: 8),
-                        _buildInfoRow('Updated By', config.updatedBy ?? 'N/A'),
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -342,7 +339,7 @@ class _SystemConfigurationPageState
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: context.colors.outline),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -354,9 +351,9 @@ class _SystemConfigurationPageState
             children: [
               Text(
                 platform,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               Text(
                 'Min version: $version',
@@ -375,14 +372,11 @@ class _SystemConfigurationPageState
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(value, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
@@ -400,16 +394,16 @@ class _SystemConfigurationPageState
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           Text(
             status,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: statusColor,
-                  fontWeight: FontWeight.bold,
-                ),
+              color: statusColor,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -432,9 +426,11 @@ class _SystemConfigurationPageState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(config.isMaintenanceMode
-            ? 'Disable Maintenance Mode'
-            : 'Enable Maintenance Mode'),
+        title: Text(
+          config.isMaintenanceMode
+              ? 'Disable Maintenance Mode'
+              : 'Enable Maintenance Mode',
+        ),
         content: SingleChildScrollView(
           child: Form(
             key: formKey,
@@ -455,8 +451,7 @@ class _SystemConfigurationPageState
                     controller: messageCtrl,
                     decoration: const InputDecoration(
                       labelText: 'Maintenance Message',
-                      hintText:
-                          'We are performing updates. Expected time...',
+                      hintText: 'We are performing updates. Expected time...',
                     ),
                     maxLines: 3,
                     validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
@@ -474,13 +469,10 @@ class _SystemConfigurationPageState
                       final picked = await showDatePicker(
                         context: context,
                         initialDate:
-                            completionTime ?? DateTime.now().add(
-                              const Duration(hours: 1),
-                            ),
+                            completionTime ??
+                            DateTime.now().add(const Duration(hours: 1)),
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 30),
-                        ),
+                        lastDate: DateTime.now().add(const Duration(days: 30)),
                       );
                       if (picked != null) {
                         setState(() => completionTime = picked);
@@ -507,9 +499,12 @@ class _SystemConfigurationPageState
               try {
                 final request = UpdateMaintenanceModeRequest(
                   isMaintenanceMode: !config.isMaintenanceMode,
-                  maintenanceTitle: titleCtrl.text.isEmpty ? null : titleCtrl.text,
-                  maintenanceMessage:
-                      messageCtrl.text.isEmpty ? null : messageCtrl.text,
+                  maintenanceTitle: titleCtrl.text.isEmpty
+                      ? null
+                      : titleCtrl.text,
+                  maintenanceMessage: messageCtrl.text.isEmpty
+                      ? null
+                      : messageCtrl.text,
                   expectedCompletionTime: completionTime,
                 );
 
@@ -518,23 +513,19 @@ class _SystemConfigurationPageState
 
                 if (!context.mounted) return;
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Maintenance mode ${!config.isMaintenanceMode ? 'enabled' : 'disabled'}',
-                    ),
-                  ),
+                AppFeedback.success(
+                  context,
+                  'Maintenance mode ${!config.isMaintenanceMode ? 'enabled' : 'disabled'}',
                 );
               } catch (e) {
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')),
-                );
+                AppFeedback.error(context, e);
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  config.isMaintenanceMode ? Colors.red : Colors.orange,
+              backgroundColor: config.isMaintenanceMode
+                  ? context.colors.error
+                  : context.status.warning,
             ),
             child: Text(config.isMaintenanceMode ? 'Disable' : 'Enable'),
           ),
@@ -548,16 +539,17 @@ class _SystemConfigurationPageState
     SystemConfiguration config,
   ) {
     final formKey = GlobalKey<FormState>();
-    final androidCtrl =
-        TextEditingController(text: config.minSupportedAndroidVersion);
-    final iosCtrl =
-        TextEditingController(text: config.minSupportedIosVersion);
-    final windowsCtrl =
-        TextEditingController(text: config.minSupportedWindowsVersion);
-    final macosCtrl =
-        TextEditingController(text: config.minSupportedMacosVersion);
-    final webCtrl =
-        TextEditingController(text: config.minSupportedWebVersion);
+    final androidCtrl = TextEditingController(
+      text: config.minSupportedAndroidVersion,
+    );
+    final iosCtrl = TextEditingController(text: config.minSupportedIosVersion);
+    final windowsCtrl = TextEditingController(
+      text: config.minSupportedWindowsVersion,
+    );
+    final macosCtrl = TextEditingController(
+      text: config.minSupportedMacosVersion,
+    );
+    final webCtrl = TextEditingController(text: config.minSupportedWebVersion);
 
     showDialog(
       context: context,
@@ -640,20 +632,13 @@ class _SystemConfigurationPageState
 
                 if (!context.mounted) return;
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ Version requirements updated successfully'),
-                    backgroundColor: Colors.green,
-                  ),
+                AppFeedback.success(
+                  context,
+                  'Version requirements updated successfully',
                 );
               } catch (e) {
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('❌ Error: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                AppFeedback.error(context, e);
               }
             },
             child: const Text('Update'),

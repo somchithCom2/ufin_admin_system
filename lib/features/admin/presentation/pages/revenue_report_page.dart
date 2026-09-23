@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class RevenueReportPage extends ConsumerStatefulWidget {
   const RevenueReportPage({super.key});
@@ -45,43 +46,54 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
         title: const Text('Revenue Report'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(revenueReportProvider.notifier).refresh(),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Filters
-          _buildFilters(),
+      body: ContentWidth(
+        child: Column(
+          children: [
+            // Filters
+            _buildFilters(),
 
-          // Content
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error, size: 48, color: Colors.red[300]),
-                        const SizedBox(height: 16),
-                        Text(state.error!),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => ref
-                              .read(revenueReportProvider.notifier)
-                              .refresh(),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : state.report == null
-                ? const Center(child: Text('No data available'))
-                : _buildReport(state),
-          ),
-        ],
+            // Content
+            Expanded(
+              child: state.isLoading
+                  ? const AppLoadingView()
+                  : state.error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error,
+                            size: 48,
+                            color: context.colors.error,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(state.error!),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => ref
+                                .read(revenueReportProvider.notifier)
+                                .refresh(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : state.report == null
+                  ? const AppEmptyView(
+                      icon: Icons.insights_outlined,
+                      title: 'No data available',
+                      message: 'There is nothing to show for this period.',
+                    )
+                  : _buildReport(state),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -89,7 +101,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
   Widget _buildFilters() {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Colors.grey[50],
+      color: context.colors.surfaceContainer,
       child: Column(
         children: [
           Row(
@@ -104,7 +116,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(color: context.colors.outline),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -112,14 +124,16 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                         Icon(
                           Icons.date_range,
                           size: 18,
-                          color: Colors.grey[600],
+                          color: context.colors.onSurfaceVariant,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _dateRange != null
                               ? '${DateFormat('MMM d').format(_dateRange!.start)} - ${DateFormat('MMM d').format(_dateRange!.end)}'
                               : 'Select dates',
-                          style: TextStyle(color: Colors.grey[700]),
+                          style: TextStyle(
+                            color: context.colors.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -171,15 +185,15 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.green[600]!, Colors.green[400]!],
+                colors: const [Color(0xFF2563EB), Color(0xFF4F46E5)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.green.withValues(alpha: 0.3),
-                  blurRadius: 8,
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.25),
+                  blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -233,7 +247,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   'Total Transactions',
                   report.totalTransactions.toString(),
                   Icons.receipt_long,
-                  Colors.blue,
+                  context.status.info,
                 ),
               ),
               const SizedBox(width: 12),
@@ -242,7 +256,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   'Success Rate',
                   '${report.successRate.toStringAsFixed(1)}%',
                   Icons.check_circle,
-                  Colors.green,
+                  context.status.success,
                 ),
               ),
             ],
@@ -257,7 +271,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   'Successful',
                   report.successfulTransactions.toString(),
                   Icons.done_all,
-                  Colors.green,
+                  context.status.success,
                 ),
               ),
               const SizedBox(width: 12),
@@ -266,7 +280,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   'Failed',
                   report.failedTransactions.toString(),
                   Icons.error_outline,
-                  Colors.red,
+                  context.colors.error,
                 ),
               ),
             ],
@@ -294,7 +308,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
               height: 200,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: context.colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: _buildSimpleBarChart(report.revenueByPeriod),
@@ -381,7 +395,10 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                 ),
                 Text(
                   label,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                  style: TextStyle(
+                    color: context.colors.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -418,7 +435,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                 Container(
                   height: (140 * heightRatio).toDouble(),
                   decoration: BoxDecoration(
-                    color: Colors.green[400],
+                    color: context.status.success,
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(4),
                     ),
@@ -427,7 +444,10 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                 const SizedBox(height: 4),
                 Text(
                   _formatPeriodLabel(item.period),
-                  style: TextStyle(fontSize: 8, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: context.colors.onSurfaceVariant,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -443,9 +463,9 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: context.colors.outlineVariant),
       ),
       child: Row(
         children: [
@@ -459,7 +479,10 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                 ),
                 Text(
                   '${plan.subscriptionCount} payments',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.colors.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -474,12 +497,15 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                 ).format(plan.revenue),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+                  color: context.status.success,
                 ),
               ),
               Text(
                 '${plan.percentage.toStringAsFixed(1)}%',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.colors.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -493,21 +519,21 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: context.colors.outlineVariant),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.blue[50],
+              color: context.status.infoContainer,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               _getPaymentMethodIcon(method.paymentMethod),
-              color: Colors.blue,
+              color: context.status.info,
               size: 20,
             ),
           ),
@@ -522,7 +548,10 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                 ),
                 Text(
                   '${method.transactionCount} transactions',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.colors.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -537,12 +566,15 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                 ).format(method.revenue),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+                  color: context.status.success,
                 ),
               ),
               Text(
                 '${method.percentage.toStringAsFixed(1)}%',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.colors.onSurfaceVariant,
+                ),
               ),
             ],
           ),

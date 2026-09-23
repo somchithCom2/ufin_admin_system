@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
   const UsersPage({super.key});
@@ -60,7 +61,8 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         title: const Text('Users'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref
                 .read(usersProvider.notifier)
                 .loadUsers(
@@ -71,153 +73,137 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search and Filter
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search users...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+      body: ContentWidth(
+        child: Column(
+          children: [
+            // Search and Filter
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: AppSearchField(
+                      controller: _searchController,
+                      hintText: 'Search users…',
+                      onSubmitted: (value) {
+                        if (_scrollController.hasClients) {
+                          _scrollController.jumpTo(0);
+                        }
+                        ref
+                            .read(usersProvider.notifier)
+                            .loadUsers(
+                              search: value,
+                              status: _statusFilter,
+                              userType: _typeFilter,
+                            );
+                      },
                     ),
-                    onSubmitted: (value) {
+                  ),
+                  const SizedBox(width: 12),
+                  PopupMenuButton<String?>(
+                    icon: Badge(
+                      isLabelVisible:
+                          _statusFilter != null || _typeFilter != null,
+                      child: const Icon(Icons.filter_list),
+                    ),
+                    onSelected: (value) {
+                      if (value?.startsWith('status:') == true) {
+                        setState(() => _statusFilter = value?.substring(7));
+                      } else if (value?.startsWith('type:') == true) {
+                        setState(() => _typeFilter = value?.substring(5));
+                      } else {
+                        setState(() {
+                          _statusFilter = null;
+                          _typeFilter = null;
+                        });
+                      }
                       if (_scrollController.hasClients) {
                         _scrollController.jumpTo(0);
                       }
                       ref
                           .read(usersProvider.notifier)
                           .loadUsers(
-                            search: value,
+                            search: _searchController.text,
                             status: _statusFilter,
                             userType: _typeFilter,
                           );
                     },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                PopupMenuButton<String?>(
-                  icon: Badge(
-                    isLabelVisible:
-                        _statusFilter != null || _typeFilter != null,
-                    child: const Icon(Icons.filter_list),
-                  ),
-                  onSelected: (value) {
-                    if (value?.startsWith('status:') == true) {
-                      setState(() => _statusFilter = value?.substring(7));
-                    } else if (value?.startsWith('type:') == true) {
-                      setState(() => _typeFilter = value?.substring(5));
-                    } else {
-                      setState(() {
-                        _statusFilter = null;
-                        _typeFilter = null;
-                      });
-                    }
-                    if (_scrollController.hasClients) {
-                      _scrollController.jumpTo(0);
-                    }
-                    ref
-                        .read(usersProvider.notifier)
-                        .loadUsers(
-                          search: _searchController.text,
-                          status: _statusFilter,
-                          userType: _typeFilter,
-                        );
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'clear',
-                      child: Text('Clear Filters'),
-                    ),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem(
-                      enabled: false,
-                      child: Text(
-                        'Status',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'clear',
+                        child: Text('Clear Filters'),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'status:active',
-                      child: Text('  Active'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'status:suspended',
-                      child: Text('  Suspended'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'status:deleted',
-                      child: Text('  Deleted'),
-                    ),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem(
-                      enabled: false,
-                      child: Text(
-                        'Type',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem(
+                        enabled: false,
+                        child: Text(
+                          'Status',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'type:CLIENT',
-                      child: Text('  Shop Owner'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'type:STAFF',
-                      child: Text('  Employee'),
-                    ),
-                  ],
-                ),
-              ],
+                      const PopupMenuItem(
+                        value: 'status:active',
+                        child: Text('  Active'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'status:suspended',
+                        child: Text('  Suspended'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'status:deleted',
+                        child: Text('  Deleted'),
+                      ),
+                      const PopupMenuDivider(),
+                      const PopupMenuItem(
+                        enabled: false,
+                        child: Text(
+                          'Type',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'type:CLIENT',
+                        child: Text('  Shop Owner'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'type:STAFF',
+                        child: Text('  Employee'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          // User List
-          Expanded(
-            child: usersState.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : usersState.error != null
-                ? _buildErrorView(usersState.error!)
-                : usersState.users.isEmpty
-                ? const Center(child: Text('No users found'))
-                : _buildUserList(usersState.users),
-          ),
-        ],
+            // User List
+            Expanded(
+              child: usersState.isLoading
+                  ? const AppLoadingView()
+                  : usersState.error != null && usersState.users.isEmpty
+                  ? _buildErrorView(usersState.error!)
+                  : usersState.users.isEmpty
+                  ? const AppEmptyView(
+                      icon: Icons.people_outline_rounded,
+                      title: 'No users found',
+                      message: 'Try a different search or filter.',
+                    )
+                  : _buildUserList(usersState.users),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(error),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => ref
-                .read(usersProvider.notifier)
-                .loadUsers(
-                  search: _searchController.text,
-                  status: _statusFilter,
-                  userType: _typeFilter,
-                ),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
+    return AppErrorView(
+      error: error,
+      onRetry: () => ref
+          .read(usersProvider.notifier)
+          .loadUsers(
+            search: _searchController.text,
+            status: _statusFilter,
+            userType: _typeFilter,
           ),
-        ],
-      ),
     );
   }
 
@@ -245,10 +231,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         itemCount: hasMore ? users.length + 1 : users.length,
         itemBuilder: (context, index) {
           if (index == users.length && hasMore) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const LoadMoreIndicator();
           }
           final user = users[index];
           return _buildUserCard(user);
@@ -316,33 +299,33 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               if (!isDeleted &&
                   user.userType != 'ADMIN' &&
                   user.status != 'suspended')
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'suspend',
                   child: Row(
                     children: [
-                      Icon(Icons.block, color: Colors.orange),
+                      Icon(Icons.block, color: context.status.warning),
                       SizedBox(width: 8),
                       Text('Suspend'),
                     ],
                   ),
                 ),
               if (!isDeleted && user.status != 'active')
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'activate',
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green),
+                      Icon(Icons.check_circle, color: context.status.success),
                       SizedBox(width: 8),
                       Text('Activate'),
                     ],
                   ),
                 ),
               if (!isDeleted && user.userType != 'ADMIN')
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete, color: Colors.red),
+                      Icon(Icons.delete, color: context.colors.error),
                       SizedBox(width: 8),
                       Text('Delete'),
                     ],
@@ -368,54 +351,29 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   }
 
   Widget _buildStatusChip(String status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: _getStatusColor(status).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: _getStatusColor(status),
-        ),
-      ),
-    );
+    return StatusBadge.fromStatus(status);
   }
 
   Widget _buildTypeChip(String type) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.1),
+        color: context.status.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         type.replaceAll('_', ' '),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          color: Colors.blue,
+          color: context.status.info,
         ),
       ),
     );
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'suspended':
-        return Colors.orange;
-      case 'banned':
-        return Colors.red;
-      case 'deleted':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
+    return StatusTone.fromStatus(status).foreground(context);
   }
 
   void _handleUserAction(AdminUser user, String action) {
@@ -461,7 +419,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: context.colors.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -586,7 +544,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),
@@ -615,7 +573,6 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   obscureText: obscure,
                   decoration: InputDecoration(
                     labelText: 'New Password',
-                    border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(
                         obscure ? Icons.visibility : Icons.visibility_off,
@@ -651,18 +608,12 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   await ref
                       .read(usersProvider.notifier)
                       .resetUserPassword(user.id, password);
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text('Password reset for "${user.username}"'),
-                      backgroundColor: Colors.green,
-                    ),
+                  messenger.showSuccess(
+                    'Password reset for "${user.username}"',
                   );
-                } catch (_) {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Failed to reset password'),
-                      backgroundColor: Colors.red,
-                    ),
+                } catch (e) {
+                  messenger.showError(
+                    'Failed to reset password: ${friendlyError(e)}',
                   );
                 }
               },
@@ -674,64 +625,52 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     );
   }
 
-  void _showStatusDialog(AdminUser user, String newStatus) {
-    final reasonController = TextEditingController();
-    String dialogTitle;
-    String actionText;
-    switch (newStatus) {
-      case 'suspended':
-        dialogTitle = 'Suspend User';
-        actionText = 'suspend';
-        break;
-      case 'deleted':
-        dialogTitle = 'Delete User';
-        actionText = 'delete';
-        break;
-      default:
-        dialogTitle = 'Activate User';
-        actionText = 'activate';
-    }
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(dialogTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Are you sure you want to $actionText "${user.username}"?'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Reason (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref
-                  .read(usersProvider.notifier)
-                  .updateUserStatus(
-                    user.id,
-                    newStatus,
-                    reasonController.text.isNotEmpty
-                        ? reasonController.text
-                        : null,
-                  );
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
+  Future<void> _showStatusDialog(AdminUser user, String newStatus) async {
+    final (title, verb, pastTense, icon) = switch (newStatus) {
+      'suspended' => (
+        'Suspend user',
+        'Suspend',
+        'suspended',
+        Icons.block_rounded,
       ),
+      'deleted' => (
+        'Delete user',
+        'Delete',
+        'deleted',
+        Icons.delete_outline_rounded,
+      ),
+      _ => (
+        'Activate user',
+        'Activate',
+        'activated',
+        Icons.check_circle_outline_rounded,
+      ),
+    };
+    final destructive = newStatus != 'active';
+    final reason = await AppDialogs.confirmWithReason(
+      context,
+      title: title,
+      message: newStatus == 'deleted'
+          ? '"${user.username}" will lose access immediately. You can restore the account later from Deleted Users.'
+          : newStatus == 'suspended'
+          ? '"${user.username}" will be signed out and unable to log in until reactivated.'
+          : '"${user.username}" will regain access to their account.',
+      confirmLabel: verb,
+      destructive: destructive,
+      icon: icon,
     );
+    if (reason == null || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(usersProvider.notifier)
+          .updateUserStatus(user.id, newStatus, reason.isEmpty ? null : reason);
+      messenger.showSuccess('"${user.username}" has been $pastTense');
+    } catch (e) {
+      messenger.showError(
+        'Could not update "${user.username}": ${friendlyError(e)}',
+      );
+    }
   }
 }

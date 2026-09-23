@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 
 final appReleasesProvider = FutureProvider<List<AppRelease>>((ref) async {
   final repository = AdminRepository();
@@ -10,9 +12,9 @@ final appReleasesProvider = FutureProvider<List<AppRelease>>((ref) async {
 
 final appReleasesByPlatformProvider =
     FutureProvider.family<List<AppRelease>, String>((ref, platform) async {
-  final repository = AdminRepository();
-  return repository.getAppReleasesByPlatform(platform);
-});
+      final repository = AdminRepository();
+      return repository.getAppReleasesByPlatform(platform);
+    });
 
 class AppReleasesPage extends ConsumerStatefulWidget {
   const AppReleasesPage({super.key});
@@ -37,14 +39,10 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
       ref.invalidate(appReleasesProvider);
       ref.invalidate(appReleasesByPlatformProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Release published successfully')),
-      );
+      AppFeedback.success(context, 'Release published successfully');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      AppFeedback.error(context, e);
     }
   }
 
@@ -54,14 +52,10 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
       ref.invalidate(appReleasesProvider);
       ref.invalidate(appReleasesByPlatformProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Release unpublished successfully')),
-      );
+      AppFeedback.success(context, 'Release unpublished successfully');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      AppFeedback.error(context, e);
     }
   }
 
@@ -70,8 +64,9 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Release'),
-        content:
-            Text('Are you sure you want to delete ${release.versionName}?'),
+        content: Text(
+          'Are you sure you want to delete ${release.versionName}?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -79,7 +74,10 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(
+              'Delete',
+              style: TextStyle(color: context.colors.error),
+            ),
           ),
         ],
       ),
@@ -92,14 +90,10 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
       ref.invalidate(appReleasesProvider);
       ref.invalidate(appReleasesByPlatformProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Release deleted successfully')),
-      );
+      AppFeedback.success(context, 'Release deleted successfully');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      AppFeedback.error(context, e);
     }
   }
 
@@ -111,6 +105,7 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: buildAdminMenuButton(context),
         title: const Text('App Releases'),
         actions: [
           Padding(
@@ -123,86 +118,96 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Platform filter
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Row(
-                children: [
-                  const Text('Filter by Platform:'),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButton<String?>(
-                      isExpanded: true,
-                      value: _selectedPlatform,
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('All Platforms'),
-                        ),
-                        const DropdownMenuItem(
-                          value: 'android',
-                          child: Text('🤖 Android'),
-                        ),
-                        const DropdownMenuItem(
-                          value: 'ios',
-                          child: Text('🍎 iOS'),
-                        ),
-                        const DropdownMenuItem(
-                          value: 'macos',
-                          child: Text('🖥️ macOS'),
-                        ),
-                        const DropdownMenuItem(
-                          value: 'windows',
-                          child: Text('🪟 Windows'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() => _selectedPlatform = value);
-                      },
+      body: ContentWidth(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // Platform filter
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Row(
+                  children: [
+                    const Text('Filter by Platform:'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButton<String?>(
+                        isExpanded: true,
+                        value: _selectedPlatform,
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('All Platforms'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 'android',
+                            child: Text('🤖 Android'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 'ios',
+                            child: Text('🍎 iOS'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 'macos',
+                            child: Text('🖥️ macOS'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 'windows',
+                            child: Text('🪟 Windows'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() => _selectedPlatform = value);
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            // Releases list
-            Expanded(
-              child: releasesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(
-                  child: Text('Error: $error'),
+                  ],
                 ),
-                data: (releases) {
-                  if (releases.isEmpty) {
-                    return const Center(
-                      child: Text('No releases found'),
-                    );
-                  }
-
-                  return ListView.builder(
-                    itemCount: releases.length,
-                    itemBuilder: (context, index) {
-                      final release = releases[index];
-                      return _buildReleaseCard(release);
-                    },
-                  );
-                },
               ),
-            ),
-          ],
+              // Releases list
+              Expanded(
+                child: releasesAsync.when(
+                  loading: () => const AppLoadingView(),
+                  error: (error, stack) => AppErrorView(
+                    error: error,
+                    onRetry: () => _selectedPlatform != null
+                        ? ref.invalidate(
+                            appReleasesByPlatformProvider(_selectedPlatform!),
+                          )
+                        : ref.invalidate(appReleasesProvider),
+                  ),
+                  data: (releases) {
+                    if (releases.isEmpty) {
+                      return const AppEmptyView(
+                        icon: Icons.system_update_outlined,
+                        title: 'No releases yet',
+                        message:
+                            'Publish a release to notify users of new app versions.',
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: releases.length,
+                      itemBuilder: (context, index) {
+                        final release = releases[index];
+                        return _buildReleaseCard(release);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildReleaseCard(AppRelease release) {
-    final statusColor =
-        release.isPublished ? Colors.green : Colors.orange;
-    final statusText =
-        release.isPublished ? 'Published' : 'Draft';
+    final statusColor = release.isPublished
+        ? context.status.success
+        : context.status.warning;
+    final statusText = release.isPublished ? 'Published' : 'Draft';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -226,8 +231,7 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                         children: [
                           Chip(
                             label: Text(release.platform),
-                            backgroundColor:
-                                Colors.blue.withAlpha(100),
+                            backgroundColor: context.status.info.withAlpha(100),
                           ),
                           const SizedBox(width: 8),
                           Chip(
@@ -235,9 +239,9 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                             backgroundColor: statusColor.withAlpha(100),
                           ),
                           if (release.isMandatory)
-                            const Chip(
+                            Chip(
                               label: Text('Mandatory'),
-                              backgroundColor: Colors.red,
+                              backgroundColor: context.colors.error,
                             ),
                         ],
                       ),
@@ -280,11 +284,14 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                     ),
                     PopupMenuItem(
                       onTap: () => _deleteRelease(release),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.delete, color: Colors.red),
+                          Icon(Icons.delete, color: context.colors.error),
                           SizedBox(width: 8),
-                          Text('Delete', style: TextStyle(color: Colors.red)),
+                          Text(
+                            'Delete',
+                            style: TextStyle(color: context.colors.error),
+                          ),
                         ],
                       ),
                     ),
@@ -300,9 +307,9 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
             const SizedBox(height: 8),
             Text(
               'Changelog:',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             Text(
               release.changelog,
@@ -361,59 +368,83 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                  DropdownButtonFormField(
-                    initialValue: platform,
-                    items: const [
-                      DropdownMenuItem(value: 'android', child: Text('🤖 Android')),
-                      DropdownMenuItem(value: 'ios', child: Text('🍎 iOS')),
-                      DropdownMenuItem(value: 'macos', child: Text('🖥️ macOS')),
-                      DropdownMenuItem(value: 'windows', child: Text('🪟 Windows')),
+                      DropdownButtonFormField(
+                        initialValue: platform,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'android',
+                            child: Text('🤖 Android'),
+                          ),
+                          DropdownMenuItem(value: 'ios', child: Text('🍎 iOS')),
+                          DropdownMenuItem(
+                            value: 'macos',
+                            child: Text('🖥️ macOS'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'windows',
+                            child: Text('🪟 Windows'),
+                          ),
+                        ],
+                        onChanged: (value) => platform = value ?? 'android',
+                        decoration: const InputDecoration(
+                          labelText: 'Platform',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: versionNameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Version Name (e.g. 1.0.0)',
+                        ),
+                        validator: (v) =>
+                            v?.isEmpty ?? true ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: versionCodeCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Version Code',
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (v) =>
+                            v?.isEmpty ?? true ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: titleCtrl,
+                        decoration: const InputDecoration(labelText: 'Title'),
+                        validator: (v) =>
+                            v?.isEmpty ?? true ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: changelogCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Changelog',
+                        ),
+                        maxLines: 3,
+                        validator: (v) =>
+                            v?.isEmpty ?? true ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: downloadUrlCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Download URL',
+                        ),
+                        validator: (v) =>
+                            v?.isEmpty ?? true ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 8),
+                      CheckboxListTile(
+                        value: isMandatory,
+                        onChanged: (v) =>
+                            setDialogState(() => isMandatory = v ?? false),
+                        title: const Text('Mandatory Update'),
+                      ),
+                      const SizedBox(height: 24),
                     ],
-                    onChanged: (value) => platform = value ?? 'android',
-                    decoration: const InputDecoration(labelText: 'Platform'),
                   ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: versionNameCtrl,
-                    decoration: const InputDecoration(labelText: 'Version Name (e.g. 1.0.0)'),
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: versionCodeCtrl,
-                    decoration: const InputDecoration(labelText: 'Version Code'),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(labelText: 'Title'),
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: changelogCtrl,
-                    decoration: const InputDecoration(labelText: 'Changelog'),
-                    maxLines: 3,
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: downloadUrlCtrl,
-                    decoration: const InputDecoration(labelText: 'Download URL'),
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  CheckboxListTile(
-                    value: isMandatory,
-                    onChanged: (v) =>
-                        setDialogState(() => isMandatory = v ?? false),
-                    title: const Text('Mandatory Update'),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
                 ),
               ),
             ),
@@ -453,19 +484,11 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                           ref.invalidate(appReleasesByPlatformProvider);
 
                           navigator.pop();
-                          scaffoldMessenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Release created successfully'),
-                              backgroundColor: Colors.green,
-                            ),
+                          scaffoldMessenger.showSuccess(
+                            'Release created successfully',
                           );
                         } catch (e) {
-                          scaffoldMessenger.showSnackBar(
-                            SnackBar(
-                              content: Text('❌ Error: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                          scaffoldMessenger.showError(e);
                         }
                       },
                       child: const Text('Create'),
@@ -480,15 +503,11 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
     );
   }
 
-  void _showEditReleaseDialog(
-    BuildContext context,
-    AppRelease release,
-  ) {
+  void _showEditReleaseDialog(BuildContext context, AppRelease release) {
     final formKey = GlobalKey<FormState>();
     final titleCtrl = TextEditingController(text: release.title);
     final changelogCtrl = TextEditingController(text: release.changelog);
-    final downloadUrlCtrl =
-        TextEditingController(text: release.downloadUrl);
+    final downloadUrlCtrl = TextEditingController(text: release.downloadUrl);
     bool isMandatory = release.isMandatory;
 
     showDialog(
@@ -505,41 +524,43 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
               ),
             ),
             body: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: titleCtrl,
-                    decoration: const InputDecoration(labelText: 'Title'),
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: changelogCtrl,
-                    decoration: const InputDecoration(labelText: 'Changelog'),
-                    maxLines: 3,
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: downloadUrlCtrl,
-                    decoration: const InputDecoration(labelText: 'Download URL'),
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  CheckboxListTile(
-                    value: isMandatory,
-                    onChanged: (v) =>
-                        setDialogState(() => isMandatory = v ?? false),
-                    title: const Text('Mandatory Update'),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: titleCtrl,
+                      decoration: const InputDecoration(labelText: 'Title'),
+                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: changelogCtrl,
+                      decoration: const InputDecoration(labelText: 'Changelog'),
+                      maxLines: 3,
+                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: downloadUrlCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Download URL',
+                      ),
+                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    CheckboxListTile(
+                      value: isMandatory,
+                      onChanged: (v) =>
+                          setDialogState(() => isMandatory = v ?? false),
+                      title: const Text('Mandatory Update'),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
+            ),
             bottomNavigationBar: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -568,24 +589,19 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                             isMandatory: isMandatory,
                           );
 
-                          await _repository.updateAppRelease(release.id, request);
+                          await _repository.updateAppRelease(
+                            release.id,
+                            request,
+                          );
                           ref.invalidate(appReleasesProvider);
                           ref.invalidate(appReleasesByPlatformProvider);
 
                           navigator.pop();
-                          scaffoldMessenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('✅ Release updated successfully'),
-                              backgroundColor: Colors.green,
-                            ),
+                          scaffoldMessenger.showSuccess(
+                            'Release updated successfully',
                           );
                         } catch (e) {
-                          scaffoldMessenger.showSnackBar(
-                            SnackBar(
-                              content: Text('❌ Error: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                          scaffoldMessenger.showError(e);
                         }
                       },
                       child: const Text('Update'),

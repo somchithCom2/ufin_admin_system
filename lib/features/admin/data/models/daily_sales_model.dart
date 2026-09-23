@@ -54,9 +54,10 @@ class DailySalesData {
       totalShopsActive: json['totalShopsActive'] as int? ?? 0,
       totalOrders: json['totalOrders'] as int? ?? 0,
       totalNetIncome: (json['totalNetIncome'] as num?)?.toDouble() ?? 0.0,
-      shopSales: (json['shopSales'] as List<dynamic>?)
-          ?.map((e) => ShopSalesData.fromJson(e as Map<String, dynamic>))
-          .toList() ??
+      shopSales:
+          (json['shopSales'] as List<dynamic>?)
+              ?.map((e) => ShopSalesData.fromJson(e as Map<String, dynamic>))
+              .toList() ??
           [],
     );
   }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class UpgradeRequestsPage extends ConsumerStatefulWidget {
   const UpgradeRequestsPage({super.key});
@@ -48,50 +49,52 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
         title: const Text('Upgrade Requests'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => _load(page: _currentPage),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Status filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              children: _statusFilters.map((f) {
-                final isSelected = _statusFilter == f.value;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(f.label),
-                    selected: isSelected,
-                    onSelected: (_) {
-                      setState(() => _statusFilter = f.value);
-                      _load();
-                    },
-                  ),
-                );
-              }).toList(),
+      body: ContentWidth(
+        child: Column(
+          children: [
+            // Status filter chips
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: _statusFilters.map((f) {
+                  final isSelected = _statusFilter == f.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(f.label),
+                      selected: isSelected,
+                      onSelected: (_) {
+                        setState(() => _statusFilter = f.value);
+                        _load();
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
 
-          // Content
-          Expanded(
-            child: state.isLoading && state.requests.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
-                ? _buildError(state.error!)
-                : state.requests.isEmpty
-                ? _buildEmpty()
-                : _buildList(state.requests, colorScheme),
-          ),
+            // Content
+            Expanded(
+              child: state.isLoading && state.requests.isEmpty
+                  ? const AppLoadingView()
+                  : state.error != null && state.requests.isEmpty
+                  ? _buildError(state.error!)
+                  : state.requests.isEmpty
+                  ? _buildEmpty()
+                  : _buildList(state.requests, colorScheme),
+            ),
 
-          // Pagination
-          if (state.totalPages > 1) _buildPagination(state),
-        ],
+            // Pagination
+            if (state.totalPages > 1) _buildPagination(state),
+          ],
+        ),
       ),
     );
   }
@@ -122,66 +125,40 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
     );
     if (confirmed == null) return;
 
-    final notifier = ref.read(upgradeRequestsProvider.notifier);
-    final success = approve
-        ? await notifier.approveRequest(request.id, reviewNote: confirmed)
-        : await notifier.rejectRequest(request.id, reviewNote: confirmed);
-
     if (!mounted) return;
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            approve
-                ? 'Request #${request.id} approved'
-                : 'Request #${request.id} rejected',
-          ),
-          backgroundColor: approve ? Colors.green : Colors.orange,
-        ),
+    final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(upgradeRequestsProvider.notifier);
+    try {
+      if (approve) {
+        await notifier.approveRequest(request.id, reviewNote: confirmed);
+      } else {
+        await notifier.rejectRequest(request.id, reviewNote: confirmed);
+      }
+      messenger.showSuccess(
+        approve
+            ? 'Request #${request.id} approved'
+            : 'Request #${request.id} rejected',
       );
-    } else {
-      final error = ref.read(upgradeRequestsProvider).error ?? 'Unknown error';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: Colors.red),
+    } catch (e) {
+      messenger.showError(
+        'Could not ${approve ? 'approve' : 'reject'} request #${request.id}: '
+        '${friendlyError(e)}',
       );
     }
   }
 
   Widget _buildError(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text(error, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => _load(page: _currentPage),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AppErrorView(
+      error: error,
+      onRetry: () => _load(page: _currentPage),
     );
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No upgrade requests',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-        ],
-      ),
+    return const AppEmptyView(
+      icon: Icons.upgrade_rounded,
+      title: 'No upgrade requests',
+      message: 'Requests from shops wanting to change plans will appear here.',
     );
   }
 
@@ -221,7 +198,7 @@ Future<String?> _showReviewDialog(
   final controller = TextEditingController(text: initialNote);
   final title = approve ? 'Approve Request' : 'Reject Request';
   final actionLabel = approve ? 'Approve' : 'Reject';
-  final actionColor = approve ? Colors.green : Colors.red;
+  final actionColor = approve ? context.status.success : context.colors.error;
 
   return showDialog<String>(
     context: context,
@@ -247,14 +224,13 @@ Future<String?> _showReviewDialog(
           Text(
             '${request.fromPlanName['en'] ?? request.fromPlanCode} → '
             '${request.toPlanName['en'] ?? request.toPlanCode}',
-            style: const TextStyle(color: Colors.black54),
+            style: TextStyle(color: context.colors.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: controller,
             decoration: const InputDecoration(
               labelText: 'Review note (optional)',
-              border: OutlineInputBorder(),
             ),
             maxLines: 3,
           ),
@@ -290,7 +266,6 @@ class _RequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isPending = request.status == 'PENDING';
-    final statusColor = _statusColor(request.status);
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
     return Card(
@@ -311,7 +286,7 @@ class _RequestCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                _StatusChip(status: request.status, color: statusColor),
+                StatusBadge.fromStatus(request.status),
               ],
             ),
             const SizedBox(height: 8),
@@ -321,7 +296,7 @@ class _RequestCard extends StatelessWidget {
               children: [
                 _PlanBadge(
                   label: request.fromPlanName['en'] ?? request.fromPlanCode,
-                  color: Colors.grey,
+                  color: context.status.neutral,
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8),
@@ -329,7 +304,7 @@ class _RequestCard extends StatelessWidget {
                 ),
                 _PlanBadge(
                   label: request.toPlanName['en'] ?? request.toPlanCode,
-                  color: Colors.blue,
+                  color: context.status.info,
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -338,7 +313,7 @@ class _RequestCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: context.colors.surfaceContainer,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -387,7 +362,7 @@ class _RequestCard extends StatelessWidget {
                     icon: const Icon(Icons.close, size: 16),
                     label: const Text('Reject'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
+                      foregroundColor: context.colors.error,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -396,7 +371,7 @@ class _RequestCard extends StatelessWidget {
                     icon: const Icon(Icons.check, size: 16),
                     label: const Text('Approve'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: context.status.success,
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -404,46 +379,6 @@ class _RequestCard extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'PENDING':
-        return Colors.orange;
-      case 'APPROVED':
-        return Colors.green;
-      case 'REJECTED':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  final String status;
-  final Color color;
-
-  const _StatusChip({required this.status, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -490,12 +425,15 @@ class _MetaRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: Colors.grey[500]),
+          Icon(icon, size: 14, color: context.colors.onSurfaceVariant),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+              style: TextStyle(
+                fontSize: 13,
+                color: context.colors.onSurfaceVariant,
+              ),
             ),
           ),
         ],

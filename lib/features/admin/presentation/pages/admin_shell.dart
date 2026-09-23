@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/dashboard_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shops_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/users_page.dart';
@@ -20,24 +21,119 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/system_confi
 /// Global scaffold key for drawer access
 final adminScaffoldKey = GlobalKey<ScaffoldState>();
 
-/// Navigation item model
-class _NavItem {
-  final int index;
+/// Sections of the admin console. Order defines the sidebar order.
+enum AdminSection {
+  dashboard(
+    'Dashboard',
+    Icons.space_dashboard_outlined,
+    Icons.space_dashboard_rounded,
+    null,
+  ),
+  shops(
+    'Shops',
+    Icons.storefront_outlined,
+    Icons.storefront_rounded,
+    'Management',
+  ),
+  users('Users', Icons.people_outline_rounded, Icons.people_rounded, null),
+  shopTypes(
+    'Shop Types',
+    Icons.category_outlined,
+    Icons.category_rounded,
+    null,
+  ),
+  units('Units', Icons.straighten_outlined, Icons.straighten_rounded, null),
+  deletedUsers(
+    'Deleted Users',
+    Icons.person_remove_outlined,
+    Icons.person_remove_rounded,
+    null,
+  ),
+  subscriptions(
+    'Subscriptions',
+    Icons.card_membership_outlined,
+    Icons.card_membership_rounded,
+    'Subscriptions',
+  ),
+  plans('Plans', Icons.inventory_2_outlined, Icons.inventory_2_rounded, null),
+  upgradeRequests(
+    'Upgrade Requests',
+    Icons.upgrade_outlined,
+    Icons.upgrade_rounded,
+    null,
+  ),
+  statistics(
+    'Statistics',
+    Icons.analytics_outlined,
+    Icons.analytics_rounded,
+    null,
+  ),
+  payments(
+    'Payments',
+    Icons.payments_outlined,
+    Icons.payments_rounded,
+    'Finance',
+  ),
+  revenue(
+    'Revenue Report',
+    Icons.bar_chart_outlined,
+    Icons.bar_chart_rounded,
+    null,
+  ),
+  dailySales(
+    'Daily Sales',
+    Icons.trending_up_outlined,
+    Icons.trending_up_rounded,
+    null,
+  ),
+  appReleases(
+    'App Releases',
+    Icons.system_update_outlined,
+    Icons.system_update_rounded,
+    'System',
+  ),
+  systemConfig(
+    'System Config',
+    Icons.settings_outlined,
+    Icons.settings_rounded,
+    null,
+  );
+
   final String label;
   final IconData icon;
   final IconData selectedIcon;
-  final String? section;
 
-  const _NavItem({
-    required this.index,
-    required this.label,
-    required this.icon,
-    required this.selectedIcon,
-    this.section,
-  });
+  /// Group header shown above this item; `null` continues the previous group.
+  final String? group;
+
+  const AdminSection(this.label, this.icon, this.selectedIcon, this.group);
+
+  Widget buildPage() => switch (this) {
+    AdminSection.dashboard => const DashboardPage(),
+    AdminSection.shops => const ShopsPage(),
+    AdminSection.users => const UsersPage(),
+    AdminSection.shopTypes => const ShopTypePage(),
+    AdminSection.units => const UnitsPage(),
+    AdminSection.deletedUsers => const DeletedUsersPage(),
+    AdminSection.subscriptions => const SubscriptionsListPage(),
+    AdminSection.plans => const PlansPage(),
+    AdminSection.upgradeRequests => const UpgradeRequestsPage(),
+    AdminSection.statistics => const StatisticsPage(),
+    AdminSection.payments => const PaymentsPage(),
+    AdminSection.revenue => const RevenueReportPage(),
+    AdminSection.dailySales => const DailySalesPage(),
+    AdminSection.appReleases => const AppReleasesPage(),
+    AdminSection.systemConfig => const SystemConfigurationPage(),
+  };
 }
 
-/// Main admin shell with drawer navigation
+/// Currently selected admin section. Pages can write to it to cross-link
+/// (e.g. dashboard tiles jumping to Shops).
+final adminSectionProvider = StateProvider.autoDispose<AdminSection>(
+  (ref) => AdminSection.dashboard,
+);
+
+/// Main admin shell: persistent sidebar on wide screens, drawer on mobile.
 class AdminShell extends ConsumerStatefulWidget {
   const AdminShell({super.key});
 
@@ -46,393 +142,340 @@ class AdminShell extends ConsumerStatefulWidget {
 }
 
 class _AdminShellState extends ConsumerState<AdminShell> {
-  int _currentIndex = 0;
+  /// Pages are built on first visit and then kept alive so filters,
+  /// scroll positions and loaded data survive switching sections.
+  final Map<AdminSection, Widget> _visited = {};
 
-  final List<Widget> _pages = const [
-    DashboardPage(),
-    ShopsPage(),
-    UsersPage(),
-    ShopTypePage(),
-    SubscriptionsListPage(),
-    PlansPage(),
-    PaymentsPage(),
-    StatisticsPage(),
-    RevenueReportPage(),
-    UpgradeRequestsPage(),
-    DeletedUsersPage(),
-    UnitsPage(),
-    AppReleasesPage(),
-    SystemConfigurationPage(),
-    DailySalesPage(),
-  ];
+  Future<void> _confirmLogout() async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'Sign out?',
+      message: 'You will need to sign in again to access the admin console.',
+      confirmLabel: 'Sign out',
+      icon: Icons.logout_rounded,
+      destructive: true,
+    );
+    if (ok && mounted) {
+      ref.read(authStateProvider.notifier).logout();
+    }
+  }
 
-  final List<_NavItem> _navItems = const [
-    // Main
-    _NavItem(
-      index: 0,
-      label: 'Dashboard',
-      icon: Icons.dashboard_outlined,
-      selectedIcon: Icons.dashboard,
-    ),
-    // Management
-    _NavItem(
-      index: 1,
-      label: 'Shops',
-      icon: Icons.storefront_outlined,
-      selectedIcon: Icons.storefront,
-      section: 'Management',
-    ),
-    _NavItem(
-      index: 2,
-      label: 'Users',
-      icon: Icons.people_outline,
-      selectedIcon: Icons.people,
-    ),
-    _NavItem(
-      index: 3,
-      label: 'Shop Types',
-      icon: Icons.category_outlined,
-      selectedIcon: Icons.category,
-    ),
-    _NavItem(
-      index: 11,
-      label: 'Units',
-      icon: Icons.straighten_outlined,
-      selectedIcon: Icons.straighten,
-    ),
-    _NavItem(
-      index: 10,
-      label: 'Deleted Users',
-      icon: Icons.person_remove_outlined,
-      selectedIcon: Icons.person_remove,
-    ),
-    // Subscriptions
-    _NavItem(
-      index: 4,
-      label: 'Subscriptions',
-      icon: Icons.card_membership_outlined,
-      selectedIcon: Icons.card_membership,
-      section: 'Subscriptions',
-    ),
-    _NavItem(
-      index: 5,
-      label: 'Plans',
-      icon: Icons.inventory_2_outlined,
-      selectedIcon: Icons.inventory_2,
-    ),
-    _NavItem(
-      index: 9,
-      label: 'Upgrade Requests',
-      icon: Icons.upgrade_outlined,
-      selectedIcon: Icons.upgrade,
-    ),
-    _NavItem(
-      index: 7,
-      label: 'Statistics',
-      icon: Icons.analytics_outlined,
-      selectedIcon: Icons.analytics,
-    ),
-    // Finance
-    _NavItem(
-      index: 6,
-      label: 'Payments',
-      icon: Icons.payment_outlined,
-      selectedIcon: Icons.payment,
-      section: 'Finance',
-    ),
-    _NavItem(
-      index: 8,
-      label: 'Revenue Report',
-      icon: Icons.bar_chart_outlined,
-      selectedIcon: Icons.bar_chart,
-    ),
-    _NavItem(
-      index: 14,
-      label: 'Daily Sales',
-      icon: Icons.trending_up_outlined,
-      selectedIcon: Icons.trending_up,
-    ),
-    // System
-    _NavItem(
-      index: 12,
-      label: 'App Releases',
-      icon: Icons.app_registration_outlined,
-      selectedIcon: Icons.app_registration,
-      section: 'System',
-    ),
-    _NavItem(
-      index: 13,
-      label: 'System Config',
-      icon: Icons.settings_outlined,
-      selectedIcon: Icons.settings,
-    ),
-  ];
+  void _select(AdminSection section, {bool closeDrawer = false}) {
+    if (closeDrawer) adminScaffoldKey.currentState?.closeDrawer();
+    ref.read(adminSectionProvider.notifier).state = section;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
-    final isWideScreen = MediaQuery.of(context).size.width >= 800;
-    final colorScheme = Theme.of(context).colorScheme;
+    final current = ref.watch(adminSectionProvider);
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = width >= AppSpacing.tabletBreakpoint;
+    final isExtended = width >= AppSpacing.desktopBreakpoint;
 
-    Widget buildDrawerContent() {
-      return Column(
-        children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.fromLTRB(
-              16,
-              MediaQuery.of(context).padding.top + 16,
-              16,
-              16,
-            ),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: colorScheme.primary,
-                  child: Text(
-                    authState.username?.substring(0, 1).toUpperCase() ?? 'A',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  authState.username ?? 'Admin',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Administrator',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Navigation items
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: _buildNavItems(colorScheme),
-            ),
-          ),
-          // Logout
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
-            onTap: () {
-              ref.read(authStateProvider.notifier).logout();
-            },
-          ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
-        ],
-      );
-    }
+    _visited.putIfAbsent(current, current.buildPage);
+    final sections = _visited.keys.toList(growable: false);
+    final body = IndexedStack(
+      index: sections.indexOf(current),
+      children: [
+        for (final s in sections)
+          // TickerMode pauses animations on hidden pages.
+          TickerMode(enabled: s == current, child: _visited[s]!),
+      ],
+    );
 
-    if (isWideScreen) {
-      // Desktop/Tablet: Persistent side drawer
-      final isExtended = MediaQuery.of(context).size.width >= 1100;
-
+    if (isWide) {
+      final scheme = Theme.of(context).colorScheme;
       return Scaffold(
         body: Row(
           children: [
-            // Side drawer
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: isExtended ? 260 : 72,
-              child: Material(
-                color: colorScheme.surface,
-                elevation: 1,
-                child: isExtended
-                    ? buildDrawerContent()
-                    : _buildCompactRail(colorScheme, authState),
+              curve: Curves.easeOutCubic,
+              width: isExtended ? 264 : 76,
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                border: Border(right: BorderSide(color: scheme.outlineVariant)),
+              ),
+              child: _Sidebar(
+                current: current,
+                compact: !isExtended,
+                onSelect: _select,
+                onLogout: _confirmLogout,
               ),
             ),
-            // Content
-            Expanded(
-              child: Container(
-                color: colorScheme.surfaceContainerLowest,
-                child: _pages[_currentIndex],
-              ),
-            ),
+            Expanded(child: body),
           ],
         ),
       );
     }
 
-    // Mobile: Use drawer with global key
     return Scaffold(
       key: adminScaffoldKey,
-      drawer: Drawer(child: buildDrawerContent()),
-      body: _pages[_currentIndex],
+      drawer: Drawer(
+        width: 288,
+        child: _Sidebar(
+          current: current,
+          compact: false,
+          onSelect: (s) => _select(s, closeDrawer: true),
+          onLogout: () {
+            adminScaffoldKey.currentState?.closeDrawer();
+            _confirmLogout();
+          },
+        ),
+      ),
+      body: body,
     );
   }
+}
 
-  Widget _buildCompactRail(ColorScheme colorScheme, AuthState authState) {
-    return Column(
-      children: [
-        // Avatar
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            0,
-            MediaQuery.of(context).padding.top + 16,
-            0,
-            16,
-          ),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundColor: colorScheme.primary,
-            child: Text(
-              authState.username?.substring(0, 1).toUpperCase() ?? 'A',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onPrimary,
-              ),
-            ),
-          ),
-        ),
-        const Divider(height: 1),
-        // Nav items
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            children: _navItems.map((item) {
-              final isSelected = _currentIndex == item.index;
-              return Tooltip(
-                message: item.label,
-                preferBelow: false,
-                waitDuration: const Duration(milliseconds: 500),
-                child: InkWell(
-                  onTap: () => setState(() => _currentIndex = item.index),
-                  child: Container(
-                    height: 56,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? colorScheme.primaryContainer
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      isSelected ? item.selectedIcon : item.icon,
-                      color: isSelected
-                          ? colorScheme.onPrimaryContainer
-                          : colorScheme.onSurfaceVariant,
+class _Sidebar extends ConsumerWidget {
+  final AdminSection current;
+  final bool compact;
+  final ValueChanged<AdminSection> onSelect;
+  final VoidCallback onLogout;
+
+  const _Sidebar({
+    required this.current,
+    required this.compact,
+    required this.onSelect,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authStateProvider);
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final padding = MediaQuery.paddingOf(context);
+
+    final items = <Widget>[];
+    for (final s in AdminSection.values) {
+      if (s.group != null) {
+        items.add(
+          compact
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+                  child: Divider(),
+                )
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 16, 6),
+                  child: Text(
+                    s.group!.toUpperCase(),
+                    style: textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
                     ),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        ),
-        const Divider(height: 1),
-        // Logout
-        Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).padding.bottom + 16,
-            top: 8,
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: () {
-              ref.read(authStateProvider.notifier).logout();
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildNavItems(ColorScheme colorScheme) {
-    final List<Widget> widgets = [];
-    String? currentSection;
-
-    for (final item in _navItems) {
-      // Add section header if new section
-      if (item.section != null && item.section != currentSection) {
-        currentSection = item.section;
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              item.section!.toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurfaceVariant,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
         );
       }
-
-      final isSelected = _currentIndex == item.index;
-      widgets.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-          child: ListTile(
-            dense: true,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            selected: isSelected,
-            selectedTileColor: colorScheme.primaryContainer,
-            leading: Icon(
-              isSelected ? item.selectedIcon : item.icon,
-              color: isSelected
-                  ? colorScheme.onPrimaryContainer
-                  : colorScheme.onSurfaceVariant,
-              size: 22,
-            ),
-            title: Text(
-              item.label,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onSurface,
-              ),
-            ),
-            onTap: () {
-              setState(() => _currentIndex = item.index);
-              // Close drawer on mobile
-              if (MediaQuery.of(context).size.width < 800) {
-                Navigator.of(context).pop();
-              }
-            },
-          ),
+      items.add(
+        _NavTile(
+          section: s,
+          selected: s == current,
+          compact: compact,
+          onTap: () => onSelect(s),
         ),
       );
     }
 
-    return widgets;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Brand
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 0 : 20,
+            padding.top + 18,
+            compact ? 0 : 16,
+            14,
+          ),
+          child: compact
+              ? const Center(child: AppLogo(size: 36))
+              : Row(
+                  children: [
+                    const AppLogo(size: 36),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'UFin Admin',
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            'Control center',
+                            style: textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 12),
+            children: items,
+          ),
+        ),
+        const Divider(),
+        // Account
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 0 : 12,
+            10,
+            compact ? 0 : 8,
+            padding.bottom + 12,
+          ),
+          child: compact
+              ? Column(
+                  children: [
+                    Tooltip(
+                      message: auth.username ?? 'Admin',
+                      child: InitialAvatar(name: auth.username),
+                    ),
+                    const SizedBox(height: 8),
+                    IconButton(
+                      tooltip: 'Sign out',
+                      icon: const Icon(Icons.logout_rounded, size: 20),
+                      onPressed: onLogout,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    InitialAvatar(name: auth.username),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            auth.username ?? 'Admin',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            humanize(auth.role ?? 'Administrator'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Sign out',
+                      icon: const Icon(Icons.logout_rounded, size: 20),
+                      onPressed: onLogout,
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NavTile extends StatelessWidget {
+  final AdminSection section;
+  final bool selected;
+  final bool compact;
+  final VoidCallback onTap;
+
+  const _NavTile({
+    required this.section,
+    required this.selected,
+    required this.compact,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = selected ? scheme.primary : scheme.onSurfaceVariant;
+    final bg = selected
+        ? scheme.primary.withValues(alpha: 0.10)
+        : Colors.transparent;
+
+    final tile = Padding(
+      padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 12, vertical: 1),
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm + 2),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm + 2),
+          onTap: onTap,
+          child: SizedBox(
+            height: 42,
+            child: compact
+                ? Icon(
+                    selected ? section.selectedIcon : section.icon,
+                    color: fg,
+                    size: 22,
+                  )
+                : Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Icon(
+                        selected ? section.selectedIcon : section.icon,
+                        color: fg,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          section.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: selected ? scheme.primary : scheme.onSurface,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+
+    return Semantics(
+      selected: selected,
+      button: true,
+      label: section.label,
+      child: compact
+          ? Tooltip(message: section.label, preferBelow: false, child: tile)
+          : tile,
+    );
   }
 }
 
 /// Helper widget to build AppBar leading menu button for mobile
 Widget? buildAdminMenuButton(BuildContext context) {
-  final isWideScreen = MediaQuery.of(context).size.width >= 800;
+  final isWideScreen =
+      MediaQuery.sizeOf(context).width >= AppSpacing.tabletBreakpoint;
   if (isWideScreen) return null;
 
   return IconButton(
-    icon: const Icon(Icons.menu),
+    tooltip: 'Menu',
+    icon: const Icon(Icons.menu_rounded),
     onPressed: () {
       adminScaffoldKey.currentState?.openDrawer();
     },

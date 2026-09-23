@@ -90,8 +90,12 @@ class AdminProduct {
           : null,
       imageUrl: json['imageUrl'] as String?,
       thumbnailUrl: json['thumbnailUrl'] as String?,
-      categoryName: category != null ? category['name'] as String? : json['categoryName'] as String?,
-      categoryId: category != null ? category['id'] as int? : json['categoryId'] as int?,
+      categoryName: category != null
+          ? category['name'] as String?
+          : json['categoryName'] as String?,
+      categoryId: category != null
+          ? category['id'] as int?
+          : json['categoryId'] as int?,
       baseUnitId: json['baseUnitId'] as int?,
       baseUnitCode: json['baseUnitCode'] as String?,
       baseUnitName: json['baseUnitName'] as String?,

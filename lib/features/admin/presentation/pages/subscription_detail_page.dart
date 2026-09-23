@@ -6,6 +6,7 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_history_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/change_plan_page.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class SubscriptionDetailPage extends ConsumerStatefulWidget {
   final AdminSubscription subscription;
@@ -35,9 +36,7 @@ class _SubscriptionDetailPageState
       if (mounted) setState(() => _subscription = value);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        AppFeedback.error(context, e);
       }
     }
   }
@@ -70,7 +69,8 @@ class _SubscriptionDetailPageState
             onPressed: () => _navigateToHistory(),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: _refreshSubscription,
           ),
         ],
@@ -175,7 +175,7 @@ class _SubscriptionDetailPageState
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
+                      color: context.status.warningContainer,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Row(
@@ -183,13 +183,13 @@ class _SubscriptionDetailPageState
                         Icon(
                           Icons.warning_amber,
                           size: 14,
-                          color: Colors.orange.shade700,
+                          color: context.status.warning,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '$daysLeft days left',
                           style: TextStyle(
-                            color: Colors.orange.shade700,
+                            color: context.status.warning,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -216,7 +216,7 @@ class _SubscriptionDetailPageState
                   ? dateFormat.format(_subscription.expiresAt!)
                   : 'N/A',
               isExpired ? Icons.error : Icons.event,
-              valueColor: isExpired ? Colors.red : null,
+              valueColor: isExpired ? context.colors.error : null,
             ),
             if (!isExpired) ...[
               const SizedBox(height: 12),
@@ -224,7 +224,9 @@ class _SubscriptionDetailPageState
                 'Days Remaining',
                 '$daysLeft days',
                 Icons.timer,
-                valueColor: isExpiringSoon ? Colors.orange : Colors.green,
+                valueColor: isExpiringSoon
+                    ? context.status.warning
+                    : context.status.success,
               ),
             ],
           ],
@@ -283,7 +285,7 @@ class _SubscriptionDetailPageState
           children: [
             Row(
               children: [
-                const Icon(Icons.analytics, color: Colors.blue),
+                Icon(Icons.analytics, color: context.status.info),
                 const SizedBox(width: 8),
                 Text(
                   'Usage',
@@ -327,15 +329,18 @@ class _SubscriptionDetailPageState
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: Colors.grey[600]),
+            Icon(icon, size: 18, color: context.colors.onSurfaceVariant),
             const SizedBox(width: 8),
-            Text(label, style: TextStyle(color: Colors.grey[600])),
+            Text(
+              label,
+              style: TextStyle(color: context.colors.onSurfaceVariant),
+            ),
             const Spacer(),
             Text(
               '$current / ${isUnlimited ? '∞' : max}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isNearLimit ? Colors.orange : null,
+                color: isNearLimit ? context.status.warning : null,
               ),
             ),
           ],
@@ -344,9 +349,9 @@ class _SubscriptionDetailPageState
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: percentage,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: context.colors.surfaceContainerHigh,
             valueColor: AlwaysStoppedAnimation(
-              isNearLimit ? Colors.orange : Colors.blue,
+              isNearLimit ? context.status.warning : context.status.info,
             ),
           ),
         ],
@@ -371,7 +376,7 @@ class _SubscriptionDetailPageState
               child: _buildActionCard(
                 'Extend',
                 Icons.add_circle_outline,
-                Colors.green,
+                context.status.success,
                 () => _showExtendDialog(),
               ),
             ),
@@ -380,7 +385,7 @@ class _SubscriptionDetailPageState
               child: _buildActionCard(
                 'Reduce',
                 Icons.remove_circle_outline,
-                Colors.orange,
+                context.status.warning,
                 () => _showReduceDialog(),
               ),
             ),
@@ -405,8 +410,8 @@ class _SubscriptionDetailPageState
           child: Column(
             children: [
               ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.blue,
+                leading: CircleAvatar(
+                  backgroundColor: context.status.info,
                   child: Icon(Icons.swap_horiz, color: Colors.white),
                 ),
                 title: const Text('Change Plan'),
@@ -470,9 +475,9 @@ class _SubscriptionDetailPageState
   }) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
+        Icon(icon, size: 18, color: context.colors.onSurfaceVariant),
         const SizedBox(width: 8),
-        Text(label, style: TextStyle(color: Colors.grey[600])),
+        Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
         const Spacer(),
         Text(
           value,
@@ -483,18 +488,7 @@ class _SubscriptionDetailPageState
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'trial':
-        return Colors.blue;
-      case 'expired':
-        return Colors.red;
-      case 'cancelled':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
+    return StatusTone.fromStatus(status).foreground(context);
   }
 
   void _navigateToHistory() {
@@ -535,19 +529,13 @@ class _SubscriptionDetailPageState
           children: [
             TextField(
               controller: daysController,
-              decoration: const InputDecoration(
-                labelText: 'Days to extend',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Days to extend'),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Reason (optional)',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Reason (optional)'),
               maxLines: 2,
             ),
           ],
@@ -572,21 +560,18 @@ class _SubscriptionDetailPageState
                           : null,
                     );
                 if (pageContext.mounted) {
-                  ScaffoldMessenger.of(pageContext).showSnackBar(
-                    SnackBar(
-                      content: Text('Extended subscription by $days days'),
-                      backgroundColor: Colors.green,
-                    ),
+                  AppFeedback.success(
+                    pageContext,
+                    'Extended subscription by $days days',
                   );
                   _refreshSubscription();
                 }
               } catch (e) {
                 if (pageContext.mounted) {
-                  ScaffoldMessenger.of(pageContext).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to extend subscription: $e'),
-                      backgroundColor: Colors.red,
-                    ),
+                  AppFeedback.show(
+                    pageContext,
+                    'Failed to extend subscription: ${friendlyError(e)}',
+                    kind: FeedbackKind.error,
                   );
                 }
               }
@@ -608,7 +593,7 @@ class _SubscriptionDetailPageState
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.remove_circle_outline, color: Colors.orange[700]),
+            Icon(Icons.remove_circle_outline, color: context.status.warning),
             const SizedBox(width: 8),
             const Text('Reduce Subscription'),
           ],
@@ -619,18 +604,18 @@ class _SubscriptionDetailPageState
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
+                color: context.status.warningContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                  Icon(Icons.warning_amber, color: context.status.warning),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Cannot reduce below current date',
                       style: TextStyle(
-                        color: Colors.orange.shade700,
+                        color: context.status.warning,
                         fontSize: 12,
                       ),
                     ),
@@ -641,19 +626,13 @@ class _SubscriptionDetailPageState
             const SizedBox(height: 16),
             TextField(
               controller: daysController,
-              decoration: const InputDecoration(
-                labelText: 'Days to reduce',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Days to reduce'),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Reason (required)',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Reason (required)'),
               maxLines: 2,
             ),
           ],
@@ -666,12 +645,7 @@ class _SubscriptionDetailPageState
           FilledButton(
             onPressed: () async {
               if (reasonController.text.isEmpty) {
-                ScaffoldMessenger.of(pageContext).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please provide a reason'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
+                AppFeedback.warning(pageContext, 'Please provide a reason');
                 return;
               }
               Navigator.pop(dialogContext);
@@ -685,26 +659,25 @@ class _SubscriptionDetailPageState
                       reason: reasonController.text,
                     );
                 if (pageContext.mounted) {
-                  ScaffoldMessenger.of(pageContext).showSnackBar(
-                    SnackBar(
-                      content: Text('Reduced subscription by $days days'),
-                      backgroundColor: Colors.orange,
-                    ),
+                  AppFeedback.success(
+                    pageContext,
+                    'Reduced subscription by $days days',
                   );
                   _refreshSubscription();
                 }
               } catch (e) {
                 if (pageContext.mounted) {
-                  ScaffoldMessenger.of(pageContext).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to reduce subscription: $e'),
-                      backgroundColor: Colors.red,
-                    ),
+                  AppFeedback.show(
+                    pageContext,
+                    'Failed to reduce subscription: ${friendlyError(e)}',
+                    kind: FeedbackKind.error,
                   );
                 }
               }
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.status.warning,
+            ),
             child: const Text('Reduce'),
           ),
         ],

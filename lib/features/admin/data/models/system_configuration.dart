@@ -36,17 +36,25 @@ class SystemConfiguration {
   factory SystemConfiguration.fromJson(Map<String, dynamic> json) {
     return SystemConfiguration(
       id: json['id'] as int,
-      isMaintenanceMode: json['is_maintenance_mode'] as bool? ?? json['maintenance_mode'] as bool? ?? false,
+      isMaintenanceMode:
+          json['is_maintenance_mode'] as bool? ??
+          json['maintenance_mode'] as bool? ??
+          false,
       maintenanceTitle: json['maintenance_title'] as String?,
       maintenanceMessage: json['maintenance_message'] as String?,
       expectedCompletionTime: json['expected_completion_time'] != null
           ? DateTime.parse(json['expected_completion_time'] as String)
           : null,
-      minSupportedAndroidVersion: json['min_supported_android_version'] as String? ?? '5.0',
-      minSupportedIosVersion: json['min_supported_ios_version'] as String? ?? '12.0',
-      minSupportedWebVersion: json['min_supported_web_version'] as String? ?? '1.0.0',
-      minSupportedWindowsVersion: json['min_supported_windows_version'] as String? ?? '10.0',
-      minSupportedMacosVersion: json['min_supported_macos_version'] as String? ?? '10.15',
+      minSupportedAndroidVersion:
+          json['min_supported_android_version'] as String? ?? '5.0',
+      minSupportedIosVersion:
+          json['min_supported_ios_version'] as String? ?? '12.0',
+      minSupportedWebVersion:
+          json['min_supported_web_version'] as String? ?? '1.0.0',
+      minSupportedWindowsVersion:
+          json['min_supported_windows_version'] as String? ?? '10.0',
+      minSupportedMacosVersion:
+          json['min_supported_macos_version'] as String? ?? '10.15',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
@@ -75,7 +83,8 @@ class SystemConfiguration {
     'updated_at': updatedAt.toIso8601String(),
     'updated_by': updatedBy,
     if (updateAvailable != null) 'update_available': updateAvailable,
-    if (forceUpdateRequired != null) 'force_update_required': forceUpdateRequired,
+    if (forceUpdateRequired != null)
+      'force_update_required': forceUpdateRequired,
   };
 }
 
@@ -107,7 +116,8 @@ class UpdateMaintenanceModeRequest {
     'is_maintenance_mode': isMaintenanceMode,
     if (maintenanceTitle != null) 'maintenance_title': maintenanceTitle,
     if (maintenanceMessage != null) 'maintenance_message': maintenanceMessage,
-    if (expectedCompletionTime != null) 'expected_completion_time': expectedCompletionTime!.toIso8601String(),
+    if (expectedCompletionTime != null)
+      'expected_completion_time': expectedCompletionTime!.toIso8601String(),
   };
 }
 
@@ -128,19 +138,26 @@ class UpdateSystemConfigRequest {
 
   factory UpdateSystemConfigRequest.fromJson(Map<String, dynamic> json) {
     return UpdateSystemConfigRequest(
-      minSupportedAndroidVersion: json['min_supported_android_version'] as String?,
+      minSupportedAndroidVersion:
+          json['min_supported_android_version'] as String?,
       minSupportedIosVersion: json['min_supported_ios_version'] as String?,
       minSupportedWebVersion: json['min_supported_web_version'] as String?,
-      minSupportedWindowsVersion: json['min_supported_windows_version'] as String?,
+      minSupportedWindowsVersion:
+          json['min_supported_windows_version'] as String?,
       minSupportedMacosVersion: json['min_supported_macos_version'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    if (minSupportedAndroidVersion != null) 'min_supported_android_version': minSupportedAndroidVersion,
-    if (minSupportedIosVersion != null) 'min_supported_ios_version': minSupportedIosVersion,
-    if (minSupportedWebVersion != null) 'min_supported_web_version': minSupportedWebVersion,
-    if (minSupportedWindowsVersion != null) 'min_supported_windows_version': minSupportedWindowsVersion,
-    if (minSupportedMacosVersion != null) 'min_supported_macos_version': minSupportedMacosVersion,
+    if (minSupportedAndroidVersion != null)
+      'min_supported_android_version': minSupportedAndroidVersion,
+    if (minSupportedIosVersion != null)
+      'min_supported_ios_version': minSupportedIosVersion,
+    if (minSupportedWebVersion != null)
+      'min_supported_web_version': minSupportedWebVersion,
+    if (minSupportedWindowsVersion != null)
+      'min_supported_windows_version': minSupportedWindowsVersion,
+    if (minSupportedMacosVersion != null)
+      'min_supported_macos_version': minSupportedMacosVersion,
   };
 }

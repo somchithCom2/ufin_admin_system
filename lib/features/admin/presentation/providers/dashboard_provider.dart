@@ -170,8 +170,9 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
       final request = UpdateShopStatusRequest(status: status, reason: reason);
       await _repository.updateShopStatus(shopId, request);
       loadShops(search: _search, status: _status); // Refresh list
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 }
@@ -316,8 +317,9 @@ class UsersNotifier extends StateNotifier<UsersState> {
         status: _status,
         userType: _userType,
       ); // Refresh list
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 
@@ -326,7 +328,6 @@ class UsersNotifier extends StateNotifier<UsersState> {
       final request = ResetUserPasswordRequest(newPassword: newPassword);
       await _repository.resetUserPassword(userId, request);
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow;
     }
   }
@@ -396,7 +397,6 @@ class DeletedUsersNotifier extends StateNotifier<DeletedUsersState> {
       await _repository.restoreUser(userId);
       loadDeletedUsers(); // Refresh list
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow;
     }
   }
@@ -538,7 +538,6 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
       await _repository.extendSubscription(shopId, request);
       await refresh(); // Refresh list and wait for completion
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
     }
   }
@@ -558,7 +557,6 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
       await _repository.reduceSubscription(shopId, request);
       await refresh(); // Refresh list and wait for completion
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
     }
   }
@@ -576,7 +574,6 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
       );
       await refresh(); // Refresh list and wait for completion
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
     }
   }
@@ -596,7 +593,6 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
       );
       await refresh(); // Refresh list and wait for completion
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
     }
   }
@@ -620,7 +616,6 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
       await _repository.changePlan(shopId, request);
       await refresh(); // Refresh list and wait for completion
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
     }
   }
@@ -642,7 +637,6 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
       await _repository.createSubscription(shopId, request);
       await refresh(); // Refresh list and wait for completion
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
     }
   }
@@ -662,7 +656,6 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
       await _repository.cancelSubscription(shopId, request);
       await refresh(); // Refresh list and wait for completion
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
     }
   }
@@ -682,7 +675,6 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
       await _repository.reactivateSubscription(shopId, request);
       await refresh(); // Refresh list and wait for completion
     } catch (e) {
-      state = state.copyWith(error: e.toString());
       rethrow; // Rethrow to allow caller to handle the error
     }
   }
@@ -854,8 +846,9 @@ class PlansNotifier extends StateNotifier<PlansState> {
     try {
       await _repository.activatePlan(planId);
       loadPlans(); // Refresh list
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 
@@ -863,8 +856,9 @@ class PlansNotifier extends StateNotifier<PlansState> {
     try {
       await _repository.deactivatePlan(planId);
       loadPlans(); // Refresh list
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 }
@@ -919,8 +913,9 @@ class PlanDetailNotifier extends StateNotifier<PlanDetailState> {
       await _repository.activatePlan(planId);
       loadPlan(planId); // Refresh
       _ref.read(plansProvider.notifier).loadPlans(); // Refresh list
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 
@@ -929,8 +924,9 @@ class PlanDetailNotifier extends StateNotifier<PlanDetailState> {
       await _repository.deactivatePlan(planId);
       loadPlan(planId); // Refresh
       _ref.read(plansProvider.notifier).loadPlans(); // Refresh list
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 
@@ -1037,7 +1033,7 @@ class ShopTypesNotifier extends StateNotifier<ShopTypesState> {
   }
 
   /// Toggle shop type enabled/disabled
-  Future<bool> toggleShopType(int id) async {
+  Future<void> toggleShopType(int id) async {
     try {
       final updated = await _repository.toggleShopType(id);
       // Update the item in the list without full reload
@@ -1046,10 +1042,9 @@ class ShopTypesNotifier extends StateNotifier<ShopTypesState> {
             .map((s) => s.id == id ? updated : s)
             .toList(),
       );
-      return true;
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      return false;
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 }
@@ -1368,7 +1363,7 @@ class UpgradeRequestsNotifier extends StateNotifier<UpgradeRequestsState> {
     }
   }
 
-  Future<bool> approveRequest(int requestId, {String? reviewNote}) async {
+  Future<void> approveRequest(int requestId, {String? reviewNote}) async {
     try {
       final body = ReviewUpgradeRequestBody(reviewNote: reviewNote);
       final updated = await _repository.approveUpgradeRequest(requestId, body);
@@ -1377,14 +1372,13 @@ class UpgradeRequestsNotifier extends StateNotifier<UpgradeRequestsState> {
             .map((r) => r.id == requestId ? updated : r)
             .toList(),
       );
-      return true;
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      return false;
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 
-  Future<bool> rejectRequest(int requestId, {String? reviewNote}) async {
+  Future<void> rejectRequest(int requestId, {String? reviewNote}) async {
     try {
       final body = ReviewUpgradeRequestBody(reviewNote: reviewNote);
       final updated = await _repository.rejectUpgradeRequest(requestId, body);
@@ -1393,10 +1387,9 @@ class UpgradeRequestsNotifier extends StateNotifier<UpgradeRequestsState> {
             .map((r) => r.id == requestId ? updated : r)
             .toList(),
       );
-      return true;
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      return false;
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 }

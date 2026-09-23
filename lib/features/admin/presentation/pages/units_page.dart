@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class UnitsPage extends ConsumerStatefulWidget {
   const UnitsPage({super.key});
@@ -47,7 +48,8 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
         title: const Text('Units'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(unitsProvider.notifier).loadUnits(),
           ),
         ],
@@ -57,19 +59,25 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
         icon: const Icon(Icons.add),
         label: const Text('Add Unit'),
       ),
-      body: Column(
-        children: [
-          _buildFilterBar(unitsState),
-          Expanded(
-            child: unitsState.isLoading && unitsState.units.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : unitsState.error != null && unitsState.units.isEmpty
-                    ? _buildErrorView(unitsState.error!)
-                    : unitsState.units.isEmpty
-                        ? const Center(child: Text('No units found'))
-                        : _buildUnitsList(unitsState),
-          ),
-        ],
+      body: ContentWidth(
+        child: Column(
+          children: [
+            _buildFilterBar(unitsState),
+            Expanded(
+              child: unitsState.isLoading && unitsState.units.isEmpty
+                  ? const AppLoadingView()
+                  : unitsState.error != null && unitsState.units.isEmpty
+                  ? _buildErrorView(unitsState.error!)
+                  : unitsState.units.isEmpty
+                  ? const AppEmptyView(
+                      icon: Icons.straighten_outlined,
+                      title: 'No units found',
+                      message: 'Try a different filter or add a new unit.',
+                    )
+                  : _buildUnitsList(unitsState),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -97,8 +105,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   child: FilterChip(
                     label: const Text('All'),
                     selected: state.categoryFilter == null,
-                    onSelected: (_) =>
-                        ref.read(unitsProvider.notifier).setCategoryFilter(null),
+                    onSelected: (_) => ref
+                        .read(unitsProvider.notifier)
+                        .setCategoryFilter(null),
                   ),
                 ),
                 ...categories.map(
@@ -126,7 +135,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   selected: state.isActiveFilter == true,
                   onSelected: (_) => ref
                       .read(unitsProvider.notifier)
-                      .setActiveFilter(state.isActiveFilter == true ? null : true),
+                      .setActiveFilter(
+                        state.isActiveFilter == true ? null : true,
+                      ),
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
@@ -134,7 +145,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   selected: state.isActiveFilter == false,
                   onSelected: (_) => ref
                       .read(unitsProvider.notifier)
-                      .setActiveFilter(state.isActiveFilter == false ? null : false),
+                      .setActiveFilter(
+                        state.isActiveFilter == false ? null : false,
+                      ),
                 ),
               ],
             ),
@@ -145,21 +158,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(error),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => ref.read(unitsProvider.notifier).loadUnits(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
-        ],
-      ),
+    return AppErrorView(
+      error: error,
+      onRetry: () => ref.read(unitsProvider.notifier).loadUnits(),
     );
   }
 
@@ -199,11 +200,13 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: unit.isActive
-                ? Colors.green.withValues(alpha: 0.1)
-                : Colors.grey.withValues(alpha: 0.1),
+                ? context.status.success.withValues(alpha: 0.1)
+                : context.status.neutral.withValues(alpha: 0.1),
             child: Icon(
               _getCategoryIcon(unit.category),
-              color: unit.isActive ? Colors.green : Colors.grey,
+              color: unit.isActive
+                  ? context.status.success
+                  : context.status.neutral,
             ),
           ),
           title: Column(
@@ -223,7 +226,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 unit.abbreviation,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[600],
+                  color: context.colors.onSurfaceVariant,
                 ),
               ),
             ],
@@ -235,7 +238,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 'Code: ${unit.code}',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[600],
+                  color: context.colors.onSurfaceVariant,
                 ),
               ),
               Row(
@@ -249,15 +252,15 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.1),
+                        color: context.status.info.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
+                      child: Text(
                         'DEFAULT',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: context.status.info,
                         ),
                       ),
                     ),
@@ -290,22 +293,22 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 ),
               ),
               if (unit.isActive)
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'deactivate',
                   child: Row(
                     children: [
-                      Icon(Icons.visibility_off, color: Colors.orange),
+                      Icon(Icons.visibility_off, color: context.status.warning),
                       SizedBox(width: 8),
                       Text('Deactivate'),
                     ],
                   ),
                 )
               else
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'activate',
                   child: Row(
                     children: [
-                      Icon(Icons.visibility, color: Colors.green),
+                      Icon(Icons.visibility, color: context.status.success),
                       SizedBox(width: 8),
                       Text('Activate'),
                     ],
@@ -321,21 +324,21 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, color: Colors.red),
+                    Icon(Icons.delete, color: context.colors.error),
                     SizedBox(width: 8),
                     Text('Delete'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'restore',
                 child: Row(
                   children: [
-                    Icon(Icons.restore, color: Colors.blue),
+                    Icon(Icons.restore, color: context.status.info),
                     SizedBox(width: 8),
                     Text('Restore'),
                   ],
@@ -350,22 +353,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
   }
 
   Widget _buildStatusChip(bool isActive) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: isActive
-            ? Colors.green.withValues(alpha: 0.1)
-            : Colors.grey.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        isActive ? 'ACTIVE' : 'INACTIVE',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: isActive ? Colors.green : Colors.grey,
-        ),
-      ),
+    return StatusBadge(
+      label: isActive ? 'Active' : 'Inactive',
+      tone: isActive ? StatusTone.success : StatusTone.neutral,
     );
   }
 
@@ -437,7 +427,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: context.colors.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -448,12 +438,14 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: unit.isActive
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.grey.withValues(alpha: 0.1),
+                        ? context.status.success.withValues(alpha: 0.1)
+                        : context.status.neutral.withValues(alpha: 0.1),
                     child: Icon(
                       _getCategoryIcon(unit.category),
                       size: 30,
-                      color: unit.isActive ? Colors.green : Colors.grey,
+                      color: unit.isActive
+                          ? context.status.success
+                          : context.status.neutral,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -483,10 +475,12 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
               ]),
               const SizedBox(height: 16),
               _buildDetailSection('Multilingual Names', [
-                ...unit.name.entries.map((e) => _buildDetailRow(
-                  e.key.toUpperCase(),
-                  e.value?.toString() ?? 'N/A',
-                )),
+                ...unit.name.entries.map(
+                  (e) => _buildDetailRow(
+                    e.key.toUpperCase(),
+                    e.value?.toString() ?? 'N/A',
+                  ),
+                ),
               ]),
               const SizedBox(height: 16),
               _buildDetailSection('Status', [
@@ -517,10 +511,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
       children: [
         Text(
           title,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Card(
@@ -539,7 +532,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
           Flexible(
             child: Text(
               value,
@@ -595,7 +588,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: context.colors.outline,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -613,7 +606,6 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                     decoration: const InputDecoration(
                       labelText: 'Code *',
                       hintText: 'e.g., piece',
-                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -622,7 +614,6 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                     decoration: const InputDecoration(
                       labelText: 'Name (EN) *',
                       hintText: 'e.g., Piece',
-                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -631,32 +622,22 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                     decoration: const InputDecoration(
                       labelText: 'Name (LO)',
                       hintText: 'e.g., ຊີ້ນ',
-                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameThController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (TH)',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Name (TH)'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameViController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (VI)',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Name (VI)'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameZhController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (ZH)',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Name (ZH)'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
@@ -664,24 +645,28 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                     decoration: const InputDecoration(
                       labelText: 'Abbreviation *',
                       hintText: 'e.g., pc',
-                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     initialValue: selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Category *',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: ['piece', 'weight', 'volume', 'length', 'area', 'custom']
-                        .map(
-                          (cat) => DropdownMenuItem(
-                            value: cat,
-                            child: Text(cat),
-                          ),
-                        )
-                        .toList(),
+                    decoration: const InputDecoration(labelText: 'Category *'),
+                    items:
+                        [
+                              'piece',
+                              'weight',
+                              'volume',
+                              'length',
+                              'area',
+                              'custom',
+                            ]
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat,
+                                child: Text(cat),
+                              ),
+                            )
+                            .toList(),
                     onChanged: (value) {
                       setDialogState(() => selectedCategory = value);
                     },
@@ -689,19 +674,13 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Description'),
                     maxLines: 2,
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: sortOrderController,
-                    decoration: const InputDecoration(
-                      labelText: 'Sort Order',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Sort Order'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -736,12 +715,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                                 nameEnController.text.isEmpty ||
                                 abbreviationController.text.isEmpty ||
                                 selectedCategory == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Code, Name (EN), Abbreviation, and Category are required',
-                                  ),
-                                ),
+                              AppFeedback.warning(
+                                context,
+                                'Code, Name (EN), Abbreviation, and Category are required',
                               );
                               return;
                             }
@@ -772,19 +748,16 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                               sortOrder: int.tryParse(sortOrderController.text),
                             );
 
+                            final messenger = ScaffoldMessenger.of(context);
                             final success = await ref
                                 .read(unitsProvider.notifier)
                                 .createUnit(request);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    success ? '✅ Unit created successfully' : '❌ Failed to create unit',
-                                  ),
-                                  backgroundColor: success ? Colors.green : Colors.red,
-                                  duration: const Duration(seconds: 3),
-                                ),
+                            if (success) {
+                              messenger.showSuccess(
+                                'Unit created successfully',
                               );
+                            } else {
+                              messenger.showError('Failed to create unit');
                             }
                           },
                           child: const Text('Create'),
@@ -819,12 +792,15 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
     final nameZhController = TextEditingController(
       text: unit.name['zh']?.toString() ?? '',
     );
-    final abbreviationController =
-        TextEditingController(text: unit.abbreviation);
-    final descriptionController =
-        TextEditingController(text: unit.description ?? '');
-    final sortOrderController =
-        TextEditingController(text: unit.sortOrder.toString());
+    final abbreviationController = TextEditingController(
+      text: unit.abbreviation,
+    );
+    final descriptionController = TextEditingController(
+      text: unit.description ?? '',
+    );
+    final sortOrderController = TextEditingController(
+      text: unit.sortOrder.toString(),
+    );
     String? selectedCategory = unit.category;
     bool isActive = unit.isActive;
     bool isDefault = unit.isDefault;
@@ -858,7 +834,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: context.colors.outline,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -873,74 +849,60 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   const SizedBox(height: 20),
                   TextField(
                     controller: codeController,
-                    decoration: const InputDecoration(
-                      labelText: 'Code *',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Code *'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameEnController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (EN) *',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Name (EN) *'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameLoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (LO)',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Name (LO)'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameThController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (TH)',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Name (TH)'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameViController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (VI)',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Name (VI)'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameZhController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name (ZH)',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Name (ZH)'),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: abbreviationController,
                     decoration: const InputDecoration(
                       labelText: 'Abbreviation *',
-                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     initialValue: selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Category *',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: ['piece', 'weight', 'volume', 'length', 'area', 'custom']
-                        .map(
-                          (cat) => DropdownMenuItem(
-                            value: cat,
-                            child: Text(cat),
-                          ),
-                        )
-                        .toList(),
+                    decoration: const InputDecoration(labelText: 'Category *'),
+                    items:
+                        [
+                              'piece',
+                              'weight',
+                              'volume',
+                              'length',
+                              'area',
+                              'custom',
+                            ]
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat,
+                                child: Text(cat),
+                              ),
+                            )
+                            .toList(),
                     onChanged: (value) {
                       setDialogState(() => selectedCategory = value);
                     },
@@ -948,19 +910,13 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Description'),
                     maxLines: 2,
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: sortOrderController,
-                    decoration: const InputDecoration(
-                      labelText: 'Sort Order',
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: const InputDecoration(labelText: 'Sort Order'),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -995,12 +951,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                                 nameEnController.text.isEmpty ||
                                 abbreviationController.text.isEmpty ||
                                 selectedCategory == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Code, Name (EN), Abbreviation, and Category are required',
-                                  ),
-                                ),
+                              AppFeedback.warning(
+                                context,
+                                'Code, Name (EN), Abbreviation, and Category are required',
                               );
                               return;
                             }
@@ -1031,19 +984,16 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                               sortOrder: int.tryParse(sortOrderController.text),
                             );
 
+                            final messenger = ScaffoldMessenger.of(context);
                             final success = await ref
                                 .read(unitsProvider.notifier)
                                 .updateUnit(unit.id, request);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    success ? '✅ Unit updated successfully' : '❌ Failed to update unit',
-                                  ),
-                                  backgroundColor: success ? Colors.blue : Colors.red,
-                                  duration: const Duration(seconds: 3),
-                                ),
+                            if (success) {
+                              messenger.showSuccess(
+                                'Unit updated successfully',
                               );
+                            } else {
+                              messenger.showError('Failed to update unit');
                             }
                           },
                           child: const Text('Save'),
@@ -1076,22 +1026,19 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.status.success,
+            ),
             onPressed: () async {
               Navigator.pop(context);
+              final messenger = ScaffoldMessenger.of(context);
               final success = await ref
                   .read(unitsProvider.notifier)
                   .activateUnit(unit.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success ? '✅ Unit activated successfully' : '❌ Failed to activate unit',
-                    ),
-                    backgroundColor: success ? Colors.green : Colors.red,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
+              if (success) {
+                messenger.showSuccess('Unit activated successfully');
+              } else {
+                messenger.showError('Failed to activate unit');
               }
             },
             child: const Text('Activate'),
@@ -1116,22 +1063,19 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.status.warning,
+            ),
             onPressed: () async {
               Navigator.pop(context);
+              final messenger = ScaffoldMessenger.of(context);
               final success = await ref
                   .read(unitsProvider.notifier)
                   .deactivateUnit(unit.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success ? '✅ Unit deactivated successfully' : '❌ Failed to deactivate unit',
-                    ),
-                    backgroundColor: success ? Colors.orange : Colors.red,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
+              if (success) {
+                messenger.showSuccess('Unit deactivated successfully');
+              } else {
+                messenger.showError('Failed to deactivate unit');
               }
             },
             child: const Text('Deactivate'),
@@ -1157,22 +1101,19 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colors.error,
+            ),
             onPressed: () async {
               Navigator.pop(context);
+              final messenger = ScaffoldMessenger.of(context);
               final success = await ref
                   .read(unitsProvider.notifier)
                   .deleteUnit(unit.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success ? '✅ Unit deleted successfully' : '❌ Failed to delete unit',
-                    ),
-                    backgroundColor: success ? Colors.red : Colors.red.shade900,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
+              if (success) {
+                messenger.showSuccess('Unit deleted successfully');
+              } else {
+                messenger.showError('Failed to delete unit');
               }
             },
             child: const Text('Delete'),
@@ -1197,22 +1138,17 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.blue),
+            style: FilledButton.styleFrom(backgroundColor: context.status.info),
             onPressed: () async {
               Navigator.pop(context);
+              final messenger = ScaffoldMessenger.of(context);
               final success = await ref
                   .read(unitsProvider.notifier)
                   .restoreUnit(unit.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success ? '✅ Unit restored successfully' : '❌ Failed to restore unit',
-                    ),
-                    backgroundColor: success ? Colors.blue : Colors.red,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
+              if (success) {
+                messenger.showSuccess('Unit restored successfully');
+              } else {
+                messenger.showError('Failed to restore unit');
               }
             },
             child: const Text('Restore'),
@@ -1240,19 +1176,14 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
             style: FilledButton.styleFrom(backgroundColor: Colors.amber),
             onPressed: () async {
               Navigator.pop(context);
+              final messenger = ScaffoldMessenger.of(context);
               final success = await ref
                   .read(unitsProvider.notifier)
                   .setUnitDefault(unit.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      success ? '✅ Unit set as default' : '❌ Failed to set default unit',
-                    ),
-                    backgroundColor: success ? Colors.amber : Colors.red,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
+              if (success) {
+                messenger.showSuccess('Unit set as default');
+              } else {
+                messenger.showError('Failed to set default unit');
               }
             },
             child: const Text('Set as Default'),

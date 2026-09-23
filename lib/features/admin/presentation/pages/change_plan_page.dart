@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class ChangePlanPage extends ConsumerStatefulWidget {
   final AdminSubscription subscription;
@@ -39,7 +40,8 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
         title: const Text('Change Plan'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(plansProvider.notifier).loadPlans(),
           ),
         ],
@@ -96,11 +98,14 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
           // Plans List
           Expanded(
             child: plansState.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppLoadingView()
                 : plansState.error != null
                 ? _buildErrorView(plansState.error!)
                 : plansState.plans.isEmpty
-                ? const Center(child: Text('No plans available'))
+                ? const AppEmptyView(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'No plans available',
+                  )
                 : Column(
                     children: [
                       // Billing Cycle Toggle
@@ -109,7 +114,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: context.colors.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
@@ -125,7 +130,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: _selectedBillingCycle == 'monthly'
-                                          ? Colors.white
+                                          ? context.colors.surface
                                           : Colors.transparent,
                                       borderRadius: BorderRadius.circular(8),
                                       boxShadow:
@@ -153,7 +158,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                                               ? Theme.of(
                                                   context,
                                                 ).colorScheme.primary
-                                              : Colors.grey[600],
+                                              : context.colors.onSurfaceVariant,
                                         ),
                                       ),
                                     ),
@@ -171,7 +176,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: _selectedBillingCycle == 'annual'
-                                          ? Colors.white
+                                          ? context.colors.surface
                                           : Colors.transparent,
                                       borderRadius: BorderRadius.circular(8),
                                       boxShadow:
@@ -203,14 +208,16 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                                                   ? Theme.of(
                                                       context,
                                                     ).colorScheme.primary
-                                                  : Colors.grey[600],
+                                                  : context
+                                                        .colors
+                                                        .onSurfaceVariant,
                                             ),
                                           ),
                                           Text(
                                             'Save up to 20%',
                                             style: TextStyle(
                                               fontSize: 10,
-                                              color: Colors.green[600],
+                                              color: context.status.success,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -243,33 +250,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load plans',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => ref.read(plansProvider.notifier).loadPlans(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AppErrorView(
+      error: error,
+      onRetry: () => ref.read(plansProvider.notifier).loadPlans(),
     );
   }
 
@@ -302,7 +285,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
           color: isSelected
               ? changeColor
               : isCurrentPlan
-              ? Colors.blue
+              ? context.status.info
               : Colors.transparent,
           width: isSelected || isCurrentPlan ? 2 : 0,
         ),
@@ -341,7 +324,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue,
+                                  color: context.status.info,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Text(
@@ -395,7 +378,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                           Text(
                             plan.description!,
                             style: TextStyle(
-                              color: Colors.grey[600],
+                              color: context.colors.onSurfaceVariant,
                               fontSize: 13,
                             ),
                           ),
@@ -429,7 +412,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: isCurrentPlan ? Colors.blue : changeColor,
+                        color: isCurrentPlan
+                            ? context.status.info
+                            : changeColor,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -437,7 +422,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
                         '/year',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(
+                          color: context.colors.onSurfaceVariant,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -449,14 +436,14 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.1),
+                          color: context.status.success.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           '${currencyFormat.format(plan.priceYearly / 12)}/mo',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.green[700],
+                            color: context.status.success,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -468,7 +455,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: isCurrentPlan ? Colors.blue : changeColor,
+                        color: isCurrentPlan
+                            ? context.status.info
+                            : changeColor,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -476,7 +465,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
                         '/month',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(
+                          color: context.colors.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -498,7 +489,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                         'Save ${currencyFormat.format(savings)} (${savingsPercent}%)',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.green[600],
+                          color: context.status.success,
                           fontWeight: FontWeight.w500,
                         ),
                       );
@@ -546,19 +537,23 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
+                    color: context.status.warningContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.star, size: 16, color: Colors.amber.shade700),
+                      Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: context.status.warning,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         plan.badgeText!,
                         style: TextStyle(
-                          color: Colors.amber.shade700,
-                          fontWeight: FontWeight.w500,
+                          color: context.status.onWarningContainer,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -575,9 +570,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
   Widget _buildFeatureRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
+        Icon(icon, size: 16, color: context.colors.onSurfaceVariant),
         const SizedBox(width: 8),
-        Text(label, style: TextStyle(color: Colors.grey[600])),
+        Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
         const Spacer(),
         Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
       ],
@@ -682,18 +677,18 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
+                  color: context.status.warningContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                    Icon(Icons.warning_amber, color: context.status.warning),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Downgrading may limit features. Changes apply at next billing cycle.',
                         style: TextStyle(
-                          color: Colors.orange.shade700,
+                          color: context.status.warning,
                           fontSize: 12,
                         ),
                       ),
@@ -759,11 +754,11 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
   Color _getChangeColor(String? changeType) {
     switch (changeType) {
       case 'upgrade':
-        return Colors.green;
+        return context.status.success;
       case 'downgrade':
-        return Colors.orange;
+        return context.status.warning;
       default:
-        return Colors.blue;
+        return context.status.info;
     }
   }
 
@@ -793,7 +788,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
           children: [
             Icon(
               isUpgrade ? Icons.arrow_upward : Icons.arrow_downward,
-              color: isUpgrade ? Colors.green : Colors.orange,
+              color: isUpgrade
+                  ? context.status.success
+                  : context.status.warning,
             ),
             const SizedBox(width: 8),
             Text('Confirm ${isUpgrade ? 'Upgrade' : 'Downgrade'}'),
@@ -822,7 +819,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                     text: _selectedPlan!.name,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isUpgrade ? Colors.green : Colors.orange,
+                      color: isUpgrade
+                          ? context.status.success
+                          : context.status.warning,
                     ),
                   ),
                   const TextSpan(text: '?'),
@@ -833,7 +832,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: context.colors.surfaceContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -841,7 +840,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                   Icon(
                     Icons.payments_outlined,
                     size: 20,
-                    color: Colors.grey[600],
+                    color: context.colors.onSurfaceVariant,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -877,10 +876,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
             const SizedBox(height: 16),
             TextField(
               controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Reason (optional)',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Reason (optional)'),
               maxLines: 2,
             ),
           ],
@@ -894,6 +890,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
             onPressed: () async {
               Navigator.pop(dialogContext);
               setState(() => _isProcessing = true);
+              final messenger = ScaffoldMessenger.of(pageContext);
+              final navigator = Navigator.of(pageContext);
+              final planName = _selectedPlan!.name;
 
               debugPrint(
                 '🔄 Changing plan with billingCycle: $_selectedBillingCycle',
@@ -913,28 +912,22 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
 
                 if (!mounted) return;
                 setState(() => _isProcessing = false);
-                ScaffoldMessenger.of(pageContext).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Successfully ${isUpgrade ? 'upgraded' : 'downgraded'} to ${_selectedPlan!.name}',
-                    ),
-                    backgroundColor: isUpgrade ? Colors.green : Colors.orange,
-                  ),
+                messenger.showSuccess(
+                  'Successfully ${isUpgrade ? 'upgraded' : 'downgraded'} to $planName',
                 );
-                Navigator.pop(pageContext, true);
+                navigator.pop(true);
               } catch (e) {
                 if (!mounted) return;
                 setState(() => _isProcessing = false);
-                ScaffoldMessenger.of(pageContext).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to change plan: $e'),
-                    backgroundColor: Colors.red,
-                  ),
+                messenger.showError(
+                  'Failed to change plan: ${friendlyError(e)}',
                 );
               }
             },
             style: FilledButton.styleFrom(
-              backgroundColor: isUpgrade ? Colors.green : Colors.orange,
+              backgroundColor: isUpgrade
+                  ? context.status.success
+                  : context.status.warning,
             ),
             child: Text(isUpgrade ? 'Upgrade' : 'Downgrade'),
           ),

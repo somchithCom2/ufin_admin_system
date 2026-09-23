@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class SubscriptionHistoryPage extends ConsumerStatefulWidget {
   final int? shopId;
@@ -63,7 +64,11 @@ class _SubscriptionHistoryPageState
       appBar: AppBar(
         title: const Text('Subscription History'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadHistory),
+          IconButton(
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _loadHistory,
+          ),
         ],
       ),
       body: Column(
@@ -94,7 +99,7 @@ class _SubscriptionHistoryPageState
           // Content
           Expanded(
             child: historyState.isLoading && historyState.history.isEmpty
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppLoadingView()
                 : historyState.error != null && historyState.history.isEmpty
                 ? _buildErrorView(historyState.error!)
                 : historyState.history.isEmpty
@@ -107,34 +112,7 @@ class _SubscriptionHistoryPageState
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load history',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _loadHistory,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
+    return AppErrorView(error: error, onRetry: _loadHistory);
   }
 
   Widget _buildEmptyView() {
@@ -142,7 +120,7 @@ class _SubscriptionHistoryPageState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history, size: 64, color: Colors.grey[400]),
+          Icon(Icons.history, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
             'No history found',
@@ -153,7 +131,7 @@ class _SubscriptionHistoryPageState
             widget.shopId != null
                 ? 'No changes have been made to this subscription yet'
                 : 'No subscription changes recorded',
-            style: TextStyle(color: Colors.grey[600]),
+            style: TextStyle(color: context.colors.onSurfaceVariant),
           ),
         ],
       ),
@@ -184,9 +162,9 @@ class _SubscriptionHistoryPageState
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!, width: 0.5),
+          bottom: BorderSide(color: context.colors.outlineVariant, width: 0.5),
         ),
       ),
       child: Column(
@@ -236,7 +214,7 @@ class _SubscriptionHistoryPageState
                                         Icon(
                                           Icons.store_outlined,
                                           size: 10,
-                                          color: Colors.grey[400],
+                                          color: context.colors.outline,
                                         ),
                                         const SizedBox(width: 2),
                                         Expanded(
@@ -245,7 +223,9 @@ class _SubscriptionHistoryPageState
                                                 ? entry.shopName
                                                 : '#${entry.shopId}',
                                             style: TextStyle(
-                                              color: Colors.grey[600],
+                                              color: context
+                                                  .colors
+                                                  .onSurfaceVariant,
                                               fontSize: 11,
                                             ),
                                             overflow: TextOverflow.ellipsis,
@@ -271,7 +251,7 @@ class _SubscriptionHistoryPageState
                     horizontal: 10,
                     vertical: 10,
                   ),
-                  color: Colors.grey[50],
+                  color: context.colors.surfaceContainer,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -283,14 +263,14 @@ class _SubscriptionHistoryPageState
                             Icon(
                               Icons.attach_money,
                               size: 14,
-                              color: Colors.green[600],
+                              color: context.status.success,
                             ),
                             Text(
                               entry.pricePaid!.toStringAsFixed(2),
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
-                                color: Colors.green[700],
+                                color: context.status.success,
                               ),
                             ),
                           ],
@@ -301,13 +281,13 @@ class _SubscriptionHistoryPageState
                           Icon(
                             Icons.access_time,
                             size: 10,
-                            color: Colors.grey[400],
+                            color: context.colors.outline,
                           ),
                           const SizedBox(width: 2),
                           Text(
                             DateFormat('MMM d, HH:mm').format(entry.createdAt),
                             style: TextStyle(
-                              color: Colors.grey[500],
+                              color: context.colors.onSurfaceVariant,
                               fontSize: 10,
                             ),
                           ),
@@ -324,7 +304,7 @@ class _SubscriptionHistoryPageState
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            color: Colors.grey[50],
+            color: context.colors.surfaceContainer,
             child: Wrap(
               spacing: 12,
               runSpacing: 2,
@@ -336,12 +316,15 @@ class _SubscriptionHistoryPageState
                     Icon(
                       Icons.person_outline,
                       size: 10,
-                      color: Colors.grey[400],
+                      color: context.colors.outline,
                     ),
                     const SizedBox(width: 2),
                     Text(
                       entry.performedBy ?? 'System',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 10),
+                      style: TextStyle(
+                        color: context.colors.onSurfaceVariant,
+                        fontSize: 10,
+                      ),
                     ),
                   ],
                 ),
@@ -351,10 +334,17 @@ class _SubscriptionHistoryPageState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.swap_horiz, size: 12, color: Colors.grey[400]),
+                      Icon(
+                        Icons.swap_horiz,
+                        size: 12,
+                        color: context.colors.outline,
+                      ),
                       Text(
                         '${entry.fromPlanName ?? entry.fromPlanCode ?? '-'}',
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: context.colors.onSurfaceVariant,
+                        ),
                       ),
                       Icon(Icons.arrow_right_alt, size: 12, color: color),
                       Text(
@@ -373,22 +363,29 @@ class _SubscriptionHistoryPageState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.sync_alt, size: 10, color: Colors.grey[400]),
+                      Icon(
+                        Icons.sync_alt,
+                        size: 10,
+                        color: context.colors.outline,
+                      ),
                       Text(
                         '${entry.previousStatus}',
-                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: context.colors.onSurfaceVariant,
+                        ),
                       ),
                       Icon(
                         Icons.chevron_right,
                         size: 10,
-                        color: Colors.grey[400],
+                        color: context.colors.outline,
                       ),
                       Text(
                         '${entry.newStatus}',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
+                          color: context.colors.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -403,8 +400,8 @@ class _SubscriptionHistoryPageState
                         Icons.calendar_today,
                         size: 10,
                         color: entry.daysExtended! > 0
-                            ? Colors.green
-                            : Colors.orange,
+                            ? context.status.success
+                            : context.status.warning,
                       ),
                       const SizedBox(width: 2),
                       Text(
@@ -415,8 +412,8 @@ class _SubscriptionHistoryPageState
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                           color: entry.daysExtended! > 0
-                              ? Colors.green[700]
-                              : Colors.orange[700],
+                              ? context.status.success
+                              : context.status.warning,
                         ),
                       ),
                     ],
@@ -430,7 +427,7 @@ class _SubscriptionHistoryPageState
                       Icon(
                         Icons.info_outline,
                         size: 10,
-                        color: Colors.blue[400],
+                        color: context.status.info,
                       ),
                       const SizedBox(width: 2),
                       Flexible(
@@ -438,7 +435,7 @@ class _SubscriptionHistoryPageState
                           entry.reason!,
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.blue[600],
+                            color: context.status.info,
                           ),
                         ),
                       ),
@@ -450,14 +447,18 @@ class _SubscriptionHistoryPageState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.notes, size: 10, color: Colors.grey[400]),
+                      Icon(
+                        Icons.notes,
+                        size: 10,
+                        color: context.colors.outline,
+                      ),
                       const SizedBox(width: 2),
                       Flexible(
                         child: Text(
                           entry.notes!,
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.grey[500],
+                            color: context.colors.onSurfaceVariant,
                             fontStyle: FontStyle.italic,
                           ),
                         ),
@@ -515,21 +516,21 @@ class _SubscriptionHistoryPageState
     switch (actionType.toLowerCase()) {
       case 'upgrade':
       case 'upgraded':
-        return Colors.green;
+        return context.status.success;
       case 'downgrade':
       case 'downgraded':
-        return Colors.orange;
+        return context.status.warning;
       case 'extend':
       case 'extended':
       case 'extension':
-        return Colors.blue;
+        return context.status.info;
       case 'reduce':
       case 'reduced':
-        return Colors.orange;
+        return context.status.warning;
       case 'cancel':
       case 'cancelled':
       case 'cancellation':
-        return Colors.red;
+        return context.colors.error;
       case 'reactivate':
       case 'reactivated':
       case 'reactivation':
@@ -541,10 +542,10 @@ class _SubscriptionHistoryPageState
       case 'expire':
       case 'expired':
       case 'expiration':
-        return Colors.grey;
+        return context.status.neutral;
       case 'renew':
       case 'renewed':
-        return Colors.green;
+        return context.status.success;
       default:
         return Colors.blueGrey;
     }

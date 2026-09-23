@@ -4,6 +4,7 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_products_page.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class ShopsPage extends ConsumerStatefulWidget {
   const ShopsPage({super.key});
@@ -53,101 +54,95 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
         title: const Text('Shops'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(shopsProvider.notifier).loadShops(),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search and Filter
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search shops...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+      body: ContentWidth(
+        child: Column(
+          children: [
+            // Search and Filter
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: AppSearchField(
+                      controller: _searchController,
+                      hintText: 'Search shops…',
+                      onSubmitted: (value) {
+                        if (_scrollController.hasClients) {
+                          _scrollController.jumpTo(0);
+                        }
+                        ref
+                            .read(shopsProvider.notifier)
+                            .loadShops(search: value);
+                      },
                     ),
-                    onSubmitted: (value) {
-                      _scrollController.jumpTo(0); // Reset scroll position
-                      ref.read(shopsProvider.notifier).loadShops(search: value);
+                  ),
+                  const SizedBox(width: 12),
+                  PopupMenuButton<String?>(
+                    icon: Badge(
+                      isLabelVisible: _statusFilter != null,
+                      child: const Icon(Icons.filter_list),
+                    ),
+                    onSelected: (status) {
+                      setState(() => _statusFilter = status);
+                      if (_scrollController.hasClients) {
+                        _scrollController.jumpTo(0);
+                      }
+                      ref
+                          .read(shopsProvider.notifier)
+                          .loadShops(
+                            search: _searchController.text,
+                            status: status,
+                          );
                     },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(value: null, child: Text('All')),
+                      const PopupMenuItem(
+                        value: 'active',
+                        child: Text('Active'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'suspended',
+                        child: Text('Suspended'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'inactive',
+                        child: Text('Inactive'),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                PopupMenuButton<String?>(
-                  icon: Badge(
-                    isLabelVisible: _statusFilter != null,
-                    child: const Icon(Icons.filter_list),
-                  ),
-                  onSelected: (status) {
-                    setState(() => _statusFilter = status);
-                    _scrollController.jumpTo(0); // Reset scroll position
-                    ref
-                        .read(shopsProvider.notifier)
-                        .loadShops(
-                          search: _searchController.text,
-                          status: status,
-                        );
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: null, child: Text('All')),
-                    const PopupMenuItem(value: 'active', child: Text('Active')),
-                    const PopupMenuItem(
-                      value: 'suspended',
-                      child: Text('Suspended'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'inactive',
-                      child: Text('Inactive'),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Shop List
-          Expanded(
-            child: shopsState.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : shopsState.error != null
-                ? _buildErrorView(shopsState.error!)
-                : shopsState.shops.isEmpty
-                ? const Center(child: Text('No shops found'))
-                : _buildShopList(shopsState.shops, shopsState.isLoadingMore),
-          ),
-        ],
+            // Shop List
+            Expanded(
+              child: shopsState.isLoading
+                  ? const AppLoadingView()
+                  : shopsState.error != null && shopsState.shops.isEmpty
+                  ? _buildErrorView(shopsState.error!)
+                  : shopsState.shops.isEmpty
+                  ? const AppEmptyView(
+                      icon: Icons.storefront_outlined,
+                      title: 'No shops found',
+                      message: 'Try a different search or filter.',
+                    )
+                  : _buildShopList(shopsState.shops, shopsState.isLoadingMore),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(error),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => ref.read(shopsProvider.notifier).loadShops(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
-        ],
-      ),
+    return AppErrorView(
+      error: error,
+      onRetry: () => ref.read(shopsProvider.notifier).loadShops(),
     );
   }
 
@@ -157,7 +152,9 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        _scrollController.jumpTo(0); // Reset scroll on refresh
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
         await ref
             .read(shopsProvider.notifier)
             .loadShops(
@@ -176,10 +173,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
         itemCount: shops.length + (isLoadingMore && hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == shops.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const LoadMoreIndicator();
           }
           return _buildShopCard(shops[index]);
         },
@@ -207,7 +201,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               '#${shop.id}',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[500],
+                color: context.colors.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -248,33 +242,33 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'products',
               child: Row(
                 children: [
-                  Icon(Icons.inventory_2_outlined, color: Colors.blue),
+                  Icon(Icons.inventory_2_outlined, color: context.status.info),
                   SizedBox(width: 8),
                   Text('View Products'),
                 ],
               ),
             ),
             if (shop.status != 'suspended')
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'suspend',
                 child: Row(
                   children: [
-                    Icon(Icons.block, color: Colors.orange),
+                    Icon(Icons.block, color: context.status.warning),
                     SizedBox(width: 8),
                     Text('Suspend'),
                   ],
                 ),
               ),
             if (shop.status == 'suspended')
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'activate',
                 child: Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green),
+                    Icon(Icons.check_circle, color: context.status.success),
                     SizedBox(width: 8),
                     Text('Activate'),
                   ],
@@ -288,34 +282,11 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
   }
 
   Widget _buildStatusChip(String status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: _getStatusColor(status).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: _getStatusColor(status),
-        ),
-      ),
-    );
+    return StatusBadge.fromStatus(status);
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'suspended':
-        return Colors.orange;
-      case 'inactive':
-        return Colors.grey;
-      default:
-        return Colors.blue;
-    }
+    return StatusTone.fromStatus(status).foreground(context);
   }
 
   void _handleShopAction(AdminShop shop, String action) {
@@ -361,7 +332,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: context.colors.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -479,60 +450,39 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  void _showStatusDialog(AdminShop shop, String newStatus) {
-    final reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          newStatus == 'suspended' ? 'Suspend Shop' : 'Activate Shop',
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Are you sure you want to ${newStatus == 'suspended' ? 'suspend' : 'activate'} "${shop.name}"?',
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Reason (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref
-                  .read(shopsProvider.notifier)
-                  .updateShopStatus(
-                    shop.id,
-                    newStatus,
-                    reasonController.text.isNotEmpty
-                        ? reasonController.text
-                        : null,
-                  );
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
+  Future<void> _showStatusDialog(AdminShop shop, String newStatus) async {
+    final suspend = newStatus == 'suspended';
+    final reason = await AppDialogs.confirmWithReason(
+      context,
+      title: suspend ? 'Suspend shop' : 'Activate shop',
+      message: suspend
+          ? '"${shop.name}" and its staff will be blocked from using UFin until reactivated.'
+          : '"${shop.name}" and its staff will regain access to UFin.',
+      confirmLabel: suspend ? 'Suspend' : 'Activate',
+      destructive: suspend,
+      icon: suspend ? Icons.block_rounded : Icons.check_circle_outline_rounded,
     );
+    if (reason == null || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(shopsProvider.notifier)
+          .updateShopStatus(shop.id, newStatus, reason.isEmpty ? null : reason);
+      messenger.showSuccess(
+        '"${shop.name}" has been ${suspend ? 'suspended' : 'activated'}',
+      );
+    } catch (e) {
+      messenger.showError(
+        'Could not update "${shop.name}": ${friendlyError(e)}',
+      );
+    }
   }
 }

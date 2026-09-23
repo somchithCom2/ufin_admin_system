@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class EditPlanPage extends ConsumerStatefulWidget {
   final AdminPlan? plan;
@@ -190,14 +191,11 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
       if (widget.plan != null) {
         ref.read(planDetailProvider.notifier).loadPlan(widget.plan!.id);
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.plan == null
-                ? 'Plan created successfully'
-                : 'Plan updated successfully',
-          ),
-        ),
+      AppFeedback.success(
+        context,
+        widget.plan == null
+            ? 'Plan created successfully'
+            : 'Plan updated successfully',
       );
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -408,7 +406,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
               Text(
                 'Feature Flags',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: context.colors.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -441,7 +439,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
               Text(
                 'Support & Tier Settings',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: context.colors.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -487,7 +485,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
               Text(
                 'Limits (leave empty for unlimited)',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: context.colors.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),

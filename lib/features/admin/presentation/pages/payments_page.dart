@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/payments_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_picker.dart';
 
 class PaymentsPage extends ConsumerStatefulWidget {
   const PaymentsPage({super.key});
@@ -35,49 +37,60 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
         title: const Text('Payments'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(paymentsProvider.notifier).refresh(),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Filters
-          _buildFilters(),
+      body: ContentWidth(
+        child: Column(
+          children: [
+            // Filters
+            _buildFilters(),
 
-          // Summary
-          if (!state.isLoading && state.payments.isNotEmpty)
-            _buildSummary(state),
+            // Summary
+            if (!state.isLoading && state.payments.isNotEmpty)
+              _buildSummary(state),
 
-          // Content
-          Expanded(
-            child: state.isLoading && state.payments.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error, size: 48, color: Colors.red[300]),
-                        const SizedBox(height: 16),
-                        Text(state.error!),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () =>
-                              ref.read(paymentsProvider.notifier).refresh(),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : state.payments.isEmpty
-                ? const Center(child: Text('No payments found'))
-                : _buildPaymentsList(state),
-          ),
+            // Content
+            Expanded(
+              child: state.isLoading && state.payments.isEmpty
+                  ? const AppLoadingView()
+                  : state.error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error,
+                            size: 48,
+                            color: context.colors.error,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(state.error!),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () =>
+                                ref.read(paymentsProvider.notifier).refresh(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : state.payments.isEmpty
+                  ? const AppEmptyView(
+                      icon: Icons.receipt_long_outlined,
+                      title: 'No payments found',
+                      message: 'Try changing the filters.',
+                    )
+                  : _buildPaymentsList(state),
+            ),
 
-          // Pagination
-          if (state.totalPages > 1) _buildPagination(state),
-        ],
+            // Pagination
+            if (state.totalPages > 1) _buildPagination(state),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showRecordPaymentDialog(),
@@ -89,7 +102,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
   Widget _buildFilters() {
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Colors.grey[50],
+      color: context.colors.surfaceContainer,
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -153,7 +166,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: context.status.infoContainer,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -168,7 +181,10 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text('Total', style: TextStyle(color: Colors.grey[600])),
+              Text(
+                'Total',
+                style: TextStyle(color: context.colors.onSurfaceVariant),
+              ),
             ],
           ),
           Column(
@@ -178,10 +194,13 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+                  color: context.status.success,
                 ),
               ),
-              Text('Completed', style: TextStyle(color: Colors.grey[600])),
+              Text(
+                'Completed',
+                style: TextStyle(color: context.colors.onSurfaceVariant),
+              ),
             ],
           ),
           Column(
@@ -194,10 +213,13 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+                  color: context.status.success,
                 ),
               ),
-              Text('Revenue', style: TextStyle(color: Colors.grey[600])),
+              Text(
+                'Revenue',
+                style: TextStyle(color: context.colors.onSurfaceVariant),
+              ),
             ],
           ),
         ],
@@ -269,7 +291,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         Icon(
                           Icons.access_time,
                           size: 12,
-                          color: Colors.grey[500],
+                          color: context.colors.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -278,7 +300,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                           ).format(payment.paymentDate),
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: context.colors.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -291,7 +313,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: context.colors.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -338,7 +360,10 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                   if (payment.referenceNumber != null)
                     Text(
                       '#${payment.referenceNumber}',
-                      style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.colors.onSurfaceVariant,
+                      ),
                     ),
                 ],
               ),
@@ -353,7 +378,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -401,7 +426,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.check_circle, color: Colors.green),
+            leading: Icon(Icons.check_circle, color: context.status.success),
             title: const Text('Completed'),
             onTap: () {
               setState(() => _statusFilter = 'completed');
@@ -410,7 +435,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.pending, color: Colors.orange),
+            leading: Icon(Icons.pending, color: context.status.warning),
             title: const Text('Pending'),
             onTap: () {
               setState(() => _statusFilter = 'pending');
@@ -419,7 +444,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
             },
           ),
           ListTile(
-            leading: Icon(Icons.error, color: Colors.red),
+            leading: Icon(Icons.error, color: context.colors.error),
             title: const Text('Failed'),
             onTap: () {
               setState(() => _statusFilter = 'failed');
@@ -567,7 +592,9 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         ),
                         Text(
                           'Payment #${payment.id}',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(
+                            color: context.colors.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -613,7 +640,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                     ),
                     Text(
                       payment.paymentMethodDisplay,
-                      style: TextStyle(color: Colors.grey[600]),
+                      style: TextStyle(color: context.colors.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -654,7 +681,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         onPressed: () =>
                             _updatePaymentStatus(payment, 'failed'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
+                          foregroundColor: context.colors.error,
                         ),
                         child: const Text('Mark Failed'),
                       ),
@@ -665,7 +692,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         onPressed: () =>
                             _updatePaymentStatus(payment, 'completed'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: context.status.success,
                         ),
                         child: const Text('Mark Completed'),
                       ),
@@ -687,7 +714,10 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
         children: [
           SizedBox(
             width: 120,
-            child: Text(label, style: TextStyle(color: Colors.grey[600])),
+            child: Text(
+              label,
+              style: TextStyle(color: context.colors.onSurfaceVariant),
+            ),
           ),
           Expanded(
             child: Text(
@@ -700,193 +730,38 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
     );
   }
 
-  Future<void> _showRecordPaymentDialog() async {
-    final formKey = GlobalKey<FormState>();
-    final shopIdController = TextEditingController();
-    final amountController = TextEditingController();
-    final referenceController = TextEditingController();
-    final notesController = TextEditingController();
-    String paymentMethod = 'cash';
-    bool saving = false;
-    String? error;
-
-    await showDialog(
-      barrierDismissible: false,
+  Future<void> _showRecordPaymentDialog() {
+    // The dialog owns its controllers, so they're disposed only after the
+    // route (including its close animation) is gone.
+    return showDialog<void>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => PopScope(
-          canPop: !saving,
-          child: AlertDialog(
-            title: const Text('Record Payment'),
-            content: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (error != null)
-                      Text(error!, style: const TextStyle(color: Colors.red)),
-                    TextFormField(
-                      controller: shopIdController,
-                      decoration: const InputDecoration(labelText: 'Shop ID'),
-                      keyboardType: TextInputType.number,
-                      validator: (v) {
-                        final id = int.tryParse(v?.trim() ?? '');
-                        return id == null || id < 1
-                            ? 'Enter a positive shop ID'
-                            : null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: amountController,
-                      decoration: const InputDecoration(
-                        labelText: 'Amount',
-                        prefixText: '₭ ',
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (v) {
-                        final amount = double.tryParse(v?.trim() ?? '');
-                        return amount == null ||
-                                !amount.isFinite ||
-                                amount <= 0 ||
-                                amount >= 10000000000000 ||
-                                !RegExp(
-                                  r'^\d+(\.\d{1,2})?$',
-                                ).hasMatch(v!.trim())
-                            ? 'Enter a positive amount with at most 2 decimals'
-                            : null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: paymentMethod,
-                      decoration: const InputDecoration(
-                        labelText: 'Payment Method',
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                        DropdownMenuItem(
-                          value: 'bank_transfer',
-                          child: Text('Bank Transfer'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'qr_code',
-                          child: Text('QR Code'),
-                        ),
-                        DropdownMenuItem(value: 'card', child: Text('Card')),
-                      ],
-                      onChanged: (v) => setState(() => paymentMethod = v!),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: referenceController,
-                      maxLength: 255,
-                      decoration: const InputDecoration(
-                        labelText: 'Transaction reference (optional)',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: notesController,
-                      maxLength: 4000,
-                      decoration: const InputDecoration(
-                        labelText: 'Notes (optional)',
-                      ),
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: saving ? null : () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: saving
-                    ? null
-                    : () async {
-                        if (formKey.currentState?.validate() == true) {
-                          setState(() {
-                            saving = true;
-                            error = null;
-                          });
-                          final request = RecordPaymentRequest(
-                            amount: double.parse(amountController.text),
-                            paymentMethod: paymentMethod,
-                            transactionId:
-                                referenceController.text.trim().isNotEmpty
-                                ? referenceController.text.trim()
-                                : null,
-                            notes: notesController.text.isNotEmpty
-                                ? notesController.text
-                                : null,
-                          );
-                          final result = await ref
-                              .read(paymentsProvider.notifier)
-                              .recordPayment(
-                                int.parse(shopIdController.text),
-                                request,
-                              );
-                          if (!context.mounted) return;
-                          setState(() => saving = false);
-                          if (result != null) {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Payment recorded')),
-                            );
-                          } else {
-                            setState(
-                              () => error =
-                                  ref.read(paymentsProvider).error ??
-                                  'Failed to record payment',
-                            );
-                          }
-                        }
-                      },
-                child: Text(saving ? 'Recording…' : 'Record'),
-              ),
-            ],
-          ),
-        ),
-      ),
+      barrierDismissible: false,
+      builder: (_) => const _RecordPaymentDialog(),
     );
-    shopIdController.dispose();
-    amountController.dispose();
-    referenceController.dispose();
-    notesController.dispose();
   }
 
   Future<void> _updatePaymentStatus(AdminPayment payment, String status) async {
     Navigator.pop(context);
-    final result = await ref
-        .read(paymentsProvider.notifier)
-        .updatePaymentStatus(
-          payment.id,
-          UpdatePaymentStatusRequest(status: status),
-        );
-    if (result != null && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Payment marked as $status')));
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(paymentsProvider.notifier)
+          .updatePaymentStatus(
+            payment.id,
+            UpdatePaymentStatusRequest(status: status),
+          );
+      messenger.showSuccess(
+        'Payment #${payment.id} marked as ${humanize(status).toLowerCase()}',
+      );
+    } catch (e) {
+      messenger.showError(
+        'Could not update payment #${payment.id}: ${friendlyError(e)}',
+      );
     }
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'failed':
-        return Colors.red;
-      case 'refunded':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
+    return StatusTone.fromStatus(status).foreground(context);
   }
 
   IconData _getPaymentMethodIcon(String method) {
@@ -903,5 +778,184 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
       default:
         return Icons.payment;
     }
+  }
+}
+
+class _RecordPaymentDialog extends ConsumerStatefulWidget {
+  const _RecordPaymentDialog();
+
+  @override
+  ConsumerState<_RecordPaymentDialog> createState() =>
+      _RecordPaymentDialogState();
+}
+
+class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _amount = TextEditingController();
+  final _reference = TextEditingController();
+  final _notes = TextEditingController();
+  ShopSelection? _shop;
+  String _paymentMethod = 'cash';
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _reference.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    final reference = _reference.text.trim();
+    final notes = _notes.text.trim();
+    final request = RecordPaymentRequest(
+      amount: double.parse(_amount.text.trim()),
+      paymentMethod: _paymentMethod,
+      transactionId: reference.isEmpty ? null : reference,
+      notes: notes.isEmpty ? null : notes,
+    );
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(paymentsProvider.notifier)
+          .recordPayment(_shop!.id, request);
+      navigator.pop();
+      messenger.showSuccess('Payment recorded for "${_shop!.name}"');
+    } catch (e) {
+      if (!mounted) return;
+      // Keep the dialog open so the admin can fix the input.
+      setState(() {
+        _saving = false;
+        _error = friendlyError(e);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colors;
+    return PopScope(
+      canPop: !_saving,
+      child: AlertDialog(
+        title: const Text('Record payment'),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_error != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: scheme.errorContainer,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusSm,
+                        ),
+                      ),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: scheme.onErrorContainer),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  ShopPickerField(
+                    enabled: !_saving,
+                    onChanged: (shop) => _shop = shop,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _amount,
+                    enabled: !_saving,
+                    decoration: const InputDecoration(
+                      labelText: 'Amount',
+                      prefixText: '₭ ',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    textInputAction: TextInputAction.next,
+                    validator: (v) {
+                      final text = v?.trim() ?? '';
+                      final amount = double.tryParse(text);
+                      return amount == null ||
+                              !amount.isFinite ||
+                              amount <= 0 ||
+                              amount >= 10000000000000 ||
+                              !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)
+                          ? 'Enter a positive amount with at most 2 decimals'
+                          : null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _paymentMethod,
+                    decoration: const InputDecoration(
+                      labelText: 'Payment method',
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                      DropdownMenuItem(
+                        value: 'bank_transfer',
+                        child: Text('Bank Transfer'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'qr_code',
+                        child: Text('QR Code'),
+                      ),
+                      DropdownMenuItem(value: 'card', child: Text('Card')),
+                    ],
+                    onChanged: _saving
+                        ? null
+                        : (v) => setState(() => _paymentMethod = v!),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _reference,
+                    enabled: !_saving,
+                    maxLength: 255,
+                    decoration: const InputDecoration(
+                      labelText: 'Transaction reference (optional)',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _notes,
+                    enabled: !_saving,
+                    maxLength: 4000,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (optional)',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: _saving ? null : _submit,
+            child: Text(_saving ? 'Recording…' : 'Record'),
+          ),
+        ],
+      ),
+    );
   }
 }

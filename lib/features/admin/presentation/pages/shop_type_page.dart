@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class ShopTypePage extends ConsumerStatefulWidget {
   const ShopTypePage({super.key});
@@ -30,7 +31,8 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
         title: const Text('Shop Types'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () =>
                 ref.read(shopTypesProvider.notifier).loadShopTypes(),
           ),
@@ -41,33 +43,26 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
         icon: const Icon(Icons.add),
         label: const Text('Add Type'),
       ),
-      body: shopTypesState.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : shopTypesState.error != null
-          ? _buildErrorView(shopTypesState.error!)
-          : shopTypesState.shopTypes.isEmpty
-          ? const Center(child: Text('No shop types found'))
-          : _buildShopTypeList(shopTypesState.shopTypes),
+      body: ContentWidth(
+        child: shopTypesState.isLoading
+            ? const AppLoadingView()
+            : shopTypesState.error != null && shopTypesState.shopTypes.isEmpty
+            ? _buildErrorView(shopTypesState.error!)
+            : shopTypesState.shopTypes.isEmpty
+            ? const AppEmptyView(
+                icon: Icons.category_outlined,
+                title: 'No shop types yet',
+                message: 'Add a shop type to categorize shops.',
+              )
+            : _buildShopTypeList(shopTypesState.shopTypes),
+      ),
     );
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(error),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () =>
-                ref.read(shopTypesProvider.notifier).loadShopTypes(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
-        ],
-      ),
+    return AppErrorView(
+      error: error,
+      onRetry: () => ref.read(shopTypesProvider.notifier).loadShopTypes(),
     );
   }
 
@@ -96,11 +91,13 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: shopType.enabled
-                ? Colors.green.withValues(alpha: 0.1)
-                : Colors.grey.withValues(alpha: 0.1),
+                ? context.status.success.withValues(alpha: 0.1)
+                : context.status.neutral.withValues(alpha: 0.1),
             child: Icon(
               _getIconData(shopType.iconName),
-              color: shopType.enabled ? Colors.green : Colors.grey,
+              color: shopType.enabled
+                  ? context.status.success
+                  : context.status.neutral,
             ),
           ),
           title: Text(
@@ -119,7 +116,10 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   shopType.description!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  style: TextStyle(
+                    color: context.colors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
               Row(
                 children: [
@@ -127,7 +127,10 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   const SizedBox(width: 8),
                   Text(
                     '${shopType.shopCount} shops',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: TextStyle(
+                      color: context.colors.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -164,18 +167,20 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                       shopType.enabled
                           ? Icons.visibility_off
                           : Icons.visibility,
-                      color: shopType.enabled ? Colors.orange : Colors.green,
+                      color: shopType.enabled
+                          ? context.status.warning
+                          : context.status.success,
                     ),
                     const SizedBox(width: 8),
                     Text(shopType.enabled ? 'Disable' : 'Enable'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, color: Colors.red),
+                    Icon(Icons.delete, color: context.colors.error),
                     SizedBox(width: 8),
                     Text('Delete'),
                   ],
@@ -190,22 +195,9 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
   }
 
   Widget _buildStatusChip(bool enabled) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: enabled
-            ? Colors.green.withValues(alpha: 0.1)
-            : Colors.grey.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        enabled ? 'ENABLED' : 'DISABLED',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          color: enabled ? Colors.green : Colors.grey,
-        ),
-      ),
+    return StatusBadge(
+      label: enabled ? 'Enabled' : 'Disabled',
+      tone: enabled ? StatusTone.success : StatusTone.neutral,
     );
   }
 
@@ -262,17 +254,14 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
   }
 
   Future<void> _toggleShopType(ShopType shopType) async {
-    final success = await ref
-        .read(shopTypesProvider.notifier)
-        .toggleShopType(shopType.id);
-    if (mounted && success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            shopType.enabled ? 'Shop type disabled' : 'Shop type enabled',
-          ),
-        ),
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(shopTypesProvider.notifier).toggleShopType(shopType.id);
+      messenger.showSuccess(
+        '"${shopType.name}" ${shopType.enabled ? 'disabled' : 'enabled'}',
       );
+    } catch (e) {
+      messenger.showError('Could not update shop type: ${friendlyError(e)}');
     }
   }
 
@@ -299,7 +288,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: context.colors.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -310,12 +299,14 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: shopType.enabled
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.grey.withValues(alpha: 0.1),
+                        ? context.status.success.withValues(alpha: 0.1)
+                        : context.status.neutral.withValues(alpha: 0.1),
                     child: Icon(
                       _getIconData(shopType.iconName),
                       size: 30,
-                      color: shopType.enabled ? Colors.green : Colors.grey,
+                      color: shopType.enabled
+                          ? context.status.success
+                          : context.status.neutral,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -348,11 +339,11 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
               const SizedBox(height: 16),
               _buildDetailSection('Features', [
                 if (shopType.features.isEmpty)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       'No features defined',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: context.status.neutral),
                     ),
                   )
                 else
@@ -424,7 +415,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
           Flexible(
             child: Text(
               value,
@@ -460,7 +451,6 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   decoration: const InputDecoration(
                     labelText: 'Code *',
                     hintText: 'e.g., RESTAURANT',
-                    border: OutlineInputBorder(),
                   ),
                   textCapitalization: TextCapitalization.characters,
                 ),
@@ -470,7 +460,6 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   decoration: const InputDecoration(
                     labelText: 'Name (EN) *',
                     hintText: 'e.g., Restaurant',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -479,7 +468,6 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   decoration: const InputDecoration(
                     labelText: 'Name (LO)',
                     hintText: 'e.g., ຮ້ານອາຫານ',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -487,7 +475,6 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   controller: descEnController,
                   decoration: const InputDecoration(
                     labelText: 'Description (EN)',
-                    border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
                 ),
@@ -496,17 +483,13 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   controller: descLoController,
                   decoration: const InputDecoration(
                     labelText: 'Description (LO)',
-                    border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selectedIcon,
-                  decoration: const InputDecoration(
-                    labelText: 'Icon',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Icon'),
                   items: _iconOptions
                       .map(
                         (icon) => DropdownMenuItem(
@@ -528,10 +511,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: orderController,
-                  decoration: const InputDecoration(
-                    labelText: 'Display Order',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Display Order'),
                   keyboardType: TextInputType.number,
                 ),
               ],
@@ -546,10 +526,9 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
               onPressed: () async {
                 if (codeController.text.isEmpty ||
                     nameEnController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Code and Name (EN) are required'),
-                    ),
+                  AppFeedback.warning(
+                    context,
+                    'Code and Name (EN) are required',
                   );
                   return;
                 }
@@ -572,12 +551,15 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   iconName: selectedIcon,
                   displayOrder: int.tryParse(orderController.text),
                 );
-                final success = await ref
-                    .read(shopTypesProvider.notifier)
-                    .createShopType(request);
-                if (mounted && success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Shop type created')),
+                final messenger = ScaffoldMessenger.of(context);
+                final notifier = ref.read(shopTypesProvider.notifier);
+                final success = await notifier.createShopType(request);
+                if (success) {
+                  messenger.showSuccess('Shop type created');
+                } else {
+                  messenger.showError(
+                    'Could not create shop type: '
+                    '${friendlyError(ref.read(shopTypesProvider).error)}',
                   );
                 }
               },
@@ -613,34 +595,24 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
               children: [
                 TextField(
                   controller: codeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Code *',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Code *'),
                   textCapitalization: TextCapitalization.characters,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameEnController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name (EN) *',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Name (EN) *'),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameLoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name (LO)',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Name (LO)'),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: descEnController,
                   decoration: const InputDecoration(
                     labelText: 'Description (EN)',
-                    border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
                 ),
@@ -649,17 +621,13 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   controller: descLoController,
                   decoration: const InputDecoration(
                     labelText: 'Description (LO)',
-                    border: OutlineInputBorder(),
                   ),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selectedIcon,
-                  decoration: const InputDecoration(
-                    labelText: 'Icon',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Icon'),
                   items: _iconOptions
                       .map(
                         (icon) => DropdownMenuItem(
@@ -681,10 +649,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: orderController,
-                  decoration: const InputDecoration(
-                    labelText: 'Display Order',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Display Order'),
                   keyboardType: TextInputType.number,
                 ),
               ],
@@ -699,10 +664,9 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
               onPressed: () async {
                 if (codeController.text.isEmpty ||
                     nameEnController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Code and Name (EN) are required'),
-                    ),
+                  AppFeedback.warning(
+                    context,
+                    'Code and Name (EN) are required',
                   );
                   return;
                 }
@@ -725,12 +689,18 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   iconName: selectedIcon,
                   displayOrder: int.tryParse(orderController.text),
                 );
-                final success = await ref
-                    .read(shopTypesProvider.notifier)
-                    .updateShopType(shopType.id, request);
-                if (mounted && success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Shop type updated')),
+                final messenger = ScaffoldMessenger.of(context);
+                final notifier = ref.read(shopTypesProvider.notifier);
+                final success = await notifier.updateShopType(
+                  shopType.id,
+                  request,
+                );
+                if (success) {
+                  messenger.showSuccess('Shop type updated');
+                } else {
+                  messenger.showError(
+                    'Could not update shop type: '
+                    '${friendlyError(ref.read(shopTypesProvider).error)}',
                   );
                 }
               },
@@ -757,15 +727,20 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.colors.error,
+            ),
             onPressed: () async {
               Navigator.pop(context);
-              final success = await ref
-                  .read(shopTypesProvider.notifier)
-                  .deleteShopType(shopType.id);
-              if (mounted && success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Shop type deleted')),
+              final messenger = ScaffoldMessenger.of(context);
+              final notifier = ref.read(shopTypesProvider.notifier);
+              final success = await notifier.deleteShopType(shopType.id);
+              if (success) {
+                messenger.showSuccess('Shop type deleted');
+              } else {
+                messenger.showError(
+                  'Could not delete shop type: '
+                  '${friendlyError(ref.read(shopTypesProvider).error)}',
                 );
               }
             },

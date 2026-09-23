@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class DeletedUsersPage extends ConsumerStatefulWidget {
   const DeletedUsersPage({super.key});
@@ -30,72 +31,77 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
         title: const Text('Deleted Users'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () =>
                 ref.read(deletedUsersProvider.notifier).loadDeletedUsers(),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Info banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: Colors.red.withValues(alpha: 0.08),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.delete_sweep_outlined,
-                  size: 18,
-                  color: Colors.red[700],
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Showing soft-deleted accounts sorted by most recently deleted.',
-                    style: TextStyle(fontSize: 13, color: Colors.red[800]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Count badge
-          if (!state.isLoading && state.error == null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      body: ContentWidth(
+        child: Column(
+          children: [
+            // Info banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: context.colors.error.withValues(alpha: 0.08),
               child: Row(
                 children: [
-                  Text(
-                    '${state.users.length} deleted user${state.users.length == 1 ? '' : 's'}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  Icon(
+                    Icons.delete_sweep_outlined,
+                    size: 18,
+                    color: context.colors.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Showing soft-deleted accounts sorted by most recently deleted.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.colors.error,
+                      ),
                     ),
                   ),
-                  if (state.totalPages > 1) ...[
-                    const SizedBox(width: 6),
+                ],
+              ),
+            ),
+            // Count badge
+            if (!state.isLoading && state.error == null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Row(
+                  children: [
                     Text(
-                      '· page ${state.currentPage + 1} of ${state.totalPages}',
+                      '${state.users.length} deleted user${state.users.length == 1 ? '' : 's'}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (state.totalPages > 1) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '· page ${state.currentPage + 1} of ${state.totalPages}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
+            // Content
+            Expanded(
+              child: state.isLoading
+                  ? const AppLoadingView()
+                  : state.error != null
+                  ? _buildErrorView(state.error!)
+                  : state.users.isEmpty
+                  ? _buildEmptyView()
+                  : _buildUserList(state.users),
             ),
-          // Content
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
-                ? _buildErrorView(state.error!)
-                : state.users.isEmpty
-                ? _buildEmptyView()
-                : _buildUserList(state.users),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -105,20 +111,20 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+          Icon(Icons.people_outline, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
             'No deleted users',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: context.colors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Soft-deleted accounts will appear here.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: context.colors.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -126,22 +132,9 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(error, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () =>
-                ref.read(deletedUsersProvider.notifier).loadDeletedUsers(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-          ),
-        ],
-      ),
+    return AppErrorView(
+      error: error,
+      onRetry: () => ref.read(deletedUsersProvider.notifier).loadDeletedUsers(),
     );
   }
 
@@ -174,15 +167,15 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
               // Avatar
               CircleAvatar(
                 radius: 24,
-                backgroundColor: Colors.red.withValues(alpha: 0.1),
+                backgroundColor: context.colors.error.withValues(alpha: 0.1),
                 backgroundImage: user.avatarUrl != null
                     ? NetworkImage(user.avatarUrl!)
                     : null,
                 child: user.avatarUrl == null
                     ? Text(
                         user.username.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.red,
+                        style: TextStyle(
+                          color: context.colors.error,
                           fontWeight: FontWeight.bold,
                         ),
                       )
@@ -203,20 +196,27 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                     ),
                     Text(
                       '@${user.username}',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.colors.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         _buildTypeChip(user.userType),
                         const SizedBox(width: 6),
-                        Icon(Icons.schedule, size: 12, color: Colors.grey[500]),
+                        Icon(
+                          Icons.schedule,
+                          size: 12,
+                          color: context.colors.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Deleted $deletedAtLabel',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[600],
+                            color: context.colors.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -241,11 +241,11 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                       ],
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'restore',
                     child: Row(
                       children: [
-                        Icon(Icons.restore, color: Colors.green),
+                        Icon(Icons.restore, color: context.status.success),
                         SizedBox(width: 8),
                         Text('Restore'),
                       ],
@@ -264,15 +264,15 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.1),
+        color: context.status.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         type.replaceAll('_', ' '),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          color: Colors.blue,
+          color: context.status.info,
         ),
       ),
     );
@@ -311,7 +311,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: context.colors.outline,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -322,16 +322,18 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: Colors.red.withValues(alpha: 0.1),
+                    backgroundColor: context.colors.error.withValues(
+                      alpha: 0.1,
+                    ),
                     backgroundImage: user.avatarUrl != null
                         ? NetworkImage(user.avatarUrl!)
                         : null,
                     child: user.avatarUrl == null
                         ? Text(
                             user.username.substring(0, 1).toUpperCase(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
-                              color: Colors.red,
+                              color: context.colors.error,
                             ),
                           )
                         : null,
@@ -356,15 +358,15 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
+                            color: context.colors.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
+                          child: Text(
                             'DELETED',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: Colors.red,
+                              color: context.colors.error,
                             ),
                           ),
                         ),
@@ -426,7 +428,9 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.status.success,
+                  ),
                   icon: const Icon(Icons.restore),
                   label: const Text('Restore User'),
                   onPressed: () {
@@ -469,7 +473,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
           Flexible(
             child: Text(
               value,
@@ -496,7 +500,9 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
             child: const Text('Cancel'),
           ),
           FilledButton.icon(
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.status.success,
+            ),
             icon: const Icon(Icons.restore),
             label: const Text('Restore'),
             onPressed: () async {
@@ -506,18 +512,10 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                 await ref
                     .read(deletedUsersProvider.notifier)
                     .restoreUser(user.id);
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text('"${user.username}" has been restored.'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (_) {
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Failed to restore user. Please try again.'),
-                    backgroundColor: Colors.red,
-                  ),
+                messenger.showSuccess('"${user.username}" has been restored.');
+              } catch (e) {
+                messenger.showError(
+                  'Failed to restore user: ${friendlyError(e)}',
                 );
               }
             },

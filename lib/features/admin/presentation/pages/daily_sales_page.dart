@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/daily_sales_provider.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class DailySalesPage extends ConsumerStatefulWidget {
   const DailySalesPage({super.key});
@@ -64,7 +65,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           width: 40,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: context.colors.outline,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -80,7 +81,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[300]!),
+                          border: Border.all(color: context.colors.outline),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: ListTile(
@@ -106,7 +107,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[300]!),
+                          border: Border.all(color: context.colors.outline),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: ListTile(
@@ -184,124 +185,142 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
             onPressed: _showFilterModal,
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref
                 .read(dailySalesProvider.notifier)
                 .loadDailySales(startDate: startDate, endDate: endDate),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Active Filter Info
-          if (state.data != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 18, color: Colors.blue[600]),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${formatter.format(startDate)} - ${formatter.format(endDate)}',
-                      style: Theme.of(context).textTheme.bodySmall,
+      body: ContentWidth(
+        child: Column(
+          children: [
+            // Active Filter Info
+            if (state.data != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: context.status.info,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${formatter.format(startDate)} - ${formatter.format(endDate)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          // Sales Data
-          Expanded(
-            child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : state.error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.error, size: 48, color: Colors.red[300]),
-                        const SizedBox(height: 16),
-                        Text(state.error!),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => ref
-                              .read(dailySalesProvider.notifier)
-                              .loadDailySales(
-                                startDate: startDate,
-                                endDate: endDate,
-                              ),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
-                : state.data == null
-                ? const Center(child: Text('No data available'))
-                : SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        // Summary Stats
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              // First Row: 2 columns
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _SummaryStatItem(
-                                      title: 'Total Shops',
-                                      value: _formatNumber(
-                                        state.data!.totalShopsWithSales,
-                                      ),
-                                      icon: Icons.store,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _SummaryStatItem(
-                                      title: 'Total Orders',
-                                      value: _formatNumber(
-                                        state.data!.totalOrders,
-                                      ),
-                                      icon: Icons.receipt,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              // Second Row: 1 or 2 columns
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _SummaryStatItem(
-                                      title: 'Net Income',
-                                      value: _formatCurrency(
-                                        state.data!.totalNetIncome,
-                                      ),
-                                      icon: Icons.attach_money,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+            // Sales Data
+            Expanded(
+              child: state.isLoading
+                  ? const AppLoadingView()
+                  : state.error != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error,
+                            size: 48,
+                            color: context.colors.error,
                           ),
-                        ),
-                        // Shop List
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: state.data!.shopSales.length,
-                          itemBuilder: (context, index) {
-                            final shop = state.data!.shopSales[index];
-                            return _ShopSalesCard(shop: shop);
-                          },
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          Text(state.error!),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => ref
+                                .read(dailySalesProvider.notifier)
+                                .loadDailySales(
+                                  startDate: startDate,
+                                  endDate: endDate,
+                                ),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : state.data == null
+                  ? const AppEmptyView(
+                      icon: Icons.insights_outlined,
+                      title: 'No data available',
+                      message: 'There is nothing to show for this period.',
+                    )
+                  : SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Summary Stats
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                // First Row: 2 columns
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _SummaryStatItem(
+                                        title: 'Total Shops',
+                                        value: _formatNumber(
+                                          state.data!.totalShopsWithSales,
+                                        ),
+                                        icon: Icons.store,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _SummaryStatItem(
+                                        title: 'Total Orders',
+                                        value: _formatNumber(
+                                          state.data!.totalOrders,
+                                        ),
+                                        icon: Icons.receipt,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                // Second Row: 1 or 2 columns
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _SummaryStatItem(
+                                        title: 'Net Income',
+                                        value: _formatCurrency(
+                                          state.data!.totalNetIncome,
+                                        ),
+                                        icon: Icons.attach_money,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Shop List
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: state.data!.shopSales.length,
+                            itemBuilder: (context, index) {
+                              final shop = state.data!.shopSales[index];
+                              return _ShopSalesCard(shop: shop);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -323,12 +342,12 @@ class _SummaryStatItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: context.colors.outline),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 28, color: Colors.blue[600]),
+          Icon(icon, size: 28, color: context.status.info),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -336,7 +355,10 @@ class _SummaryStatItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.colors.onSurfaceVariant,
+                  ),
                 ),
                 Text(
                   value,
@@ -375,7 +397,7 @@ class _ShopSalesCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: context.colors.outline),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -396,7 +418,10 @@ class _ShopSalesCard extends StatelessWidget {
                   ),
                   Text(
                     'ID: ${shop.shopId}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.status.neutral,
+                    ),
                   ),
                 ],
               ),
@@ -405,7 +430,7 @@ class _ShopSalesCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+                  color: context.status.success,
                 ),
               ),
             ],
@@ -444,7 +469,10 @@ class _MetricItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: context.status.neutral),
+        ),
         const SizedBox(height: 4),
         Text(
           value,

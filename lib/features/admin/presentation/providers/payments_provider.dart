@@ -165,7 +165,7 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
     loadPayments(page: 0);
   }
 
-  Future<AdminPayment?> recordPayment(
+  Future<AdminPayment> recordPayment(
     int shopId,
     RecordPaymentRequest request,
   ) async {
@@ -173,13 +173,13 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
       final payment = await _repository.recordPayment(shopId, request);
       loadPayments(); // Refresh list
       return payment;
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      return null;
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 
-  Future<AdminPayment?> updatePaymentStatus(
+  Future<AdminPayment> updatePaymentStatus(
     int paymentId,
     UpdatePaymentStatusRequest request,
   ) async {
@@ -187,9 +187,9 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
       final payment = await _repository.updatePaymentStatus(paymentId, request);
       await loadPayments(page: 0);
       return payment;
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      return null;
+    } catch (_) {
+      // Leave list state intact; the caller reports the failure.
+      rethrow;
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:ufin_admin_system/features/admin/presentation/providers/dashboar
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_detail_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_history_page.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class SubscriptionsListPage extends ConsumerStatefulWidget {
   const SubscriptionsListPage({super.key});
@@ -64,7 +65,8 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
             onPressed: () => _navigateToAllHistory(),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref
                 .read(subscriptionsProvider.notifier)
                 .loadSubscriptions(status: _statusFilter),
@@ -81,33 +83,36 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
         icon: const Icon(Icons.add),
         label: const Text('Create Subscription'),
       ),
-      body: Column(
-        children: [
-          // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                _buildFilterChip('All', null),
-                _buildFilterChip('Active', 'active'),
-                _buildFilterChip('Trial', 'trial'),
-                _buildFilterChip('Expired', 'expired'),
-                _buildFilterChip('Cancelled', 'cancelled'),
-              ],
+      body: ContentWidth(
+        child: Column(
+          children: [
+            // Filter Chips
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  _buildFilterChip('All', null),
+                  _buildFilterChip('Active', 'active'),
+                  _buildFilterChip('Trial', 'trial'),
+                  _buildFilterChip('Expired', 'expired'),
+                  _buildFilterChip('Cancelled', 'cancelled'),
+                ],
+              ),
             ),
-          ),
-          // Subscription List
-          Expanded(
-            child: subscriptionsState.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : subscriptionsState.error != null
-                ? _buildErrorView(subscriptionsState.error!)
-                : subscriptionsState.subscriptions.isEmpty
-                ? _buildEmptyView()
-                : _buildSubscriptionList(subscriptionsState.subscriptions),
-          ),
-        ],
+            // Subscription List
+            Expanded(
+              child: subscriptionsState.isLoading
+                  ? const AppLoadingView()
+                  : subscriptionsState.error != null &&
+                        subscriptionsState.subscriptions.isEmpty
+                  ? _buildErrorView(subscriptionsState.error!)
+                  : subscriptionsState.subscriptions.isEmpty
+                  ? _buildEmptyView()
+                  : _buildSubscriptionList(subscriptionsState.subscriptions),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -134,35 +139,11 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load subscriptions',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => ref
-                  .read(subscriptionsProvider.notifier)
-                  .loadSubscriptions(status: _statusFilter),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
+    return AppErrorView(
+      error: error,
+      onRetry: () => ref
+          .read(subscriptionsProvider.notifier)
+          .loadSubscriptions(status: _statusFilter),
     );
   }
 
@@ -171,7 +152,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_outlined, size: 64, color: Colors.grey[400]),
+          Icon(Icons.inbox_outlined, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
             'No subscriptions found',
@@ -275,7 +256,9 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                         const SizedBox(height: 2),
                         Text(
                           subscription.planName ?? 'No Plan',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(
+                            color: context.colors.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -325,10 +308,10 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                 ),
                 decoration: BoxDecoration(
                   color: isExpired
-                      ? Colors.red.shade50
+                      ? context.colors.errorContainer
                       : isExpiringSoon
-                      ? Colors.orange.shade50
-                      : Colors.grey.shade100,
+                      ? context.status.warningContainer
+                      : context.colors.surfaceContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -341,10 +324,10 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                           : Icons.calendar_today,
                       size: 16,
                       color: isExpired
-                          ? Colors.red
+                          ? context.colors.error
                           : isExpiringSoon
-                          ? Colors.orange
-                          : Colors.grey[600],
+                          ? context.status.warning
+                          : context.colors.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -356,17 +339,17 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                       style: TextStyle(
                         fontSize: 13,
                         color: isExpired
-                            ? Colors.red
+                            ? context.colors.error
                             : isExpiringSoon
-                            ? Colors.orange.shade700
-                            : Colors.grey[700],
+                            ? context.status.warning
+                            : context.colors.onSurfaceVariant,
                         fontWeight: isExpiringSoon || isExpired
                             ? FontWeight.w500
                             : FontWeight.normal,
                       ),
                     ),
                     const Spacer(),
-                    Icon(Icons.chevron_right, color: Colors.grey[400]),
+                    Icon(Icons.chevron_right, color: context.colors.outline),
                   ],
                 ),
               ),
@@ -378,33 +361,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
   }
 
   Widget _buildStatusChip(String status) {
-    final color = _getStatusColor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            status.toUpperCase(),
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
+    return StatusBadge.fromStatus(status);
   }
 
   Widget _buildInfoItem(IconData icon, String label, String value) {
@@ -413,11 +370,14 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 14, color: Colors.grey[500]),
+            Icon(icon, size: 14, color: context.colors.onSurfaceVariant),
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(
+                fontSize: 11,
+                color: context.colors.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -428,21 +388,6 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
         ),
       ],
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'trial':
-        return Colors.blue;
-      case 'expired':
-        return Colors.red;
-      case 'cancelled':
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
   }
 
   void _navigateToDetail(AdminSubscription subscription) {

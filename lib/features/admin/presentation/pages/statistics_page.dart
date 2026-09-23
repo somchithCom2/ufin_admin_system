@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class StatisticsPage extends ConsumerStatefulWidget {
   const StatisticsPage({super.key});
@@ -42,7 +43,8 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
         title: const Text('Statistics'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
               ref.read(subscriptionStatsProvider.notifier).refresh();
               ref.read(expiringSubscriptionsProvider.notifier).refresh();
@@ -57,9 +59,11 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildOverviewTab(), _buildExpiringTab()],
+      body: ContentWidth(
+        child: TabBarView(
+          controller: _tabController,
+          children: [_buildOverviewTab(), _buildExpiringTab()],
+        ),
       ),
     );
   }
@@ -68,7 +72,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
     final state = ref.watch(subscriptionStatsProvider);
 
     if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingView();
     }
 
     if (state.error != null) {
@@ -76,7 +80,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error, size: 48, color: Colors.red[300]),
+            Icon(Icons.error, size: 48, color: context.colors.error),
             const SizedBox(height: 16),
             Text(state.error!),
             const SizedBox(height: 16),
@@ -92,7 +96,11 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
 
     final stats = state.stats;
     if (stats == null) {
-      return const Center(child: Text('No data available'));
+      return const AppEmptyView(
+        icon: Icons.insights_outlined,
+        title: 'No data available',
+        message: 'There is nothing to show for this period.',
+      );
     }
 
     return SingleChildScrollView(
@@ -108,7 +116,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                   'Total',
                   stats.totalSubscriptions.toString(),
                   Icons.subscriptions,
-                  Colors.blue,
+                  context.status.info,
                 ),
               ),
               const SizedBox(width: 12),
@@ -117,7 +125,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                   'Active',
                   stats.activeSubscriptions.toString(),
                   Icons.check_circle,
-                  Colors.green,
+                  context.status.success,
                 ),
               ),
             ],
@@ -130,7 +138,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                   'Expired',
                   stats.expiredSubscriptions.toString(),
                   Icons.timer_off,
-                  Colors.orange,
+                  context.status.warning,
                 ),
               ),
               const SizedBox(width: 12),
@@ -139,7 +147,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                   'Cancelled',
                   stats.cancelledSubscriptions.toString(),
                   Icons.cancel,
-                  Colors.red,
+                  context.colors.error,
                 ),
               ),
             ],
@@ -175,9 +183,11 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.green[50],
+              color: context.status.successContainer,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green[200]!),
+              border: Border.all(
+                color: context.status.success.withValues(alpha: 0.3),
+              ),
             ),
             child: Column(
               children: [
@@ -187,12 +197,12 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                     _buildRevenueItem(
                       'Total Revenue',
                       stats.totalRevenue,
-                      Colors.green[700]!,
+                      context.status.success,
                     ),
                     _buildRevenueItem(
                       'MRR',
                       stats.monthlyRecurringRevenue,
-                      Colors.blue[700]!,
+                      context.status.info,
                     ),
                   ],
                 ),
@@ -253,7 +263,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
         // Days filter
         Container(
           padding: const EdgeInsets.all(12),
-          color: Colors.grey[50],
+          color: context.colors.surfaceContainer,
           child: Row(
             children: [
               const Text('Show expiring within: '),
@@ -300,7 +310,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange[50],
+              color: context.status.warningContainer,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -315,7 +325,10 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text('Total', style: TextStyle(color: Colors.grey[600])),
+                    Text(
+                      'Total',
+                      style: TextStyle(color: context.colors.onSurfaceVariant),
+                    ),
                   ],
                 ),
                 Column(
@@ -325,10 +338,13 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.orange[700],
+                        color: context.status.warning,
                       ),
                     ),
-                    Text('≤7 days', style: TextStyle(color: Colors.grey[600])),
+                    Text(
+                      '≤7 days',
+                      style: TextStyle(color: context.colors.onSurfaceVariant),
+                    ),
                   ],
                 ),
                 Column(
@@ -338,10 +354,13 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.red[700],
+                        color: context.colors.error,
                       ),
                     ),
-                    Text('≤3 days', style: TextStyle(color: Colors.grey[600])),
+                    Text(
+                      '≤3 days',
+                      style: TextStyle(color: context.colors.onSurfaceVariant),
+                    ),
                   ],
                 ),
               ],
@@ -351,13 +370,13 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
         // List
         Expanded(
           child: state.isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppLoadingView()
               : state.error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error, size: 48, color: Colors.red[300]),
+                      Icon(Icons.error, size: 48, color: context.colors.error),
                       const SizedBox(height: 16),
                       Text(state.error!),
                       ElevatedButton(
@@ -377,7 +396,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                       Icon(
                         Icons.check_circle,
                         size: 64,
-                        color: Colors.green[300],
+                        color: context.status.success,
                       ),
                       const SizedBox(height: 16),
                       const Text('No subscriptions expiring soon!'),
@@ -434,7 +453,10 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
               ),
               Text(
                 title,
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                style: TextStyle(
+                  color: context.colors.onSurfaceVariant,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -461,7 +483,13 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
             color: color,
           ),
         ),
-        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+        Text(
+          label,
+          style: TextStyle(
+            color: context.colors.onSurfaceVariant,
+            fontSize: 12,
+          ),
+        ),
       ],
     );
   }
@@ -486,7 +514,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
           const SizedBox(height: 4),
           LinearProgressIndicator(
             value: percentage,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: context.colors.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(4),
           ),
         ],
@@ -523,9 +551,9 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
 
   Widget _buildExpiringCard(sub) {
     final urgencyColor = sub.isCritical
-        ? Colors.red
+        ? context.colors.error
         : sub.isUrgent
-        ? Colors.orange
+        ? context.status.warning
         : Colors.amber;
 
     return Card(
@@ -563,11 +591,14 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
             Text(sub.planName),
             Text(
               'Expires: ${DateFormat('MMM d, yyyy').format(sub.endDate)}',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              style: TextStyle(
+                color: context.colors.onSurfaceVariant,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
-        trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
+        trailing: Icon(Icons.chevron_right, color: context.colors.outline),
         onTap: () {
           // Navigate to subscription detail or show action sheet
         },
@@ -576,19 +607,6 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'expired':
-        return Colors.orange;
-      case 'cancelled':
-        return Colors.red;
-      case 'trial':
-        return Colors.purple;
-      case 'suspended':
-        return Colors.grey;
-      default:
-        return Colors.blue;
-    }
+    return StatusTone.fromStatus(status).foreground(context);
   }
 }
