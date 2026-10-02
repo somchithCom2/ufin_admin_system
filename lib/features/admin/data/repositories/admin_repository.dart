@@ -80,6 +80,16 @@ class AdminRepository {
     }
   }
 
+  /// Restore a soft-deleted shop
+  Future<AdminShop> restoreShop(int id) async {
+    try {
+      final response = await _dio.put(ApiConstants.adminShopRestore(id));
+      return _parseResponse<AdminShop>(response, AdminShop.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Soft delete shop
   Future<void> deleteShop(int id) async {
     try {
@@ -162,6 +172,22 @@ class AdminRepository {
         ApiConstants.adminUserResetPassword(id),
         data: request.toJson(),
       );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Mark a user's email or phone verified (code never arrived)
+  Future<AdminUser> markUserVerified(
+    int id,
+    MarkUserVerifiedRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminUserVerify(id),
+        data: request.toJson(),
+      );
+      return _parseResponse<AdminUser>(response, AdminUser.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

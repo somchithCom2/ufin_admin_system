@@ -238,4 +238,66 @@ void main() {
       {'billingCycle': 'monthly'},
     );
   });
+
+  test('restoring a shop calls restore and reads the restored shop', () async {
+    responseBody = {
+      'success': true,
+      'data': {
+        'id': 12,
+        'name': 'Noy Cafe Branch',
+        'status': 'active',
+        'parentShopId': 4,
+        'parentShopName': 'Noy Cafe',
+        'deletedAt': null,
+      },
+    };
+    final shop = await repository.restoreShop(12);
+    expect(requests.single.method, 'PUT');
+    expect(requests.single.path, '/admin/shops/12/restore');
+    expect(shop.isDeleted, isFalse);
+    expect(shop.isBranch, isTrue);
+    expect(shop.parentShopName, 'Noy Cafe');
+  });
+
+  test('deleted shops in a list carry their deletion date', () {
+    final shop = AdminShop.fromJson({
+      'id': 12,
+      'name': 'Old Branch',
+      'status': 'inactive',
+      'deletedAt': '2026-09-30T10:15:00',
+    });
+    expect(shop.isDeleted, isTrue);
+    expect(shop.isBranch, isFalse);
+    expect(shop.deletedAt, DateTime(2026, 9, 30, 10, 15));
+  });
+
+  test('marking a user verified sends the channel and reason', () async {
+    responseBody = {
+      'success': true,
+      'data': {
+        'id': 7,
+        'username': 'noy',
+        'userType': 'CLIENT',
+        'status': 'active',
+        'phoneVerified': true,
+      },
+    };
+    final user = await repository.markUserVerified(
+      7,
+      const MarkUserVerifiedRequest(
+        channel: 'phone',
+        reason: 'called back on registered number',
+      ),
+    );
+    expect(requests.single.method, 'PUT');
+    expect(requests.single.path, '/admin/users/7/verify');
+    expect(requests.single.data, {
+      'channel': 'phone',
+      'reason': 'called back on registered number',
+    });
+    expect(user.phoneVerified, isTrue);
+    expect(const MarkUserVerifiedRequest(channel: 'email').toJson(), {
+      'channel': 'email',
+    });
+  });
 }

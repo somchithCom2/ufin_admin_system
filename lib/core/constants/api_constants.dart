@@ -37,6 +37,7 @@ class ApiConstants {
   static const String adminShops = '/admin/shops';
   static String adminShopById(int id) => '/admin/shops/$id';
   static String adminShopStatus(int id) => '/admin/shops/$id/status';
+  static String adminShopRestore(int id) => '/admin/shops/$id/restore';
 
   // Users
   static const String adminUsers = '/admin/users';
@@ -46,6 +47,7 @@ class ApiConstants {
   static String adminUserResetPassword(int id) =>
       '/admin/users/$id/reset-password';
   static String adminUserRestore(int id) => '/admin/users/$id/restore';
+  static String adminUserVerify(int id) => '/admin/users/$id/verify';
 
   // Products
   static String productsPaginated(int shopId, int empId) =>

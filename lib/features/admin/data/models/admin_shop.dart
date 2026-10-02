@@ -12,6 +12,10 @@ class AdminShop {
   final String? currency;
   final String? timezone;
 
+  // Branch info - null for a top-level shop
+  final int? parentShopId;
+  final String? parentShopName;
+
   // Owner info
   final int? ownerId;
   final String? ownerUsername;
@@ -30,6 +34,7 @@ class AdminShop {
   // Timestamps
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
 
   const AdminShop({
     required this.id,
@@ -43,6 +48,8 @@ class AdminShop {
     required this.status,
     this.currency,
     this.timezone,
+    this.parentShopId,
+    this.parentShopName,
     this.ownerId,
     this.ownerUsername,
     this.ownerEmail,
@@ -54,6 +61,7 @@ class AdminShop {
     this.productCount = 0,
     this.createdAt,
     this.updatedAt,
+    this.deletedAt,
   });
 
   factory AdminShop.fromJson(Map<String, dynamic> json) {
@@ -75,6 +83,8 @@ class AdminShop {
       status: json['status'] as String? ?? 'active',
       currency: json['currency'] as String?,
       timezone: json['timezone'] as String?,
+      parentShopId: json['parentShopId'] as int?,
+      parentShopName: json['parentShopName'] as String?,
       ownerId: json['ownerId'] as int?,
       ownerUsername: json['ownerUsername'] as String?,
       ownerEmail: json['ownerEmail'] as String?,
@@ -92,6 +102,9 @@ class AdminShop {
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'] as String)
           : null,
+      deletedAt: json['deletedAt'] != null
+          ? DateTime.tryParse(json['deletedAt'] as String)
+          : null,
     );
   }
 
@@ -107,6 +120,8 @@ class AdminShop {
     'status': status,
     'currency': currency,
     'timezone': timezone,
+    'parentShopId': parentShopId,
+    'parentShopName': parentShopName,
     'ownerId': ownerId,
     'ownerUsername': ownerUsername,
     'ownerEmail': ownerEmail,
@@ -118,6 +133,7 @@ class AdminShop {
     'productCount': productCount,
     'createdAt': createdAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
+    'deletedAt': deletedAt?.toIso8601String(),
   };
 
   /// Check if shop is active
@@ -125,4 +141,10 @@ class AdminShop {
 
   /// Check if shop is suspended
   bool get isSuspended => status.toLowerCase() == 'suspended';
+
+  /// Soft-deleted by its owner or an admin; only restore applies
+  bool get isDeleted => deletedAt != null;
+
+  /// A branch of another shop
+  bool get isBranch => parentShopId != null;
 }
