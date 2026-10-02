@@ -175,6 +175,12 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
       rethrow;
     }
   }
+
+  /// Restores a deleted shop; it leaves the "Deleted" list on refresh.
+  Future<void> restoreShop(int shopId) async {
+    await _repository.restoreShop(shopId);
+    loadShops(search: _search, status: _status);
+  }
 }
 
 final shopsProvider = StateNotifierProvider<ShopsNotifier, ShopsState>((ref) {
@@ -321,6 +327,18 @@ class UsersNotifier extends StateNotifier<UsersState> {
       // Leave list state intact; the caller reports the failure.
       rethrow;
     }
+  }
+
+  Future<void> markUserVerified(
+    int userId,
+    String channel,
+    String? reason,
+  ) async {
+    await _repository.markUserVerified(
+      userId,
+      MarkUserVerifiedRequest(channel: channel, reason: reason),
+    );
+    loadUsers(search: _search, status: _status, userType: _userType);
   }
 
   Future<void> resetUserPassword(int userId, String newPassword) async {

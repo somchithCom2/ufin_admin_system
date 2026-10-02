@@ -71,7 +71,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   Expanded(
                     child: AppSearchField(
                       controller: _searchController,
-                      hintText: 'Search shops…',
+                      hintText: 'Name, phone, email, owner or ID…',
                       onSubmitted: (value) {
                         if (_scrollController.hasClients) {
                           _scrollController.jumpTo(0);
@@ -113,6 +113,10 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                       const PopupMenuItem(
                         value: 'inactive',
                         child: Text('Inactive'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'deleted',
+                        child: Text('Deleted'),
                       ),
                     ],
                   ),
@@ -186,8 +190,13 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: _getStatusColor(shop.status).withValues(alpha: 0.1),
-          child: Icon(Icons.storefront, color: _getStatusColor(shop.status)),
+          backgroundColor: _getStatusColor(
+            _displayStatus(shop),
+          ).withValues(alpha: 0.1),
+          child: Icon(
+            Icons.storefront,
+            color: _getStatusColor(_displayStatus(shop)),
+          ),
         ),
         title: Row(
           children: [
@@ -212,9 +221,13 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
           children: [
             if (shop.ownerUsername != null)
               Text('Owner: ${shop.ownerUsername}'),
+            if (shop.isBranch)
+              Text(
+                'Branch of: ${shop.parentShopName ?? '#${shop.parentShopId}'}',
+              ),
             Row(
               children: [
-                _buildStatusChip(shop.status),
+                _buildStatusChip(_displayStatus(shop)),
                 const SizedBox(width: 8),
                 if (shop.subscriptionPlan != null)
                   Chip(
@@ -242,6 +255,17 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 ],
               ),
             ),
+            if (shop.isDeleted)
+              PopupMenuItem(
+                value: 'restore',
+                child: Row(
+                  children: [
+                    Icon(Icons.restore, color: context.status.success),
+                    SizedBox(width: 8),
+                    Text('Restore'),
+                  ],
+                ),
+              ),
             PopupMenuItem(
               value: 'products',
               child: Row(
@@ -252,7 +276,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 ],
               ),
             ),
-            if (shop.status != 'suspended')
+            if (!shop.isDeleted && shop.status != 'suspended')
               PopupMenuItem(
                 value: 'suspend',
                 child: Row(
@@ -263,7 +287,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   ],
                 ),
               ),
-            if (shop.status == 'suspended')
+            if (!shop.isDeleted && shop.status == 'suspended')
               PopupMenuItem(
                 value: 'activate',
                 child: Row(
@@ -285,6 +309,10 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     return StatusBadge.fromStatus(status);
   }
 
+  /// A deleted shop is stored as "inactive"; show why it is gone instead.
+  String _displayStatus(AdminShop shop) =>
+      shop.isDeleted ? 'deleted' : shop.status;
+
   Color _getStatusColor(String status) {
     return StatusTone.fromStatus(status).foreground(context);
   }
@@ -305,6 +333,9 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
         break;
       case 'activate':
         _showStatusDialog(shop, 'active');
+        break;
+      case 'restore':
+        _showRestoreDialog(shop);
         break;
     }
   }
@@ -343,12 +374,12 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: _getStatusColor(
-                      shop.status,
+                      _displayStatus(shop),
                     ).withValues(alpha: 0.1),
                     child: Icon(
                       Icons.storefront,
                       size: 30,
-                      color: _getStatusColor(shop.status),
+                      color: _getStatusColor(_displayStatus(shop)),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -360,7 +391,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                           shop.name,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        _buildStatusChip(shop.status),
+                        _buildStatusChip(_displayStatus(shop)),
                       ],
                     ),
                   ),
@@ -378,6 +409,16 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 _buildDetailRow('Email', shop.email ?? 'N/A'),
                 _buildDetailRow('Phone', shop.phone ?? 'N/A'),
                 _buildDetailRow('Address', shop.address ?? 'N/A'),
+                if (shop.isBranch)
+                  _buildDetailRow(
+                    'Branch of',
+                    shop.parentShopName ?? '#${shop.parentShopId}',
+                  ),
+                if (shop.isDeleted)
+                  _buildDetailRow(
+                    'Deleted on',
+                    shop.deletedAt!.toLocal().toString().split('.')[0],
+                  ),
               ]),
               const SizedBox(height: 16),
               _buildDetailSection('Owner', [
@@ -400,6 +441,20 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 _buildDetailRow('Products', shop.productCount.toString()),
               ]),
               const SizedBox(height: 24),
+              if (shop.isDeleted) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.restore),
+                    label: const Text('Restore Shop'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showRestoreDialog(shop);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
@@ -455,6 +510,29 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _showRestoreDialog(AdminShop shop) async {
+    final confirmed = await AppDialogs.confirm(
+      context,
+      title: 'Restore shop',
+      message:
+          '"${shop.name}" will be active again with all its products, staff '
+          'and sales history. Its owner and staff can sign in to it right away.',
+      confirmLabel: 'Restore',
+      icon: Icons.restore_rounded,
+    );
+    if (!confirmed || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(shopsProvider.notifier).restoreShop(shop.id);
+      messenger.showSuccess('"${shop.name}" has been restored');
+    } catch (e) {
+      messenger.showError(
+        'Could not restore "${shop.name}": ${friendlyError(e)}',
+      );
+    }
   }
 
   Future<void> _showStatusDialog(AdminShop shop, String newStatus) async {

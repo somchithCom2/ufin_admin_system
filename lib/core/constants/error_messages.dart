@@ -56,6 +56,24 @@ abstract final class ErrorMessages {
     // --- Shops & general ---
     'ERR_SHOP_NOT_FOUND': 'Shop not found.',
     'ERR_SHOP_DELETED': 'This shop has been deleted.',
+    'ERR_SHOP_NOT_DELETED': 'This shop is not deleted.',
+    'ERR_SHOP_DELETED_USE_RESTORE':
+        'This shop is deleted. Restore it instead of changing its status.',
+    'ERR_SHOP_OWNER_DELETED':
+        "The shop's owner account is deleted. Restore the owner first.",
+    'ERR_PARENT_SHOP_DELETED':
+        'This branch belongs to a shop that is still deleted. Restore that shop first.',
+    'ERR_SHOP_NAME_ALREADY_EXISTS':
+        'The owner already has another shop with this name. Ask them to rename it first.',
+    'ERR_INVALID_SHOP_STATUS': 'Unknown shop status.',
+
+    // --- Users ---
+    'ERR_USER_NOT_FOUND': 'User not found.',
+    'ERR_ACCOUNT_DELETED_USE_RESTORE':
+        'This account is deleted. Restore it first.',
+    'ERR_USER_EMAIL_MISSING': 'This user has no email address.',
+    'ERR_USER_PHONE_MISSING': 'This user has no phone number.',
+    'ERR_INVALID_VERIFICATION_CHANNEL': 'Choose email or phone to verify.',
     'ERR_UNAUTHORIZED': 'You are not allowed to do that.',
     'ERR_NOT_AUTHORIZED': 'You are not allowed to do that.',
     'ERR_UNEXPECTED': 'Something went wrong. Please try again.',

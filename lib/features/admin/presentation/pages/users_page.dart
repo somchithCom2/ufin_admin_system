@@ -331,6 +331,17 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     ],
                   ),
                 ),
+              if (!isDeleted && _unverifiedChannels(user).isNotEmpty)
+                PopupMenuItem(
+                  value: 'verify',
+                  child: Row(
+                    children: [
+                      Icon(Icons.verified_user, color: context.status.success),
+                      SizedBox(width: 8),
+                      Text('Mark Verified'),
+                    ],
+                  ),
+                ),
               if (!isDeleted)
                 const PopupMenuItem(
                   value: 'reset_password',
@@ -390,10 +401,106 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       case 'delete':
         _showStatusDialog(user, 'deleted');
         break;
+      case 'verify':
+        _showMarkVerifiedDialog(user);
+        break;
       case 'reset_password':
         _showResetPasswordDialog(user);
         break;
     }
+  }
+
+  /// Contacts the user has but has not verified, phone first: owners in Laos
+  /// are far more likely to be stuck waiting for an OTP than an email.
+  List<String> _unverifiedChannels(AdminUser user) => [
+    if ((user.phone ?? '').trim().isNotEmpty && !user.phoneVerified) 'phone',
+    if ((user.email ?? '').trim().isNotEmpty && !user.emailVerified) 'email',
+  ];
+
+  void _showMarkVerifiedDialog(AdminUser user) {
+    final channels = _unverifiedChannels(user);
+    final reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var channel = channels.first;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Mark Verified'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Use this when "${user.username}" never received their '
+                  'verification code. Only do it after confirming the contact '
+                  'belongs to the person asking.',
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final option in channels)
+                      ChoiceChip(
+                        label: Text(
+                          option == 'phone'
+                              ? 'Phone: ${user.phone}'
+                              : 'Email: ${user.email}',
+                        ),
+                        selected: channel == option,
+                        onSelected: (_) =>
+                            setDialogState(() => channel = option),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: reasonController,
+                  decoration: const InputDecoration(
+                    labelText: 'How did you confirm it is them?',
+                    hintText: 'e.g. called back on the registered number',
+                  ),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Reason is required'
+                      : null,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                final messenger = ScaffoldMessenger.of(this.context);
+                final reason = reasonController.text.trim();
+                Navigator.pop(context);
+                try {
+                  await ref
+                      .read(usersProvider.notifier)
+                      .markUserVerified(user.id, channel, reason);
+                  messenger.showSuccess(
+                    '"${user.username}" ${channel == 'phone' ? 'phone' : 'email'} marked verified',
+                  );
+                } catch (e) {
+                  messenger.showError(
+                    'Failed to mark verified: ${friendlyError(e)}',
+                  );
+                }
+              },
+              child: const Text('Mark Verified'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showUserDetails(AdminUser user) {

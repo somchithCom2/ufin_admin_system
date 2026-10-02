@@ -47,6 +47,19 @@ class ResetUserPasswordRequest {
   Map<String, dynamic> toJson() => {'newPassword': newPassword};
 }
 
+/// Request to mark a user's email or phone verified
+class MarkUserVerifiedRequest {
+  final String channel; // 'email' or 'phone'
+  final String? reason;
+
+  const MarkUserVerifiedRequest({required this.channel, this.reason});
+
+  Map<String, dynamic> toJson() => {
+    'channel': channel,
+    if (reason != null && reason!.isNotEmpty) 'reason': reason,
+  };
+}
+
 /// Request to extend subscription
 class ExtendSubscriptionRequest {
   final int? days;
