@@ -429,6 +429,30 @@ class AdminRepository {
     }
   }
 
+  /// Turn auto-renewal on or off for a shop's subscription
+  ///
+  /// Auto-renewal is not a free extension: the scheduler only rolls a paid
+  /// subscription forward when a completed payment that has not been spent yet
+  /// covers the next period. Leaving it on simply lets a recorded payment be
+  /// applied automatically instead of the admin extending by hand.
+  Future<AdminSubscription> setAutoRenew(
+    int shopId,
+    UpdateAutoRenewRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminSubscriptionAutoRenew(shopId),
+        data: request.toJson(),
+      );
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Get all subscription history (paginated)
   Future<PaginatedResponse<SubscriptionHistory>> getSubscriptionHistory({
     int page = 0,

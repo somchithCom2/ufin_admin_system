@@ -155,6 +155,11 @@ class PaymentsNotifier extends StateNotifier<PaymentsState> {
     loadPayments(page: 0);
   }
 
+  void setShopFilter(int? shopId) {
+    state = state.copyWith(shopIdFilter: shopId);
+    loadPayments(page: 0);
+  }
+
   void setDateRangeFilter(DateTime? startDate, DateTime? endDate) {
     state = state.copyWith(startDateFilter: startDate, endDateFilter: endDate);
     loadPayments(page: 0);

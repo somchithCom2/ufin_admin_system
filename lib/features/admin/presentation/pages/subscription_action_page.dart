@@ -48,9 +48,11 @@ class _SubscriptionActionPageState
     if (sub != null) {
       _shop = ShopSelection(id: sub.shopId, name: sub.shopName);
     }
-    _cycle = widget.subscription?.billingCycle == 'yearly'
-        ? 'yearly'
-        : 'monthly';
+    _cycle = switch (widget.subscription?.billingCycle) {
+      'yearly' => 'yearly',
+      'lifetime' => 'lifetime',
+      _ => 'monthly',
+    };
     if (widget.action != SubscriptionAction.cancel) _loadPlans();
   }
 
@@ -209,6 +211,10 @@ class _SubscriptionActionPageState
                                 value: 'yearly',
                                 child: Text('Yearly'),
                               ),
+                              DropdownMenuItem(
+                                value: 'lifetime',
+                                child: Text('Lifetime'),
+                              ),
                             ],
                             onChanged: (v) => setState(() => _cycle = v!),
                           ),
@@ -216,7 +222,10 @@ class _SubscriptionActionPageState
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               child: Text(
-                                'Plan price: ${_cycle == 'yearly' ? selected.priceYearly : selected.priceMonthly} ${selected.currency}',
+                                _cycle == 'lifetime'
+                                    ? 'One-off price: ${selected.priceYearly} ${selected.currency} '
+                                          '— never expires and is never renewed.'
+                                    : 'Plan price: ${_cycle == 'yearly' ? selected.priceYearly : selected.priceMonthly} ${selected.currency}',
                               ),
                             ),
                           if (widget.action == SubscriptionAction.create &&
@@ -230,8 +239,13 @@ class _SubscriptionActionPageState
                               value: _trial,
                               onChanged: (v) => setState(() => _trial = v),
                             ),
-                          const Text(
-                            'This changes subscription access. Record any payment separately in Payments.',
+                          Text(
+                            _cycle == 'lifetime'
+                                ? 'This changes subscription access. A lifetime '
+                                      'subscription never expires and never renews.'
+                                : 'This changes subscription access. Auto-renew only '
+                                      'rolls the period forward once a matching payment '
+                                      'is recorded in Payments — record it there.',
                           ),
                         ],
                         if (widget.action == SubscriptionAction.cancel) ...[
@@ -243,8 +257,11 @@ class _SubscriptionActionPageState
                           ),
                           Text(
                             _immediate
-                                ? 'The current subscription ends immediately.'
-                                : 'Access continues until the current billing period ends; renewal is disabled.',
+                                ? 'The paid plan ends now and the shop drops to the '
+                                      'Free plan. It keeps working under Free limits '
+                                      'rather than being locked out.'
+                                : 'Access continues until the current billing period '
+                                      'ends; auto-renew is switched off.',
                           ),
                         ],
                         const SizedBox(height: 16),

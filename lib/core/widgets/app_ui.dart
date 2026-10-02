@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ufin_admin_system/config/theme/app_theme.dart';
+import 'package:ufin_admin_system/core/constants/error_messages.dart';
 
 export 'package:ufin_admin_system/config/theme/app_theme.dart'
     show AppSpacing, StatusColors, StatusColorsX;
@@ -28,6 +29,18 @@ String friendlyError(Object? error) {
   }
   // Server HTML error pages are not readable to users.
   if (text.startsWith('<')) return 'Server error. Please try again later.';
+  // The backend answers with bare ERR_ codes so the shop app can translate
+  // them; this console was putting those codes straight in front of an admin.
+  final mapped = ErrorMessages.lookup(text);
+  if (mapped != null) return mapped;
+  if (ErrorMessages.isCode(text)) {
+    // Unknown code: still better than nothing, but make it readable.
+    return text
+        .substring(4)
+        .toLowerCase()
+        .replaceAll('_', ' ')
+        .replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toUpperCase());
+  }
   return text.length > 240 ? '${text.substring(0, 240)}…' : text;
 }
 

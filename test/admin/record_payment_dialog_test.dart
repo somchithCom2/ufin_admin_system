@@ -7,6 +7,7 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/payments_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_picker.dart';
 
 class _EmptyPaymentsRepo extends AdminRepository {
   /// `true` mimics a backend that stores the requested payment date;
@@ -92,6 +93,12 @@ class _EmptyPaymentsRepo extends AdminRepository {
   );
 }
 
+/// The form's shop field (the page's filter bar also says "Shop").
+final _shopField = find.descendant(
+  of: find.byType(ShopPickerField),
+  matching: find.text('Shop'),
+);
+
 void main() {
   Future<_EmptyPaymentsRepo> openForm(
     WidgetTester tester, {
@@ -147,7 +154,7 @@ void main() {
   ) async {
     final repo = await openForm(tester);
 
-    await tester.tap(find.text('Shop'));
+    await tester.tap(_shopField);
     await tester.pumpAndSettle();
     expect(find.text('Select shop'), findsOneWidget);
     expect(find.text('Mekong Mart'), findsOneWidget);
@@ -203,7 +210,7 @@ void main() {
   });
 
   Future<DateTime> fillBackdated(WidgetTester tester) async {
-    await tester.tap(find.text('Shop'));
+    await tester.tap(_shopField);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mekong Mart'));
     await tester.pumpAndSettle();
@@ -264,7 +271,7 @@ void main() {
     // Server ignores the date and (UTC) stamps "now": for a same-day record
     // that's expected, so the admin just sees success.
     await openForm(tester, honorsPaymentDate: false);
-    await tester.tap(find.text('Shop'));
+    await tester.tap(_shopField);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mekong Mart'));
     await tester.pumpAndSettle();

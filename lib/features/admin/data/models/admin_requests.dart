@@ -267,6 +267,23 @@ class ReactivateSubscriptionRequest {
   };
 }
 
+/// Turns auto-renewal on or off for a shop's current subscription.
+///
+/// Auto-renewal only rolls a paid subscription forward when an unapplied
+/// completed payment covers the next period, so leaving this on does not give
+/// the shop free time — it lets a recorded payment be spent automatically.
+class UpdateAutoRenewRequest {
+  final bool autoRenew;
+  final String? reason;
+
+  const UpdateAutoRenewRequest({required this.autoRenew, this.reason});
+
+  Map<String, dynamic> toJson() => {
+    'autoRenew': autoRenew,
+    if (reason != null && reason!.trim().isNotEmpty) 'reason': reason!.trim(),
+  };
+}
+
 /// Manual payments are recorded against the shop's current subscription.
 class RecordPaymentRequest {
   final double amount;

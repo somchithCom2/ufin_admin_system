@@ -72,6 +72,8 @@ class ApiConstants {
       '/admin/subscriptions/shop/$shopId/downgrade/$newPlanCode';
   static String adminSubscriptionChangePlan(int shopId) =>
       '/admin/subscriptions/shop/$shopId/change-plan';
+  static String adminSubscriptionAutoRenew(int shopId) =>
+      '/admin/subscriptions/shop/$shopId/auto-renew';
   static const String adminSubscriptionHistory = '/admin/subscriptions/history';
   static String adminSubscriptionShopHistory(int shopId) =>
       '/admin/subscriptions/shop/$shopId/history';

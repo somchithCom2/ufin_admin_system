@@ -15,9 +15,8 @@ class PaymentsPage extends ConsumerStatefulWidget {
 }
 
 class _PaymentsPageState extends ConsumerState<PaymentsPage> {
-  String? _statusFilter;
-  String? _paymentMethodFilter;
-  DateTimeRange? _dateRange;
+  /// Only for the chip label; the filter itself lives in the provider.
+  ShopSelection? _shopFilter;
 
   @override
   void initState() {
@@ -49,34 +48,15 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
             // Filters
             _buildFilters(),
 
-            // Summary
-            if (!state.isLoading && state.payments.isNotEmpty)
-              _buildSummary(state),
-
             // Content
             Expanded(
               child: state.isLoading && state.payments.isEmpty
                   ? const AppLoadingView()
-                  : state.error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error,
-                            size: 48,
-                            color: context.colors.error,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(state.error!),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () =>
-                                ref.read(paymentsProvider.notifier).refresh(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
+                  : state.error != null && state.payments.isEmpty
+                  ? AppErrorView(
+                      error: state.error,
+                      onRetry: () =>
+                          ref.read(paymentsProvider.notifier).refresh(),
                     )
                   : state.payments.isEmpty
                   ? const AppEmptyView(
@@ -99,128 +79,289 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
     );
   }
 
+  static const _statuses = {
+    'completed': ('Completed', Icons.check_circle_outline_rounded),
+    'pending': ('Pending', Icons.schedule_rounded),
+    'failed': ('Failed', Icons.error_outline_rounded),
+    'refunded': ('Refunded', Icons.undo_rounded),
+  };
+
+  static const _methods = {
+    'cash': ('Cash', Icons.payments_outlined),
+    'bank_transfer': ('Bank transfer', Icons.account_balance_outlined),
+    'qr_code': ('QR code', Icons.qr_code_2_rounded),
+    'card': ('Card', Icons.credit_card_rounded),
+  };
+
+  /// Date presets, each resolving to an inclusive (start, end) day range.
+  static List<(String, DateTimeRange Function(DateTime today))>
+  get _datePresets => [
+    ('Today', (t) => DateTimeRange(start: t, end: t)),
+    (
+      'Last 7 days',
+      (t) => DateTimeRange(start: t.subtract(const Duration(days: 6)), end: t),
+    ),
+    (
+      'This month',
+      (t) => DateTimeRange(start: DateTime(t.year, t.month), end: t),
+    ),
+    (
+      'Last month',
+      (t) => DateTimeRange(
+        start: DateTime(t.year, t.month - 1),
+        end: DateTime(t.year, t.month, 0),
+      ),
+    ),
+  ];
+
+  String? _dateLabelFor(DateTime? start, DateTime? end) {
+    if (start == null || end == null) return null;
+    final today = DateUtils.dateOnly(DateTime.now());
+    for (final (label, range) in _datePresets) {
+      final r = range(today);
+      if (DateUtils.isSameDay(r.start, start) &&
+          DateUtils.isSameDay(r.end, end)) {
+        return label;
+      }
+    }
+    final sameYear = start.year == end.year && start.year == today.year;
+    final f = DateFormat(sameYear ? 'd MMM' : 'd MMM y');
+    return DateUtils.isSameDay(start, end)
+        ? f.format(start)
+        : '${f.format(start)} – ${f.format(end)}';
+  }
+
+  /// Active filters move to the front so they're never scrolled out of view.
+  static List<Widget> _activeFirst(List<Widget> chips) {
+    bool isActive(Widget w) =>
+        (w is _FilterButton && w.value != null) ||
+        (w is _FilterMenu && w.value != null);
+    return [...chips.where(isActive), ...chips.where((w) => !isActive(w))];
+  }
+
+  Future<void> _pickShop() async {
+    final picked = await showShopPicker(context, selected: _shopFilter);
+    if (picked == null || !mounted) return;
+    setState(() => _shopFilter = picked);
+    ref.read(paymentsProvider.notifier).setShopFilter(picked.id);
+  }
+
+  Future<void> _pickCustomRange(PaymentsState state) async {
+    final start = state.startDateFilter;
+    final end = state.endDateFilter;
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: start != null && end != null
+          ? DateTimeRange(start: start, end: end)
+          : null,
+    );
+    if (picked != null && mounted) {
+      ref
+          .read(paymentsProvider.notifier)
+          .setDateRangeFilter(picked.start, picked.end);
+    }
+  }
+
+  void _clearAll() {
+    setState(() => _shopFilter = null);
+    ref.read(paymentsProvider.notifier).clearFilters();
+  }
+
   Widget _buildFilters() {
+    final state = ref.watch(paymentsProvider);
+    final notifier = ref.read(paymentsProvider.notifier);
+    final today = DateUtils.dateOnly(DateTime.now());
+    final dateLabel = _dateLabelFor(state.startDateFilter, state.endDateFilter);
+    final activeCount = [
+      state.shopIdFilter,
+      state.statusFilter,
+      state.paymentMethodFilter,
+      state.startDateFilter,
+    ].where((f) => f != null).length;
+
     return Container(
-      padding: const EdgeInsets.all(12),
-      color: context.colors.surfaceContainer,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          // Status filter
-          FilterChip(
-            label: Text(_statusFilter ?? 'Status'),
-            selected: _statusFilter != null,
-            onSelected: (_) => _showStatusFilter(),
-          ),
-
-          // Payment method filter
-          FilterChip(
-            label: Text(_paymentMethodFilter ?? 'Method'),
-            selected: _paymentMethodFilter != null,
-            onSelected: (_) => _showPaymentMethodFilter(),
-          ),
-
-          // Date range filter
-          FilterChip(
-            label: Text(
-              _dateRange != null
-                  ? '${DateFormat('MMM d').format(_dateRange!.start)} - ${DateFormat('MMM d').format(_dateRange!.end)}'
-                  : 'Date Range',
-            ),
-            selected: _dateRange != null,
-            onSelected: (_) => _showDateRangePicker(),
-          ),
-
-          // Clear filters
-          if (_statusFilter != null ||
-              _paymentMethodFilter != null ||
-              _dateRange != null)
-            ActionChip(
-              label: const Text('Clear'),
-              avatar: const Icon(Icons.clear, size: 16),
-              onPressed: () {
-                setState(() {
-                  _statusFilter = null;
-                  _paymentMethodFilter = null;
-                  _dateRange = null;
-                });
-                ref.read(paymentsProvider.notifier).clearFilters();
-              },
-            ),
-        ],
+      height: 56,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        border: Border(
+          bottom: BorderSide(color: context.colors.outlineVariant),
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, c) {
+          // Phones drop the chip icons so all four filters fit on screen.
+          final compact = c.maxWidth < 600;
+          return Row(
+            children: [
+              Expanded(
+                // Fade the right edge so overflowing chips read as scrollable.
+                child: ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: (rect) => const LinearGradient(
+                    colors: [Colors.black, Colors.black, Colors.transparent],
+                    stops: [0, 0.92, 1],
+                  ).createShader(rect),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+                    child: Row(
+                      children: _activeFirst([
+                        _FilterButton(
+                          key: const ValueKey('shop'),
+                          compact: compact,
+                          icon: Icons.storefront_outlined,
+                          label: 'Shop',
+                          value: state.shopIdFilter == null
+                              ? null
+                              : (_shopFilter?.name ??
+                                    'Shop #${state.shopIdFilter}'),
+                          onTap: _pickShop,
+                          onClear: () {
+                            setState(() => _shopFilter = null);
+                            notifier.setShopFilter(null);
+                          },
+                        ),
+                        _FilterMenu(
+                          key: const ValueKey('status'),
+                          compact: compact,
+                          icon: Icons.flag_outlined,
+                          label: 'Status',
+                          value:
+                              _statuses[state.statusFilter]?.$1 ??
+                              state.statusFilter,
+                          options: [
+                            for (final e in _statuses.entries)
+                              (
+                                e.value.$1,
+                                e.value.$2,
+                                e.key == state.statusFilter,
+                                () => notifier.setStatusFilter(e.key),
+                              ),
+                          ],
+                          onClear: () => notifier.setStatusFilter(null),
+                        ),
+                        _FilterMenu(
+                          key: const ValueKey('method'),
+                          compact: compact,
+                          icon: Icons.account_balance_wallet_outlined,
+                          label: 'Method',
+                          value:
+                              _methods[state.paymentMethodFilter]?.$1 ??
+                              state.paymentMethodFilter,
+                          options: [
+                            for (final e in _methods.entries)
+                              (
+                                e.value.$1,
+                                e.value.$2,
+                                e.key == state.paymentMethodFilter,
+                                () => notifier.setPaymentMethodFilter(e.key),
+                              ),
+                          ],
+                          onClear: () => notifier.setPaymentMethodFilter(null),
+                        ),
+                        _FilterMenu(
+                          key: const ValueKey('date'),
+                          compact: compact,
+                          icon: Icons.calendar_today_outlined,
+                          label: 'Date',
+                          value: dateLabel,
+                          options: [
+                            for (final (label, range) in _datePresets)
+                              (
+                                label,
+                                Icons.event_outlined,
+                                label == dateLabel,
+                                () {
+                                  final r = range(today);
+                                  notifier.setDateRangeFilter(r.start, r.end);
+                                },
+                              ),
+                            (
+                              'Custom range…',
+                              Icons.date_range_outlined,
+                              false,
+                              () => _pickCustomRange(state),
+                            ),
+                          ],
+                          onClear: () =>
+                              notifier.setDateRangeFilter(null, null),
+                        ),
+                      ]),
+                    ),
+                  ),
+                ),
+              ),
+              // Pinned so it stays reachable however far the chips scroll.
+              if (activeCount >= 2)
+                IconButton(
+                  tooltip: 'Clear all filters',
+                  icon: const Icon(Icons.filter_alt_off_outlined, size: 20),
+                  onPressed: _clearAll,
+                ),
+            ],
+          );
+        },
       ),
     );
   }
 
+  /// One-line totals shown as the list header; scrolls away with the list.
   Widget _buildSummary(PaymentsState state) {
-    final totalAmount = state.payments.fold<double>(
-      0,
-      (sum, p) => sum + (p.status == 'completed' ? p.amount : 0),
-    );
-    final completedCount = state.payments
-        .where((p) => p.status == 'completed')
-        .length;
-
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.status.infoContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    final completed = state.payments.where((p) => p.status == 'completed');
+    final revenue = completed.fold<double>(0, (sum, p) => sum + p.amount);
+    final muted = context.colors.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Column(
-            children: [
-              Text(
-                '${state.totalElements}',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: NumberFormat.decimalPattern().format(
+                      state.totalElements,
+                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  TextSpan(
+                    text: state.totalElements == 1 ? ' payment' : ' payments',
+                  ),
+                  if (state.totalPages > 1)
+                    TextSpan(
+                      text:
+                          ' · page ${state.currentPage + 1}/${state.totalPages}',
+                    ),
+                ],
               ),
-              Text(
-                'Total',
-                style: TextStyle(color: context.colors.onSurfaceVariant),
-              ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: muted, fontSize: 13),
+            ),
           ),
-          Column(
-            children: [
-              Text(
-                '$completedCount',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: context.status.success,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Tooltip(
+              message: 'Completed on this page (${completed.length})',
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  NumberFormat.currency(
+                    symbol: '₭ ',
+                    decimalDigits: 0,
+                  ).format(revenue),
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: context.status.success,
+                  ),
                 ),
               ),
-              Text(
-                'Completed',
-                style: TextStyle(color: context.colors.onSurfaceVariant),
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              Text(
-                NumberFormat.currency(
-                  symbol: '₭',
-                  decimalDigits: 0,
-                ).format(totalAmount),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: context.status.success,
-                ),
-              ),
-              Text(
-                'Revenue',
-                style: TextStyle(color: context.colors.onSurfaceVariant),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -228,144 +369,122 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
   }
 
   Widget _buildPaymentsList(PaymentsState state) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      itemCount: state.payments.length,
-      itemBuilder: (context, index) {
-        final payment = state.payments[index];
-        return _buildPaymentCard(payment);
-      },
+    return RefreshIndicator(
+      onRefresh: () async => ref.read(paymentsProvider.notifier).refresh(),
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        // Bottom space keeps the last card clear of the "+" button.
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 88),
+        itemCount: state.payments.length + 1,
+        itemBuilder: (context, index) => index == 0
+            ? _buildSummary(state)
+            : _buildPaymentCard(state.payments[index - 1]),
+      ),
     );
   }
 
   Widget _buildPaymentCard(AdminPayment payment) {
     final statusColor = _getStatusColor(payment.status);
+    final muted = context.colors.onSurfaceVariant;
+    final amount = NumberFormat.currency(
+      symbol: payment.currency == 'LAK' ? '₭ ' : '\$',
+      decimalDigits: 0,
+    ).format(payment.amount);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         onTap: () => _showPaymentDetails(payment),
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Status indicator
-              Container(
-                width: 4,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+              IconBadge(
+                icon: _getPaymentMethodIcon(payment.paymentMethod),
+                color: statusColor,
+                size: 40,
               ),
               const SizedBox(width: 12),
-
-              // Icon
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  _getPaymentMethodIcon(payment.paymentMethod),
-                  color: statusColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      payment.shopName,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
+                    // Name and amount share one line; the name truncates
+                    // first so the amount is always readable.
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 12,
-                          color: context.colors.onSurfaceVariant,
+                        Expanded(
+                          child: Text(
+                            payment.shopName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          DateFormat(
-                            'MMM d, yyyy HH:mm',
-                          ).format(payment.paymentDate),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.colors.onSurfaceVariant,
+                        const SizedBox(width: 8),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 150),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              amount,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: statusColor,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    Row(
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        DateFormat(
+                          'd MMM y, HH:mm',
+                        ).format(payment.paymentDate),
+                        if (payment.referenceNumber != null)
+                          '#${payment.referenceNumber}',
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: muted),
+                    ),
+                    const SizedBox(height: 8),
+                    // Pills wrap onto a second line on narrow screens.
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.colors.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            payment.paymentMethodDisplay,
-                            style: const TextStyle(fontSize: 10),
-                          ),
+                        StatusBadge.fromStatus(payment.status),
+                        _Pill(
+                          label: payment.paymentMethodDisplay,
+                          color: muted,
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                        // Whether this money has been spent on a period yet: a
+                        // completed payment funds exactly one auto-renewal, so
+                        // "unapplied" is what will carry the shop forward next.
+                        if (payment.isAvailableForRenewal)
+                          _Pill(
+                            label: 'Funds next renewal',
+                            color: context.status.info,
+                          )
+                        else if (payment.appliedAt != null)
+                          _Pill(
+                            label: payment.billingPeriodEnd != null
+                                ? 'Applied → ${DateFormat('d MMM y').format(payment.billingPeriodEnd!)}'
+                                : 'Applied',
+                            color: muted,
                           ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            payment.statusDisplay,
-                            style: TextStyle(fontSize: 10, color: statusColor),
-                          ),
-                        ),
                       ],
                     ),
                   ],
                 ),
-              ),
-
-              // Amount
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    NumberFormat.currency(
-                      symbol: payment.currency == 'LAK' ? '₭' : '\$',
-                      decimalDigits: 0,
-                    ).format(payment.amount),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: statusColor,
-                    ),
-                  ),
-                  if (payment.referenceNumber != null)
-                    Text(
-                      '#${payment.referenceNumber}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: context.colors.onSurfaceVariant,
-                      ),
-                    ),
-                ],
               ),
             ],
           ),
@@ -409,141 +528,6 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
         ],
       ),
     );
-  }
-
-  void _showStatusFilter() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            title: const Text('All Statuses'),
-            onTap: () {
-              setState(() => _statusFilter = null);
-              ref.read(paymentsProvider.notifier).setStatusFilter(null);
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.check_circle, color: context.status.success),
-            title: const Text('Completed'),
-            onTap: () {
-              setState(() => _statusFilter = 'completed');
-              ref.read(paymentsProvider.notifier).setStatusFilter('completed');
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.pending, color: context.status.warning),
-            title: const Text('Pending'),
-            onTap: () {
-              setState(() => _statusFilter = 'pending');
-              ref.read(paymentsProvider.notifier).setStatusFilter('pending');
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.error, color: context.colors.error),
-            title: const Text('Failed'),
-            onTap: () {
-              setState(() => _statusFilter = 'failed');
-              ref.read(paymentsProvider.notifier).setStatusFilter('failed');
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.undo, color: Colors.purple),
-            title: const Text('Refunded'),
-            onTap: () {
-              setState(() => _statusFilter = 'refunded');
-              ref.read(paymentsProvider.notifier).setStatusFilter('refunded');
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  void _showPaymentMethodFilter() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            title: const Text('All Methods'),
-            onTap: () {
-              setState(() => _paymentMethodFilter = null);
-              ref.read(paymentsProvider.notifier).setPaymentMethodFilter(null);
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.money),
-            title: const Text('Cash'),
-            onTap: () {
-              setState(() => _paymentMethodFilter = 'cash');
-              ref
-                  .read(paymentsProvider.notifier)
-                  .setPaymentMethodFilter('cash');
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.account_balance),
-            title: const Text('Bank Transfer'),
-            onTap: () {
-              setState(() => _paymentMethodFilter = 'bank_transfer');
-              ref
-                  .read(paymentsProvider.notifier)
-                  .setPaymentMethodFilter('bank_transfer');
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.qr_code),
-            title: const Text('QR Code'),
-            onTap: () {
-              setState(() => _paymentMethodFilter = 'qr_code');
-              ref
-                  .read(paymentsProvider.notifier)
-                  .setPaymentMethodFilter('qr_code');
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.credit_card),
-            title: const Text('Card'),
-            onTap: () {
-              setState(() => _paymentMethodFilter = 'card');
-              ref
-                  .read(paymentsProvider.notifier)
-                  .setPaymentMethodFilter('card');
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showDateRangePicker() async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      initialDateRange: _dateRange,
-    );
-    if (picked != null) {
-      setState(() => _dateRange = picked);
-      ref
-          .read(paymentsProvider.notifier)
-          .setDateRangeFilter(picked.start, picked.end);
-    }
   }
 
   void _showPaymentDetails(AdminPayment payment) {
@@ -977,3 +961,176 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
 String _dateLabel(DateTime d) => DateUtils.isSameDay(d, DateTime.now())
     ? 'Today, ${DateFormat('d MMM y').format(d)}'
     : DateFormat('EEE, d MMM y').format(d);
+
+/// Small neutral label used for secondary payment facts.
+class _Pill extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _Pill({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// Filter chip: shows the label, or the active value with a clear button.
+class _FilterButton extends StatelessWidget {
+  final bool compact;
+  final IconData icon;
+  final String label;
+  final String? value;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+
+  const _FilterButton({
+    super.key,
+    this.compact = false,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colors;
+    final active = value != null;
+    final fg = active ? scheme.primary : scheme.onSurface;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: active ? scheme.primary.withValues(alpha: 0.10) : scheme.surface,
+        shape: StadiumBorder(
+          side: BorderSide(
+            color: active
+                ? scheme.primary.withValues(alpha: 0.5)
+                : scheme.outlineVariant,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.only(left: 12, right: active ? 4 : 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!compact) ...[
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: active ? fg : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 160),
+                  child: Text(
+                    value ?? label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                      color: fg,
+                    ),
+                  ),
+                ),
+                if (active)
+                  IconButton(
+                    tooltip: 'Clear $label filter',
+                    visualDensity: VisualDensity.compact,
+                    iconSize: 16,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 28,
+                      height: 28,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.close_rounded, color: fg),
+                    onPressed: onClear,
+                  )
+                else ...[
+                  const SizedBox(width: 2),
+                  Icon(
+                    Icons.expand_more_rounded,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// [_FilterButton] that opens a dropdown menu of options anchored to it.
+class _FilterMenu extends StatelessWidget {
+  final bool compact;
+  final IconData icon;
+  final String label;
+  final String? value;
+  final List<(String, IconData, bool, VoidCallback)> options;
+  final VoidCallback onClear;
+
+  const _FilterMenu({
+    super.key,
+    this.compact = false,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MenuAnchor(
+      alignmentOffset: const Offset(0, 4),
+      menuChildren: [
+        for (final (text, optionIcon, selected, onSelect) in options)
+          MenuItemButton(
+            leadingIcon: Icon(optionIcon, size: 18),
+            trailingIcon: selected
+                ? Icon(
+                    Icons.check_rounded,
+                    size: 18,
+                    color: context.colors.primary,
+                  )
+                : null,
+            onPressed: onSelect,
+            child: Text(text),
+          ),
+      ],
+      builder: (context, controller, _) => _FilterButton(
+        compact: compact,
+        icon: icon,
+        label: label,
+        value: value,
+        onTap: () => controller.isOpen ? controller.close() : controller.open(),
+        onClear: onClear,
+      ),
+    );
+  }
+}

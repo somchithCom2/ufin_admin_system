@@ -507,6 +507,17 @@ class _SubscriptionHistoryPageState
       case 'renew':
       case 'renewed':
         return Icons.autorenew;
+      case 'auto_renew_enabled':
+        return Icons.autorenew;
+      case 'auto_renew_disabled':
+        return Icons.sync_disabled;
+      case 'trial_started':
+      case 'trial_ended':
+        return Icons.hourglass_bottom;
+      case 'payment_received':
+        return Icons.payments_outlined;
+      case 'payment_failed':
+        return Icons.money_off;
       default:
         return Icons.edit_outlined;
     }
@@ -546,6 +557,17 @@ class _SubscriptionHistoryPageState
       case 'renew':
       case 'renewed':
         return context.status.success;
+      case 'auto_renew_enabled':
+        return context.status.success;
+      case 'auto_renew_disabled':
+        return context.status.warning;
+      case 'trial_started':
+      case 'trial_ended':
+        return context.status.info;
+      case 'payment_received':
+        return context.status.success;
+      case 'payment_failed':
+        return context.colors.error;
       default:
         return Colors.blueGrey;
     }

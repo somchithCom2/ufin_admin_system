@@ -4,7 +4,9 @@ class SubscriptionHistory {
   final int shopId;
   final String shopName;
   final String
-  actionType; // upgraded, downgraded, renewed, cancelled, extended, created
+  actionType; // upgraded, downgraded, renewed, cancelled, expired, created,
+  // trial_started, trial_ended, payment_received, payment_failed, suspended,
+  // unsuspended, reactivated, auto_renew_enabled, auto_renew_disabled
   final String? fromPlanCode;
   final String? fromPlanName;
   final String? toPlanCode;
@@ -122,8 +124,37 @@ class SubscriptionHistory {
         return 'Created';
       case 'changed':
         return 'Plan Changed';
+      case 'expired':
+        return 'Expired';
+      case 'reactivated':
+        return 'Reactivated';
+      case 'trial_started':
+        return 'Trial Started';
+      case 'trial_ended':
+        return 'Trial Ended';
+      case 'payment_received':
+        return 'Payment Received';
+      case 'payment_failed':
+        return 'Payment Failed';
+      case 'suspended':
+        return 'Suspended';
+      case 'unsuspended':
+        return 'Unsuspended';
+      case 'auto_renew_enabled':
+        return 'Auto-renew On';
+      case 'auto_renew_disabled':
+        return 'Auto-renew Off';
       default:
-        return actionType;
+        // Unknown action: "some_new_action" reads better than the raw code.
+        return actionType
+            .replaceAll('_', ' ')
+            .split(' ')
+            .map(
+              (w) => w.isEmpty
+                  ? w
+                  : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}',
+            )
+            .join(' ');
     }
   }
 

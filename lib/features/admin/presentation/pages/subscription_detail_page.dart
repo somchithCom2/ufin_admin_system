@@ -21,6 +21,7 @@ class SubscriptionDetailPage extends ConsumerStatefulWidget {
 class _SubscriptionDetailPageState
     extends ConsumerState<SubscriptionDetailPage> {
   late AdminSubscription _subscription;
+  bool _savingAutoRenew = false;
 
   @override
   void initState() {
@@ -38,6 +39,41 @@ class _SubscriptionDetailPageState
       if (mounted) {
         AppFeedback.error(context, e);
       }
+    }
+  }
+
+  /// Turns auto-renewal on or off.
+  ///
+  /// Auto-renewal does not hand out free time: the scheduler only rolls a paid
+  /// subscription forward when a completed payment that has not been spent yet
+  /// covers the next period. This switch decides whether such a payment is
+  /// applied automatically or whether the admin extends by hand.
+  Future<void> _toggleAutoRenew(bool value) async {
+    if (_savingAutoRenew) return;
+    setState(() => _savingAutoRenew = true);
+    try {
+      final updated = await ref
+          .read(adminRepositoryProvider)
+          .setAutoRenew(
+            _subscription.shopId,
+            UpdateAutoRenewRequest(
+              autoRenew: value,
+              reason: value
+                  ? 'Enabled from admin console'
+                  : 'Disabled from admin console',
+            ),
+          );
+      if (!mounted) return;
+      setState(() => _subscription = updated);
+      ref.read(subscriptionsProvider.notifier).refresh();
+      AppFeedback.success(
+        context,
+        value ? 'Auto-renew is on' : 'Auto-renew is off',
+      );
+    } catch (e) {
+      if (mounted) AppFeedback.error(context, e);
+    } finally {
+      if (mounted) setState(() => _savingAutoRenew = false);
     }
   }
 
@@ -86,6 +122,10 @@ class _SubscriptionDetailPageState
 
             // Plan Info Card
             _buildPlanCard(currencyFormat),
+            const SizedBox(height: 16),
+
+            // Renewal Card
+            _buildRenewalCard(dateFormat),
             const SizedBox(height: 16),
 
             // Usage Card
@@ -276,6 +316,122 @@ class _SubscriptionDetailPageState
     );
   }
 
+  /// Renewal state: whether auto-renew is on, when the next period is due, and
+  /// — the part that used to be invisible — whether that renewal is actually
+  /// funded. Auto-renewal only rolls a paid subscription forward when a
+  /// completed payment that has not been spent yet covers the next period, so
+  /// "auto-renew on" and "will actually renew" are two different things.
+  Widget _buildRenewalCard(DateFormat dateFormat) {
+    final isLifetime = _subscription.billingCycle == 'lifetime';
+    final isPaid = _subscription.pricePaid > 0;
+    final isLapsed =
+        _subscription.status == 'expired' ||
+        _subscription.status == 'cancelled';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.autorenew, color: context.status.info),
+                const SizedBox(width: 8),
+                Text(
+                  'Renewal',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (_savingAutoRenew) ...[
+                  const Spacer(),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ],
+              ],
+            ),
+            const Divider(height: 24),
+            _buildInfoRow(
+              'Billing Cycle',
+              _subscription.billingCycle ?? 'N/A',
+              Icons.repeat,
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow(
+              'Next Billing Date',
+              _subscription.nextBillingDate != null
+                  ? dateFormat.format(_subscription.nextBillingDate!)
+                  : '—',
+              Icons.event_repeat,
+            ),
+            if (isLifetime)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  'A lifetime subscription never expires and is never renewed.',
+                  style: TextStyle(color: context.colors.onSurfaceVariant),
+                ),
+              )
+            else ...[
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Auto-renew'),
+                subtitle: Text(
+                  _subscription.autoRenew
+                      ? 'Rolls forward automatically when the next period is paid for.'
+                      : 'Will not roll forward; the shop drops to the Free plan at expiry.',
+                ),
+                value: _subscription.autoRenew,
+                onChanged: _savingAutoRenew || isLapsed
+                    ? null
+                    : (value) => _toggleAutoRenew(value),
+              ),
+              if (isLapsed)
+                Text(
+                  'Reactivate the subscription before changing auto-renew.',
+                  style: TextStyle(color: context.colors.onSurfaceVariant),
+                )
+              else if (isPaid && _subscription.autoRenew)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.status.infoContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: context.status.info,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This is a paid plan. It only renews if a completed '
+                          'payment is recorded that covers the next period — '
+                          'record it in Payments, or extend manually.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.status.info,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildUsageCard() {
     return Card(
       child: Padding(
@@ -360,6 +516,8 @@ class _SubscriptionDetailPageState
   }
 
   Widget _buildQuickActions() {
+    final canReduce =
+        _subscription.status == 'active' || _subscription.status == 'trial';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -387,10 +545,25 @@ class _SubscriptionDetailPageState
                 Icons.remove_circle_outline,
                 context.status.warning,
                 () => _showReduceDialog(),
+                // Shortening a period only applies to a running subscription;
+                // the server refuses this for an expired or cancelled one
+                // rather than silently reactivating it.
+                enabled: canReduce,
               ),
             ),
           ],
         ),
+        if (!canReduce)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Reduce applies to a running subscription only.',
+              style: TextStyle(
+                fontSize: 12,
+                color: context.colors.onSurfaceVariant,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -441,24 +614,29 @@ class _SubscriptionDetailPageState
     String label,
     IconData icon,
     Color color,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    bool enabled = true,
+  }) {
+    final effectiveColor = enabled ? color : context.colors.onSurfaceVariant;
     return Card(
       child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
               CircleAvatar(
-                backgroundColor: color.withValues(alpha: 0.1),
-                child: Icon(icon, color: color),
+                backgroundColor: effectiveColor.withValues(alpha: 0.1),
+                child: Icon(icon, color: effectiveColor),
               ),
               const SizedBox(height: 8),
               Text(
                 label,
-                style: TextStyle(fontWeight: FontWeight.w500, color: color),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: effectiveColor,
+                ),
               ),
             ],
           ),

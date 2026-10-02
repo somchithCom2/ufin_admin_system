@@ -18,6 +18,18 @@ class AdminPayment {
   final String? processedBy;
   final int? processedByUserId;
 
+  /// When this payment was spent to extend the subscription.
+  ///
+  /// `null` means it is still available to fund the next auto-renewal. Payment
+  /// collection is manual, so this is how a recorded payment turns into a
+  /// billing period: the scheduler spends the oldest unapplied payment when the
+  /// current period runs out.
+  final DateTime? appliedAt;
+
+  /// Billing period this payment ended up paying for, once it was spent.
+  final DateTime? billingPeriodStart;
+  final DateTime? billingPeriodEnd;
+
   const AdminPayment({
     required this.id,
     required this.shopId,
@@ -36,6 +48,9 @@ class AdminPayment {
     this.updatedAt,
     this.processedBy,
     this.processedByUserId,
+    this.appliedAt,
+    this.billingPeriodStart,
+    this.billingPeriodEnd,
   });
 
   factory AdminPayment.fromJson(Map<String, dynamic> json) {
@@ -62,6 +77,15 @@ class AdminPayment {
           : null,
       processedBy: json['processedBy'] as String?,
       processedByUserId: json['processedByUserId'] as int?,
+      appliedAt: json['appliedAt'] != null
+          ? DateTime.tryParse(json['appliedAt'] as String)
+          : null,
+      billingPeriodStart: json['billingPeriodStart'] != null
+          ? DateTime.tryParse(json['billingPeriodStart'] as String)
+          : null,
+      billingPeriodEnd: json['billingPeriodEnd'] != null
+          ? DateTime.tryParse(json['billingPeriodEnd'] as String)
+          : null,
     );
   }
 
@@ -83,6 +107,9 @@ class AdminPayment {
     'updatedAt': updatedAt?.toIso8601String(),
     'processedBy': processedBy,
     'processedByUserId': processedByUserId,
+    'appliedAt': appliedAt?.toIso8601String(),
+    'billingPeriodStart': billingPeriodStart?.toIso8601String(),
+    'billingPeriodEnd': billingPeriodEnd?.toIso8601String(),
   };
 
   AdminPayment copyWith({
@@ -103,6 +130,9 @@ class AdminPayment {
     DateTime? updatedAt,
     String? processedBy,
     int? processedByUserId,
+    DateTime? appliedAt,
+    DateTime? billingPeriodStart,
+    DateTime? billingPeriodEnd,
   }) {
     return AdminPayment(
       id: id ?? this.id,
@@ -122,8 +152,17 @@ class AdminPayment {
       updatedAt: updatedAt ?? this.updatedAt,
       processedBy: processedBy ?? this.processedBy,
       processedByUserId: processedByUserId ?? this.processedByUserId,
+      appliedAt: appliedAt ?? this.appliedAt,
+      billingPeriodStart: billingPeriodStart ?? this.billingPeriodStart,
+      billingPeriodEnd: billingPeriodEnd ?? this.billingPeriodEnd,
     );
   }
+
+  /// True while this payment can still be spent on a renewal.
+  ///
+  /// Only completed payments fund anything, and only once.
+  bool get isAvailableForRenewal =>
+      status.toLowerCase() == 'completed' && appliedAt == null;
 
   /// Get status color
   String get statusDisplay {
