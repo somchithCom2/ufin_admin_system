@@ -193,6 +193,22 @@ class AdminRepository {
     }
   }
 
+  /// Rename a user. The backend ends their sessions; they sign in again.
+  Future<AdminUser> changeUsername(
+    int id,
+    ChangeUsernameRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminUserUsername(id),
+        data: request.toJson(),
+      );
+      return _parseResponse<AdminUser>(response, AdminUser.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Get soft-deleted users (paginated, sorted by deletedAt DESC)
   Future<PaginatedResponse<AdminUser>> getDeletedUsers({
     int page = 0,
@@ -688,6 +704,7 @@ class AdminRepository {
     DateTime? startDate,
     DateTime? endDate,
     String? groupBy, // 'day', 'week', 'month'
+    String? currency, // ISO code; the backend defaults to LAK
   }) async {
     try {
       final response = await _dio.get(
@@ -696,6 +713,7 @@ class AdminRepository {
           if (startDate != null) 'startDate': startDate.toIso8601String(),
           if (endDate != null) 'endDate': endDate.toIso8601String(),
           if (groupBy != null) 'groupBy': groupBy,
+          if (currency != null) 'currency': currency,
         },
       );
       return _parseResponse<AdminRevenueReport>(

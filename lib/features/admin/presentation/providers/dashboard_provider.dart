@@ -341,6 +341,18 @@ class UsersNotifier extends StateNotifier<UsersState> {
     loadUsers(search: _search, status: _status, userType: _userType);
   }
 
+  Future<void> changeUsername(
+    int userId,
+    String username,
+    String? reason,
+  ) async {
+    await _repository.changeUsername(
+      userId,
+      ChangeUsernameRequest(username: username, reason: reason),
+    );
+    loadUsers(search: _search, status: _status, userType: _userType);
+  }
+
   Future<void> resetUserPassword(int userId, String newPassword) async {
     try {
       final request = ResetUserPasswordRequest(newPassword: newPassword);

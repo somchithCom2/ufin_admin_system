@@ -53,6 +53,11 @@ abstract final class ErrorMessages {
     'ERR_INVOICE_NUMBER_EXISTS': 'That invoice number is already in use.',
     'ERR_PAYMENT_NOT_FOUND': 'Payment not found.',
 
+    // --- Reports ---
+    'ERR_INVALID_CURRENCY': 'Unknown currency code.',
+    'ERR_INVALID_DATE_RANGE':
+        'The start date must be before the end date, within 10 years.',
+
     // --- Shops & general ---
     'ERR_SHOP_NOT_FOUND': 'Shop not found.',
     'ERR_SHOP_DELETED': 'This shop has been deleted.',
@@ -74,6 +79,13 @@ abstract final class ErrorMessages {
     'ERR_USER_EMAIL_MISSING': 'This user has no email address.',
     'ERR_USER_PHONE_MISSING': 'This user has no phone number.',
     'ERR_INVALID_VERIFICATION_CHANNEL': 'Choose email or phone to verify.',
+    'ERR_USERNAME_REQUIRED': 'Enter a username.',
+    'ERR_USERNAME_INVALID_LENGTH': 'A username is 3 to 50 characters.',
+    'ERR_USERNAME_INVALID_CHARACTERS':
+        'Use only English letters, digits, dot, underscore and dash. No spaces or "--".',
+    'ERR_USERNAME_ALREADY_IN_USE':
+        'Another account already uses that username (ignoring capitals).',
+    'ERR_ADMIN_ACCOUNT_PROTECTED': 'Admin accounts cannot be changed here.',
     'ERR_UNAUTHORIZED': 'You are not allowed to do that.',
     'ERR_NOT_AUTHORIZED': 'You are not allowed to do that.',
     'ERR_UNEXPECTED': 'Something went wrong. Please try again.',

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/utils/money_format.dart';
+import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/daily_sales_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -35,9 +37,10 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
     return formatter.format(number);
   }
 
-  String _formatCurrency(double amount) {
-    final formatter = NumberFormat('#,##0.00');
-    return formatter.format(amount);
+  /// Net income per currency; a zero LAK line when there were no sales.
+  Map<String, double> _netIncome(DailySalesData data) {
+    final byCurrency = data.netIncomeByCurrency;
+    return byCurrency.isEmpty ? const {'LAK': 0.0} : byCurrency;
   }
 
   void _showFilterModal() {
@@ -172,6 +175,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dailySalesProvider);
+    final shops = state.data?.shopSalesInOrder ?? const <ShopSalesData>[];
     final formatter = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
@@ -287,21 +291,21 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
-                                // Second Row: 1 or 2 columns
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _SummaryStatItem(
-                                        title: 'Net Income',
-                                        value: _formatCurrency(
-                                          state.data!.totalNetIncome,
-                                        ),
-                                        icon: Icons.attach_money,
-                                      ),
+                                // Net income per currency: kip and baht
+                                // are never added together.
+                                for (final entry in _netIncome(
+                                  state.data!,
+                                ).entries) ...[
+                                  const SizedBox(height: 12),
+                                  _SummaryStatItem(
+                                    title: 'Net Income (${entry.key})',
+                                    value: MoneyFormat.format(
+                                      entry.value,
+                                      entry.key,
                                     ),
-                                  ],
-                                ),
+                                    icon: Icons.attach_money,
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -309,9 +313,9 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: state.data!.shopSales.length,
+                            itemCount: shops.length,
                             itemBuilder: (context, index) {
-                              final shop = state.data!.shopSales[index];
+                              final shop = shops[index];
                               return _ShopSalesCard(shop: shop);
                             },
                           ),
@@ -377,14 +381,12 @@ class _SummaryStatItem extends StatelessWidget {
 }
 
 class _ShopSalesCard extends StatelessWidget {
-  final dynamic shop;
+  final ShopSalesData shop;
 
   const _ShopSalesCard({required this.shop});
 
-  String _formatCurrency(double amount) {
-    final formatter = NumberFormat('#,##0.00');
-    return formatter.format(amount);
-  }
+  String _formatCurrency(double amount) =>
+      MoneyFormat.format(amount, shop.currency);
 
   String _formatNumber(int number) {
     final formatter = NumberFormat('#,##0');
@@ -417,7 +419,8 @@ class _ShopSalesCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'ID: ${shop.shopId}',
+                    // A shop that sold in two currencies has a card for each.
+                    'ID: ${shop.shopId} · ${shop.currency}',
                     style: TextStyle(
                       fontSize: 11,
                       color: context.status.neutral,

@@ -342,6 +342,17 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     ],
                   ),
                 ),
+              if (!isDeleted && user.userType != 'ADMIN')
+                PopupMenuItem(
+                  value: 'username',
+                  child: Row(
+                    children: [
+                      Icon(Icons.badge_outlined, color: context.status.info),
+                      const SizedBox(width: 8),
+                      const Text('Change Username'),
+                    ],
+                  ),
+                ),
               if (!isDeleted)
                 const PopupMenuItem(
                   value: 'reset_password',
@@ -404,10 +415,106 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       case 'verify':
         _showMarkVerifiedDialog(user);
         break;
+      case 'username':
+        _showChangeUsernameDialog(user);
+        break;
       case 'reset_password':
         _showResetPasswordDialog(user);
         break;
     }
+  }
+
+  /// Same rule as registration on the backend (UsernamePolicy).
+  static final _usernamePattern = RegExp(r'^[A-Za-z0-9._-]{3,50}$');
+
+  void _showChangeUsernameDialog(AdminUser user) {
+    final usernameController = TextEditingController(text: user.username);
+    final reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Username'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Current: "${user.username}". The user is signed out on every '
+                'device and must sign in with the new username. Email and '
+                'phone sign-in keep working.',
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: usernameController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'New username',
+                  helperText: 'Letters, digits, . _ -  (3-50, no spaces)',
+                ),
+                validator: (value) {
+                  final name = value?.trim() ?? '';
+                  if (name.isEmpty) return 'Username is required';
+                  if (name == user.username) {
+                    return 'Enter a different username';
+                  }
+                  if (name.length < 3 || name.length > 50) {
+                    return 'Must be 3 to 50 characters';
+                  }
+                  if (!_usernamePattern.hasMatch(name)) {
+                    return 'Only English letters, digits, . _ -';
+                  }
+                  // Sign-in refuses "--", so the backend does too.
+                  if (name.contains('--')) {
+                    return 'No two dashes in a row';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Reason (optional)',
+                  hintText: 'e.g. old username had spaces',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final messenger = ScaffoldMessenger.of(this.context);
+              final username = usernameController.text.trim();
+              final reason = reasonController.text.trim();
+              Navigator.pop(context);
+              try {
+                await ref
+                    .read(usersProvider.notifier)
+                    .changeUsername(user.id, username, reason);
+                messenger.showSuccess(
+                  '"${user.username}" is now "$username". Tell them to sign in again.',
+                );
+              } catch (e) {
+                messenger.showError(
+                  'Failed to change username: ${friendlyError(e)}',
+                );
+              }
+            },
+            child: const Text('Change'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Contacts the user has but has not verified, phone first: owners in Laos

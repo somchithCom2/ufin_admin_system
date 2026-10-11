@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
+import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
@@ -15,10 +16,6 @@ class DashboardPage extends ConsumerStatefulWidget {
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
-  static final _currency = NumberFormat.currency(
-    symbol: '₭ ',
-    decimalDigits: 0,
-  );
   static final _number = NumberFormat.decimalPattern();
 
   @override
@@ -163,9 +160,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   ),
                   StatCard(
                     label: 'Monthly revenue',
-                    value: _currency.format(stats.totalRevenueThisMonth),
-                    caption:
-                        '${_number.format(stats.totalPaymentsThisMonth)} payments',
+                    value: _primaryAmount(stats.revenueThisMonthByCurrency),
+                    // Other currencies are listed, never added to the kip.
+                    caption: stats.revenueThisMonthByCurrency.length > 1
+                        ? '+ ${stats.revenueThisMonthByCurrency.keys.skip(1).join(', ')}'
+                        : '${_number.format(stats.totalPaymentsThisMonth)} payments',
                     icon: Icons.payments_rounded,
                     color: status.warning,
                     onTap: () => _goTo(AdminSection.revenue),
@@ -312,15 +311,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ),
       child: Column(
         children: [
-          InfoRow(
-            label: 'This month',
-            value: _currency.format(s.totalRevenueThisMonth),
+          ..._amountRows(
+            'This month',
+            s.revenueThisMonthByCurrency,
             valueColor: context.status.success,
           ),
-          InfoRow(
-            label: 'This year',
-            value: _currency.format(s.totalRevenueThisYear),
-          ),
+          ..._amountRows('This year', s.revenueThisYearByCurrency),
           InfoRow(
             label: 'Payments this month',
             value: _number.format(s.totalPaymentsThisMonth),
@@ -328,6 +324,30 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ],
       ),
     );
+  }
+
+  /// The first currency's amount (LAK when present), or ₭ 0 with no revenue.
+  String _primaryAmount(Map<String, double> amounts) => amounts.isEmpty
+      ? MoneyFormat.format(0, 'LAK')
+      : MoneyFormat.format(amounts.values.first, amounts.keys.first);
+
+  /// One row per currency; a single LAK row when there is no revenue yet.
+  List<Widget> _amountRows(
+    String label,
+    Map<String, double> amounts, {
+    Color? valueColor,
+  }) {
+    final entries = amounts.isEmpty
+        ? const [MapEntry('LAK', 0.0)]
+        : amounts.entries.toList();
+    return [
+      for (final e in entries)
+        InfoRow(
+          label: entries.length > 1 ? '$label · ${e.key}' : label,
+          value: MoneyFormat.format(e.value, e.key),
+          valueColor: valueColor,
+        ),
+    ];
   }
 
   Widget _plansPanel(AdminDashboardStats s) {

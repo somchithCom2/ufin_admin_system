@@ -48,6 +48,7 @@ class ApiConstants {
       '/admin/users/$id/reset-password';
   static String adminUserRestore(int id) => '/admin/users/$id/restore';
   static String adminUserVerify(int id) => '/admin/users/$id/verify';
+  static String adminUserUsername(int id) => '/admin/users/$id/username';
 
   // Products
   static String productsPaginated(int shopId, int empId) =>

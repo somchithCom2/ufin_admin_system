@@ -60,6 +60,19 @@ class MarkUserVerifiedRequest {
   };
 }
 
+/// Request to rename an account whose username predates the format rule
+class ChangeUsernameRequest {
+  final String username;
+  final String? reason;
+
+  const ChangeUsernameRequest({required this.username, this.reason});
+
+  Map<String, dynamic> toJson() => {
+    'username': username,
+    if (reason != null && reason!.isNotEmpty) 'reason': reason,
+  };
+}
+
 /// Request to extend subscription
 class ExtendSubscriptionRequest {
   final int? days;

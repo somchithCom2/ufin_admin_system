@@ -1,3 +1,5 @@
+import 'package:ufin_admin_system/core/utils/money_format.dart';
+
 /// Dashboard statistics for admin panel
 class AdminDashboardStats {
   // Shop stats
@@ -23,9 +25,11 @@ class AdminDashboardStats {
   // Plan distribution
   final Map<String, int> subscriptionsByPlan;
 
-  // Revenue stats
+  // Revenue stats. The two totals are LAK only; the maps hold every currency.
   final double totalRevenueThisMonth;
   final double totalRevenueThisYear;
+  final Map<String, double> revenueThisMonthByCurrency;
+  final Map<String, double> revenueThisYearByCurrency;
   final int totalPaymentsThisMonth;
 
   // Recent activity
@@ -49,6 +53,8 @@ class AdminDashboardStats {
     this.subscriptionsByPlan = const {},
     this.totalRevenueThisMonth = 0,
     this.totalRevenueThisYear = 0,
+    this.revenueThisMonthByCurrency = const {},
+    this.revenueThisYearByCurrency = const {},
     this.totalPaymentsThisMonth = 0,
     this.recentActivities = const [],
   });
@@ -78,6 +84,14 @@ class AdminDashboardStats {
           (json['totalRevenueThisMonth'] as num?)?.toDouble() ?? 0,
       totalRevenueThisYear:
           (json['totalRevenueThisYear'] as num?)?.toDouble() ?? 0,
+      revenueThisMonthByCurrency: MoneyFormat.amountsFromJson(
+        json['revenueThisMonthByCurrency'],
+        fallbackLak: json['totalRevenueThisMonth'] as num?,
+      ),
+      revenueThisYearByCurrency: MoneyFormat.amountsFromJson(
+        json['revenueThisYearByCurrency'],
+        fallbackLak: json['totalRevenueThisYear'] as num?,
+      ),
       totalPaymentsThisMonth: json['totalPaymentsThisMonth'] as int? ?? 0,
       recentActivities:
           (json['recentActivities'] as List<dynamic>?)
@@ -105,6 +119,8 @@ class AdminDashboardStats {
     'subscriptionsByPlan': subscriptionsByPlan,
     'totalRevenueThisMonth': totalRevenueThisMonth,
     'totalRevenueThisYear': totalRevenueThisYear,
+    'revenueThisMonthByCurrency': revenueThisMonthByCurrency,
+    'revenueThisYearByCurrency': revenueThisYearByCurrency,
     'totalPaymentsThisMonth': totalPaymentsThisMonth,
     'recentActivities': recentActivities.map((e) => e.toJson()).toList(),
   };

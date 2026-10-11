@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -56,7 +57,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
         child: Column(
           children: [
             // Filters
-            _buildFilters(),
+            _buildFilters(state),
 
             // Content
             Expanded(
@@ -98,7 +99,14 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
     );
   }
 
-  Widget _buildFilters() {
+  /// The currency the loaded report's amounts are in.
+  String get _currency =>
+      ref.read(revenueReportProvider).report?.currency ?? 'LAK';
+
+  String _money(double value) => MoneyFormat.format(value, _currency);
+
+  Widget _buildFilters(RevenueReportState state) {
+    final currencies = state.report?.availableCurrencies ?? const <String>[];
     return Container(
       padding: const EdgeInsets.all(12),
       color: context.colors.surfaceContainer,
@@ -166,6 +174,29 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
               ),
             ],
           ),
+          // Payments in different currencies are reported apart, one at a time.
+          if (currencies.length > 1) ...[
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  const Text('Currency: '),
+                  const SizedBox(width: 8),
+                  for (final code in currencies) ...[
+                    ChoiceChip(
+                      label: Text(code),
+                      selected: state.currency == code,
+                      onSelected: (_) => ref
+                          .read(revenueReportProvider.notifier)
+                          .setCurrency(code),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -201,16 +232,13 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Total Revenue (LAK)',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                Text(
+                  'Total Revenue (${report.currency})',
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  NumberFormat.currency(
-                    symbol: '₭',
-                    decimalDigits: 0,
-                  ).format(report.totalRevenue),
+                  _money(report.totalRevenue),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 32,
@@ -290,10 +318,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
 
           _buildStatCard(
             'Average Transaction',
-            NumberFormat.currency(
-              symbol: '₭',
-              decimalDigits: 0,
-            ).format(report.averageTransactionValue),
+            _money(report.averageTransactionValue),
             Icons.analytics,
             Colors.purple,
           ),
@@ -342,7 +367,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          NumberFormat.currency(symbol: '₭', decimalDigits: 0).format(value),
+          _money(value),
           style: TextStyle(
             color: color,
             fontSize: 16,
@@ -491,10 +516,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                NumberFormat.currency(
-                  symbol: '₭',
-                  decimalDigits: 0,
-                ).format(plan.revenue),
+                _money(plan.revenue),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: context.status.success,
@@ -560,10 +582,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                NumberFormat.currency(
-                  symbol: '₭',
-                  decimalDigits: 0,
-                ).format(method.revenue),
+                _money(method.revenue),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: context.status.success,

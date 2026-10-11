@@ -1,3 +1,5 @@
+import 'package:ufin_admin_system/core/utils/money_format.dart';
+
 /// Daily sales report model
 class DailySalesResponse {
   final bool success;
@@ -35,7 +37,11 @@ class DailySalesData {
   final int totalShopsWithSales;
   final int totalShopsActive;
   final int totalOrders;
-  final double totalNetIncome;
+
+  /// Null when sales span several currencies; see [netIncomeByCurrency].
+  final double? totalNetIncome;
+
+  /// One entry per shop per currency.
   final List<ShopSalesData> shopSales;
 
   const DailySalesData({
@@ -53,13 +59,46 @@ class DailySalesData {
       totalShopsWithSales: json['totalShopsWithSales'] as int? ?? 0,
       totalShopsActive: json['totalShopsActive'] as int? ?? 0,
       totalOrders: json['totalOrders'] as int? ?? 0,
-      totalNetIncome: (json['totalNetIncome'] as num?)?.toDouble() ?? 0.0,
+      totalNetIncome: (json['totalNetIncome'] as num?)?.toDouble(),
       shopSales:
           (json['shopSales'] as List<dynamic>?)
               ?.map((e) => ShopSalesData.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );
+  }
+
+  /// Shop rows grouped by currency (LAK first), highest net income first
+  /// within each: comparing kip to baht amounts would mean nothing.
+  List<ShopSalesData> get shopSalesInOrder {
+    final rank = {
+      for (final (i, code) in MoneyFormat.ordered(
+        shopSales.map((s) => s.currency),
+      ).indexed)
+        code: i,
+    };
+    return [...shopSales]..sort((a, b) {
+      final byCurrency = rank[a.currency]!.compareTo(rank[b.currency]!);
+      return byCurrency != 0
+          ? byCurrency
+          : b.totalNetIncome.compareTo(a.totalNetIncome);
+    });
+  }
+
+  /// Net income per currency, LAK first, summed from the per-currency shop
+  /// rows so it always matches the list below it.
+  Map<String, double> get netIncomeByCurrency {
+    final totals = <String, double>{};
+    for (final shop in shopSales) {
+      totals.update(
+        shop.currency,
+        (value) => value + shop.totalNetIncome,
+        ifAbsent: () => shop.totalNetIncome,
+      );
+    }
+    return {
+      for (final code in MoneyFormat.ordered(totals.keys)) code: totals[code]!,
+    };
   }
 
   Map<String, dynamic> toJson() => {
@@ -76,6 +115,7 @@ class DailySalesData {
 class ShopSalesData {
   final int shopId;
   final String shopName;
+  final String currency;
   final int totalOrders;
   final double totalNetIncome;
   final double totalRevenue;
@@ -87,6 +127,7 @@ class ShopSalesData {
   const ShopSalesData({
     required this.shopId,
     required this.shopName,
+    this.currency = 'LAK',
     required this.totalOrders,
     required this.totalNetIncome,
     required this.totalRevenue,
@@ -100,6 +141,7 @@ class ShopSalesData {
     return ShopSalesData(
       shopId: json['shopId'] as int? ?? 0,
       shopName: json['shopName'] as String? ?? '',
+      currency: json['currency'] as String? ?? 'LAK',
       totalOrders: json['totalOrders'] as int? ?? 0,
       totalNetIncome: (json['totalNetIncome'] as num?)?.toDouble() ?? 0.0,
       totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0.0,
@@ -113,6 +155,7 @@ class ShopSalesData {
   Map<String, dynamic> toJson() => {
     'shopId': shopId,
     'shopName': shopName,
+    'currency': currency,
     'totalOrders': totalOrders,
     'totalNetIncome': totalNetIncome,
     'totalRevenue': totalRevenue,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/payments_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
@@ -310,7 +311,16 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
   /// One-line totals shown as the list header; scrolls away with the list.
   Widget _buildSummary(PaymentsState state) {
     final completed = state.payments.where((p) => p.status == 'completed');
-    final revenue = completed.fold<double>(0, (sum, p) => sum + p.amount);
+    // Per currency: kip and baht payments are never added together.
+    final revenue = <String, double>{};
+    for (final p in completed) {
+      revenue.update(p.currency, (v) => v + p.amount, ifAbsent: () => p.amount);
+    }
+    final revenueText = revenue.isEmpty
+        ? MoneyFormat.format(0, 'LAK')
+        : MoneyFormat.ordered(
+            revenue.keys,
+          ).map((c) => MoneyFormat.format(revenue[c]!, c)).join(' · ');
     final muted = context.colors.onSurfaceVariant;
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
@@ -349,10 +359,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
                 child: Text(
-                  NumberFormat.currency(
-                    symbol: '₭ ',
-                    decimalDigits: 0,
-                  ).format(revenue),
+                  revenueText,
                   maxLines: 1,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
@@ -386,10 +393,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
   Widget _buildPaymentCard(AdminPayment payment) {
     final statusColor = _getStatusColor(payment.status);
     final muted = context.colors.onSurfaceVariant;
-    final amount = NumberFormat.currency(
-      symbol: payment.currency == 'LAK' ? '₭ ' : '\$',
-      decimalDigits: 0,
-    ).format(payment.amount);
+    final amount = MoneyFormat.format(payment.amount, payment.currency);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -612,10 +616,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                 child: Column(
                   children: [
                     Text(
-                      NumberFormat.currency(
-                        symbol: payment.currency == 'LAK' ? '₭' : '\$',
-                        decimalDigits: 0,
-                      ).format(payment.amount),
+                      MoneyFormat.format(payment.amount, payment.currency),
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,

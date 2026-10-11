@@ -1,3 +1,5 @@
+import 'package:ufin_admin_system/core/utils/money_format.dart';
+
 import 'admin_plan.dart';
 
 /// Admin Subscription Statistics model
@@ -10,9 +12,10 @@ class AdminSubscriptionStats {
   final int expiringSoon;
   final Map<String, int> byPlan;
   final Map<String, int> byStatus;
-  final double totalRevenue;
-  final double monthlyRecurringRevenue;
-  final double averageRevenuePerUser;
+  // Per currency, LAK first: amounts in different currencies never add up.
+  final Map<String, double> totalRevenue;
+  final Map<String, double> monthlyRecurringRevenue;
+  final Map<String, double> averageRevenuePerUser;
 
   const AdminSubscriptionStats({
     required this.totalSubscriptions,
@@ -46,11 +49,18 @@ class AdminSubscriptionStats {
             (key, value) => MapEntry(key, value as int),
           ) ??
           {},
-      totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0.0,
-      monthlyRecurringRevenue:
-          (json['monthlyRecurringRevenue'] as num?)?.toDouble() ?? 0.0,
-      averageRevenuePerUser:
-          (json['averageRevenuePerUser'] as num?)?.toDouble() ?? 0.0,
+      totalRevenue: MoneyFormat.amountsFromJson(
+        json['totalRevenueByCurrency'],
+        fallbackLak: json['totalRevenue'] as num?,
+      ),
+      monthlyRecurringRevenue: MoneyFormat.amountsFromJson(
+        json['monthlyRecurringRevenueByCurrency'],
+        fallbackLak: json['monthlyRecurringRevenue'] as num?,
+      ),
+      averageRevenuePerUser: MoneyFormat.amountsFromJson(
+        json['averageRevenuePerUserByCurrency'],
+        fallbackLak: json['averageRevenuePerUser'] as num?,
+      ),
     );
   }
 
@@ -63,9 +73,9 @@ class AdminSubscriptionStats {
     'expiringSoon': expiringSoon,
     'byPlan': byPlan,
     'byStatus': byStatus,
-    'totalRevenue': totalRevenue,
-    'monthlyRecurringRevenue': monthlyRecurringRevenue,
-    'averageRevenuePerUser': averageRevenuePerUser,
+    'totalRevenueByCurrency': totalRevenue,
+    'monthlyRecurringRevenueByCurrency': monthlyRecurringRevenue,
+    'averageRevenuePerUserByCurrency': averageRevenuePerUser,
   };
 }
 

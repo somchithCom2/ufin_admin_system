@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/utils/money_format.dart';
+import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -102,6 +104,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
         message: 'There is nothing to show for this period.',
       );
     }
+    final currencies = _revenueCurrencies(stats);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -191,32 +194,47 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
             ),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildRevenueItem(
-                      'Total Revenue',
-                      stats.totalRevenue,
-                      context.status.success,
+                // One block per currency; LAK first.
+                for (final (i, currency) in currencies.indexed) ...[
+                  if (i > 0) const Divider(height: 24),
+                  if (currencies.length > 1)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        currency,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    _buildRevenueItem(
-                      'MRR',
-                      stats.monthlyRecurringRevenue,
-                      context.status.info,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildRevenueItem(
-                      'ARPU',
-                      stats.averageRevenuePerUser,
-                      Colors.purple[700]!,
-                    ),
-                  ],
-                ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildRevenueItem(
+                        'Total Revenue',
+                        stats.totalRevenue[currency] ?? 0,
+                        currency,
+                        context.status.success,
+                      ),
+                      _buildRevenueItem(
+                        'MRR',
+                        stats.monthlyRecurringRevenue[currency] ?? 0,
+                        currency,
+                        context.status.info,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildRevenueItem(
+                        'ARPU',
+                        stats.averageRevenuePerUser[currency] ?? 0,
+                        currency,
+                        Colors.purple[700]!,
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -472,11 +490,25 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
     );
   }
 
-  Widget _buildRevenueItem(String label, double value, Color color) {
+  /// Every currency with revenue or recurring revenue; LAK alone when none.
+  List<String> _revenueCurrencies(AdminSubscriptionStats stats) {
+    final codes = MoneyFormat.ordered([
+      ...stats.totalRevenue.keys,
+      ...stats.monthlyRecurringRevenue.keys,
+    ]);
+    return codes.isEmpty ? const ['LAK'] : codes;
+  }
+
+  Widget _buildRevenueItem(
+    String label,
+    double value,
+    String currency,
+    Color color,
+  ) {
     return Column(
       children: [
         Text(
-          NumberFormat.currency(symbol: '₭', decimalDigits: 0).format(value),
+          MoneyFormat.format(value, currency),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,

@@ -142,6 +142,7 @@ class RevenueReportState {
   final DateTime? startDate;
   final DateTime? endDate;
   final String groupBy;
+  final String currency; // every amount in the report is in this currency
 
   const RevenueReportState({
     this.isLoading = false,
@@ -150,6 +151,7 @@ class RevenueReportState {
     this.startDate,
     this.endDate,
     this.groupBy = 'day',
+    this.currency = 'LAK',
   });
 
   RevenueReportState copyWith({
@@ -159,6 +161,7 @@ class RevenueReportState {
     DateTime? startDate,
     DateTime? endDate,
     String? groupBy,
+    String? currency,
     bool clearError = false,
   }) {
     return RevenueReportState(
@@ -168,6 +171,7 @@ class RevenueReportState {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       groupBy: groupBy ?? this.groupBy,
+      currency: currency ?? this.currency,
     );
   }
 }
@@ -181,6 +185,7 @@ class RevenueReportNotifier extends StateNotifier<RevenueReportState> {
     DateTime? startDate,
     DateTime? endDate,
     String? groupBy,
+    String? currency,
   }) async {
     state = state.copyWith(
       isLoading: true,
@@ -188,12 +193,14 @@ class RevenueReportNotifier extends StateNotifier<RevenueReportState> {
       startDate: startDate,
       endDate: endDate,
       groupBy: groupBy,
+      currency: currency,
     );
     try {
       final report = await _repository.getRevenueReport(
         startDate: startDate ?? state.startDate,
         endDate: endDate ?? state.endDate,
         groupBy: groupBy ?? state.groupBy,
+        currency: currency ?? state.currency,
       );
       state = state.copyWith(isLoading: false, report: report);
     } catch (e) {
@@ -207,6 +214,10 @@ class RevenueReportNotifier extends StateNotifier<RevenueReportState> {
 
   void setGroupBy(String groupBy) {
     loadRevenueReport(groupBy: groupBy);
+  }
+
+  void setCurrency(String currency) {
+    if (currency != state.currency) loadRevenueReport(currency: currency);
   }
 
   void refresh() {

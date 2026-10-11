@@ -1,7 +1,13 @@
-/// Admin Revenue Report model
+import 'package:ufin_admin_system/core/utils/money_format.dart';
+
+/// Admin Revenue Report model. Every amount is in [currency]; the backend
+/// never adds payments in different currencies together.
 class AdminRevenueReport {
   final DateTime startDate;
   final DateTime endDate;
+  final String currency;
+  // Currencies with payments in the period, to switch between
+  final List<String> availableCurrencies;
   final double totalRevenue;
   final double subscriptionRevenue;
   final double otherRevenue;
@@ -16,6 +22,8 @@ class AdminRevenueReport {
   const AdminRevenueReport({
     required this.startDate,
     required this.endDate,
+    this.currency = 'LAK',
+    this.availableCurrencies = const [],
     required this.totalRevenue,
     required this.subscriptionRevenue,
     required this.otherRevenue,
@@ -63,9 +71,16 @@ class AdminRevenueReport {
     }
     final orderedPeriods = periods.values.toList()
       ..sort((a, b) => a.period.compareTo(b.period));
+    final currency = json['currency'] as String? ?? 'LAK';
     return AdminRevenueReport(
       startDate: DateTime.parse(json['startDate'] as String),
       endDate: DateTime.parse(json['endDate'] as String),
+      currency: currency,
+      // The selected currency stays listed even with no payments in it.
+      availableCurrencies: MoneyFormat.ordered([
+        currency,
+        ...((json['availableCurrencies'] as List?)?.cast<String>() ?? []),
+      ]),
       totalRevenue: (json['totalRevenue'] as num?)?.toDouble() ?? 0.0,
       subscriptionRevenue:
           (json['subscriptionRevenue'] as num?)?.toDouble() ?? total,
@@ -124,6 +139,8 @@ class AdminRevenueReport {
   Map<String, dynamic> toJson() => {
     'startDate': startDate.toIso8601String(),
     'endDate': endDate.toIso8601String(),
+    'currency': currency,
+    'availableCurrencies': availableCurrencies,
     'totalRevenue': totalRevenue,
     'subscriptionRevenue': subscriptionRevenue,
     'otherRevenue': otherRevenue,
