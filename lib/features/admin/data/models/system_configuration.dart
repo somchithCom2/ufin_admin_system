@@ -9,6 +9,7 @@ class SystemConfiguration {
   final String minSupportedWebVersion;
   final String minSupportedWindowsVersion;
   final String minSupportedMacosVersion;
+  final bool enforceNewUserVerification;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? updatedBy;
@@ -26,6 +27,7 @@ class SystemConfiguration {
     required this.minSupportedWebVersion,
     required this.minSupportedWindowsVersion,
     required this.minSupportedMacosVersion,
+    this.enforceNewUserVerification = false,
     required this.createdAt,
     required this.updatedAt,
     this.updatedBy,
@@ -55,6 +57,8 @@ class SystemConfiguration {
           json['min_supported_windows_version'] as String? ?? '10.0',
       minSupportedMacosVersion:
           json['min_supported_macos_version'] as String? ?? '10.15',
+      enforceNewUserVerification:
+          json['enforce_new_user_verification'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
@@ -79,6 +83,7 @@ class SystemConfiguration {
     'min_supported_web_version': minSupportedWebVersion,
     'min_supported_windows_version': minSupportedWindowsVersion,
     'min_supported_macos_version': minSupportedMacosVersion,
+    'enforce_new_user_verification': enforceNewUserVerification,
     'created_at': createdAt.toIso8601String(),
     'updated_at': updatedAt.toIso8601String(),
     'updated_by': updatedBy,
@@ -127,6 +132,7 @@ class UpdateSystemConfigRequest {
   final String? minSupportedWebVersion;
   final String? minSupportedWindowsVersion;
   final String? minSupportedMacosVersion;
+  final bool? enforceNewUserVerification;
 
   UpdateSystemConfigRequest({
     this.minSupportedAndroidVersion,
@@ -134,6 +140,7 @@ class UpdateSystemConfigRequest {
     this.minSupportedWebVersion,
     this.minSupportedWindowsVersion,
     this.minSupportedMacosVersion,
+    this.enforceNewUserVerification,
   });
 
   factory UpdateSystemConfigRequest.fromJson(Map<String, dynamic> json) {
@@ -145,6 +152,8 @@ class UpdateSystemConfigRequest {
       minSupportedWindowsVersion:
           json['min_supported_windows_version'] as String?,
       minSupportedMacosVersion: json['min_supported_macos_version'] as String?,
+      enforceNewUserVerification:
+          json['enforce_new_user_verification'] as bool?,
     );
   }
 
@@ -159,5 +168,7 @@ class UpdateSystemConfigRequest {
       'min_supported_windows_version': minSupportedWindowsVersion,
     if (minSupportedMacosVersion != null)
       'min_supported_macos_version': minSupportedMacosVersion,
+    if (enforceNewUserVerification != null)
+      'enforce_new_user_verification': enforceNewUserVerification,
   };
 }

@@ -191,6 +191,47 @@ class _SystemConfigurationPageState
                   ),
                 ),
                 const SizedBox(height: 24),
+                // New User Verification Section
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'New User Verification',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 16),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            config.enforceNewUserVerification
+                                ? 'Status: ENFORCED'
+                                : 'Status: NOT ENFORCED',
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  color: config.enforceNewUserVerification
+                                      ? context.status.success
+                                      : context.status.warning,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          subtitle: const Text(
+                            'Newly registered shop owners must verify their '
+                            'email or phone before they can log in. Existing '
+                            'accounts are never affected. Turn off to unblock '
+                            'everyone at once if email/OTP delivery breaks.',
+                          ),
+                          value: config.enforceNewUserVerification,
+                          onChanged: (value) =>
+                              _confirmNewUserVerification(context, value),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 // Version Requirements Section
                 Card(
                   child: Padding(
@@ -532,6 +573,62 @@ class _SystemConfigurationPageState
         ],
       ),
     );
+  }
+
+  Future<void> _confirmNewUserVerification(
+    BuildContext context,
+    bool enforce,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          enforce
+              ? 'Enforce New User Verification'
+              : 'Stop Enforcing New User Verification',
+        ),
+        content: Text(
+          enforce
+              ? 'New shop owners who have not verified their email or phone '
+                    'will be blocked at login until they do. Make sure email/OTP '
+                    'delivery is working first.'
+              : 'Unverified new shop owners will be able to log in again '
+                    'immediately.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: enforce
+                  ? context.status.warning
+                  : context.colors.error,
+            ),
+            child: Text(enforce ? 'Enforce' : 'Stop Enforcing'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await _repository.updateSystemConfiguration(
+        UpdateSystemConfigRequest(enforceNewUserVerification: enforce),
+      );
+      unawaited(ref.refresh(systemConfigProvider.future));
+
+      if (!context.mounted) return;
+      AppFeedback.success(
+        context,
+        'New user verification ${enforce ? 'enforced' : 'no longer enforced'}',
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      AppFeedback.error(context, e);
+    }
   }
 
   void _showUpdateVersionDialog(
