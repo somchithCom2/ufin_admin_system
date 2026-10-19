@@ -95,7 +95,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 ? context.status.success.withValues(alpha: 0.1)
                 : context.status.neutral.withValues(alpha: 0.1),
             child: Icon(
-              _getIconData(shopType.iconName),
+              shopTypeIcon(shopType.code),
               color: shopType.enabled
                   ? context.status.success
                   : context.status.neutral,
@@ -127,7 +127,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   _buildStatusChip(shopType.enabled),
                   const SizedBox(width: 8),
                   Text(
-                    '${shopType.shopCount} shops',
+                    _shopCountLabel(shopType.usage),
                     style: TextStyle(
                       color: context.colors.onSurfaceVariant,
                       fontSize: 12,
@@ -202,7 +202,11 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
     );
   }
 
-  IconData _getIconData(String? iconName) => shopTypeIcon(iconName);
+  String _shopCountLabel(ShopTypeUsage? usage) => switch (usage) {
+    null => 'Shop count unavailable',
+    ShopTypeUsage(total: 1) => '1 shop',
+    ShopTypeUsage(:final total) => '$total shops',
+  };
 
   void _handleAction(ShopType shopType, String action) {
     switch (action) {
@@ -270,7 +274,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                         ? context.status.success.withValues(alpha: 0.1)
                         : context.status.neutral.withValues(alpha: 0.1),
                     child: Icon(
-                      _getIconData(shopType.iconName),
+                      shopTypeIcon(shopType.code),
                       size: 30,
                       color: shopType.enabled
                           ? context.status.success
@@ -298,11 +302,6 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 _buildDetailRow('Code', shopType.code),
                 _buildDetailRow('Name', shopType.name),
                 _buildDetailRow('Description', shopType.description ?? 'N/A'),
-                _buildDetailRow('Icon', shopType.iconName ?? 'Default'),
-                _buildDetailRow(
-                  'Display Order',
-                  shopType.displayOrder.toString(),
-                ),
               ]),
               const SizedBox(height: 16),
               _buildDetailSection('Features', [
@@ -332,7 +331,13 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
               ]),
               const SizedBox(height: 16),
               _buildDetailSection('Statistics', [
-                _buildDetailRow('Shop Count', shopType.shopCount.toString()),
+                if (shopType.usage case final usage?) ...[
+                  _buildDetailRow('Shops', usage.total.toString()),
+                  _buildDetailRow('Active', usage.active.toString()),
+                  _buildDetailRow('Inactive', usage.inactive.toString()),
+                  _buildDetailRow('Suspended', usage.suspended.toString()),
+                ] else
+                  _buildDetailRow('Shops', 'Unavailable'),
                 _buildDetailRow(
                   'Status',
                   shopType.enabled ? 'Enabled' : 'Disabled',
@@ -343,10 +348,6 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 _buildDetailRow(
                   'Created',
                   shopType.createdAt?.toString().split(' ')[0] ?? 'N/A',
-                ),
-                _buildDetailRow(
-                  'Updated',
-                  shopType.updatedAt?.toString().split(' ')[0] ?? 'N/A',
                 ),
               ]),
             ],

@@ -1015,12 +1015,29 @@ class ShopTypesNotifier extends StateNotifier<ShopTypesState> {
 
   ShopTypesNotifier(this._repository) : super(const ShopTypesState());
 
-  /// Load all shop types (including disabled) for admin management
+  /// Load all shop types (including disabled) for admin management.
+  /// `/admin/all` carries no shop counts, so they are joined from `/stats`;
+  /// if that call fails the list still loads, with counts left unknown.
   Future<void> loadShopTypes() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final shopTypes = await _repository.getAllShopTypes();
-      state = state.copyWith(isLoading: false, shopTypes: shopTypes);
+      final (shopTypes, stats) = await (
+        _repository.getAllShopTypes(),
+        _repository
+            .getShopTypesWithStats()
+            .then<List<ShopType>?>((s) => s)
+            .catchError((Object _) => null),
+      ).wait;
+      final usageById = {for (final s in stats ?? <ShopType>[]) s.id: s.usage};
+      state = state.copyWith(
+        isLoading: false,
+        shopTypes: [
+          for (final t in shopTypes)
+            t.withUsage(
+              stats == null ? null : usageById[t.id] ?? const ShopTypeUsage(),
+            ),
+        ],
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -1066,10 +1083,11 @@ class ShopTypesNotifier extends StateNotifier<ShopTypesState> {
   Future<void> toggleShopType(int id) async {
     try {
       final updated = await _repository.toggleShopType(id);
-      // Update the item in the list without full reload
+      // Update the item in the list without full reload. The toggle
+      // response has no shop counts, so keep the ones already loaded.
       state = state.copyWith(
         shopTypes: state.shopTypes
-            .map((s) => s.id == id ? updated : s)
+            .map((s) => s.id == id ? updated.withUsage(s.usage) : s)
             .toList(),
       );
     } catch (_) {

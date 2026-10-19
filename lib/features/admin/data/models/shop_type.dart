@@ -1,3 +1,28 @@
+/// How many shops use a shop type, from `GET /business-types/stats`.
+class ShopTypeUsage {
+  final int total;
+  final int active;
+  final int inactive;
+  final int suspended;
+
+  const ShopTypeUsage({
+    this.total = 0,
+    this.active = 0,
+    this.inactive = 0,
+    this.suspended = 0,
+  });
+
+  factory ShopTypeUsage.fromJson(Map<String, dynamic> json) {
+    int count(String key) => (json[key] as num?)?.toInt() ?? 0;
+    return ShopTypeUsage(
+      total: count('totalShops'),
+      active: count('activeShops'),
+      inactive: count('inactiveShops'),
+      suspended: count('suspendedShops'),
+    );
+  }
+}
+
 /// Shop type for categorizing shops
 class ShopType {
   final int id;
@@ -9,13 +34,15 @@ class ShopType {
   /// Edit forms must round-trip these, or saving drops non-English text.
   final Map<String, String> nameI18n;
   final Map<String, String> descriptionI18n;
-  final String? iconName;
+
+  /// Feature keys the POS app unlocks for shops of this type. The backend
+  /// replaces them on every update, so edits must send them back.
   final List<String> features;
   final bool enabled;
-  final int displayOrder;
-  final int shopCount;
   final DateTime? createdAt;
-  final DateTime? updatedAt;
+
+  /// Null when the stats endpoint could not be read: unknown, not zero.
+  final ShopTypeUsage? usage;
 
   /// Extracts a string from a value that may be a localized map or a plain string.
   static String? _localized(dynamic value) {
@@ -50,33 +77,27 @@ class ShopType {
     this.description,
     this.nameI18n = const {},
     this.descriptionI18n = const {},
-    this.iconName,
     this.features = const [],
     this.enabled = true,
-    this.displayOrder = 0,
-    this.shopCount = 0,
     this.createdAt,
-    this.updatedAt,
+    this.usage,
   });
 
   factory ShopType.fromJson(Map<String, dynamic> json) {
     return ShopType(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       code: json['code'] as String? ?? '',
       name: _localized(json['name']) ?? '',
       description: _localized(json['description']),
       nameI18n: _translations(json['name']),
       descriptionI18n: _translations(json['description']),
-      iconName: json['iconName'] as String?,
       features: (json['features'] as List<dynamic>?)?.cast<String>() ?? [],
       enabled: (json['enabled'] ?? json['isActive']) as bool? ?? true,
-      displayOrder: json['displayOrder'] as int? ?? 0,
-      shopCount: json['shopCount'] as int? ?? 0,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String)
           : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'] as String)
+      usage: json.containsKey('totalShops')
+          ? ShopTypeUsage.fromJson(json)
           : null,
     );
   }
@@ -86,44 +107,23 @@ class ShopType {
     'code': code,
     'name': nameI18n.isEmpty ? name : nameI18n,
     'description': descriptionI18n.isEmpty ? description : descriptionI18n,
-    'iconName': iconName,
     'features': features,
     'enabled': enabled,
-    'displayOrder': displayOrder,
-    'shopCount': shopCount,
     'createdAt': createdAt?.toIso8601String(),
-    'updatedAt': updatedAt?.toIso8601String(),
   };
 
-  ShopType copyWith({
-    int? id,
-    String? code,
-    String? name,
-    String? description,
-    String? iconName,
-    List<String>? features,
-    bool? enabled,
-    int? displayOrder,
-    int? shopCount,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return ShopType(
-      id: id ?? this.id,
-      code: code ?? this.code,
-      name: name ?? this.name,
-      description: description ?? this.description,
-      nameI18n: nameI18n,
-      descriptionI18n: descriptionI18n,
-      iconName: iconName ?? this.iconName,
-      features: features ?? this.features,
-      enabled: enabled ?? this.enabled,
-      displayOrder: displayOrder ?? this.displayOrder,
-      shopCount: shopCount ?? this.shopCount,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
+  ShopType withUsage(ShopTypeUsage? usage) => ShopType(
+    id: id,
+    code: code,
+    name: name,
+    description: description,
+    nameI18n: nameI18n,
+    descriptionI18n: descriptionI18n,
+    features: features,
+    enabled: enabled,
+    createdAt: createdAt,
+    usage: usage,
+  );
 }
 
 /// Request to create a new shop type
@@ -131,53 +131,42 @@ class CreateShopTypeRequest {
   final String code;
   final Map<String, dynamic> name;
   final Map<String, dynamic>? description;
-  final String? iconName;
   final List<String>? features;
-  final int? displayOrder;
 
   const CreateShopTypeRequest({
     required this.code,
     required this.name,
     this.description,
-    this.iconName,
     this.features,
-    this.displayOrder,
   });
 
   Map<String, dynamic> toJson() => {
     'code': code,
     'name': name,
     if (description != null) 'description': description,
-    if (iconName != null) 'iconName': iconName,
     if (features != null) 'features': features,
-    if (displayOrder != null) 'displayOrder': displayOrder,
   };
 }
 
-/// Request to update a shop type
+/// Request to update a shop type. `PUT /business-types/{id}` replaces every
+/// field: an omitted description or feature list is cleared, not kept.
 class UpdateShopTypeRequest {
-  final String? code;
-  final Map<String, dynamic>? name;
-  final Map<String, dynamic>? description;
-  final String? iconName;
-  final List<String>? features;
-  final int? displayOrder;
+  final String code;
+  final Map<String, dynamic> name;
+  final Map<String, dynamic> description;
+  final List<String> features;
 
   const UpdateShopTypeRequest({
-    this.code,
-    this.name,
-    this.description,
-    this.iconName,
-    this.features,
-    this.displayOrder,
+    required this.code,
+    required this.name,
+    required this.description,
+    required this.features,
   });
 
   Map<String, dynamic> toJson() => {
-    if (code != null) 'code': code,
-    if (name != null) 'name': name,
-    if (description != null) 'description': description,
-    if (iconName != null) 'iconName': iconName,
-    if (features != null) 'features': features,
-    if (displayOrder != null) 'displayOrder': displayOrder,
+    'code': code,
+    'name': name,
+    'description': description,
+    'features': features,
   };
 }

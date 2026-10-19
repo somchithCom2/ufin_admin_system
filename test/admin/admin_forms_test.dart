@@ -62,7 +62,7 @@ void main() {
       expect(saves, 0);
     });
 
-    testWidgets('create sends upper-cased code, both names and icon', (
+    testWidgets('create sends upper-cased code and both names', (
       tester,
     ) async {
       CreateShopTypeRequest? sent;
@@ -74,15 +74,45 @@ void main() {
       await tester.enterText(_field('Code'), 'coffee_shop');
       await tester.enterText(_field('English'), 'Coffee shop');
       await tester.enterText(_field('Lao (optional)'), 'ຮ້ານກາເຟ');
-      await tester.tap(find.byTooltip('Local cafe'));
       await tester.tap(find.text('Create shop type'));
       await tester.pumpAndSettle();
 
       expect(await result, isTrue);
       expect(sent!.code, 'COFFEE_SHOP');
       expect(sent!.name, {'en': 'Coffee shop', 'lo': 'ຮ້ານກາເຟ'});
-      expect(sent!.iconName, 'local_cafe');
       expect(sent!.description, isNull);
+      // Only fields BusinessTypeRequestDto accepts.
+      expect(sent!.toJson().keys, unorderedEquals(['code', 'name']));
+    });
+
+    testWidgets('edit sends the existing features back so they survive', (
+      tester,
+    ) async {
+      UpdateShopTypeRequest? sent;
+      final existing = ShopType.fromJson({
+        'id': 1,
+        'code': 'RESTAURANT',
+        'name': {'en': 'Restaurant'},
+        'features': ['restaurant', 'tables', 'kitchen'],
+      });
+      await _open(
+        tester,
+        (c) => showShopTypeForm(
+          c,
+          existing: existing,
+          save: (_, update) async => sent = update,
+        ),
+      );
+
+      await tester.enterText(_field('English'), 'Restaurant & Bar');
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(sent!.toJson()['features'], ['restaurant', 'tables', 'kitchen']);
+      expect(
+        sent!.toJson().keys,
+        unorderedEquals(['code', 'name', 'description', 'features']),
+      );
     });
 
     testWidgets('edit keeps Lao and other translations it does not show', (

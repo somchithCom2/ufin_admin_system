@@ -3,26 +3,29 @@ import 'package:flutter/services.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
-/// Icon names the backend accepts for shop types, in display order.
-const shopTypeIconNames = <String, IconData>{
-  'store': Icons.store_rounded,
+/// The backend stores no icon for a shop type, so it follows from the code.
+const _shopTypeIcons = <String, IconData>{
+  'retail': Icons.store_rounded,
   'restaurant': Icons.restaurant_rounded,
-  'local_cafe': Icons.local_cafe_rounded,
-  'local_bar': Icons.local_bar_rounded,
-  'shopping_cart': Icons.shopping_cart_rounded,
-  'local_grocery_store': Icons.local_grocery_store_rounded,
-  'local_mall': Icons.local_mall_rounded,
-  'local_pharmacy': Icons.local_pharmacy_rounded,
-  'local_hospital': Icons.local_hospital_rounded,
-  'local_laundry_service': Icons.local_laundry_service_rounded,
+  'cafe': Icons.local_cafe_rounded,
+  'bar': Icons.local_bar_rounded,
+  'service': Icons.room_service_rounded,
+  'wholesale': Icons.warehouse_rounded,
+  'online': Icons.shopping_cart_rounded,
+  'grocery': Icons.local_grocery_store_rounded,
+  'pharmacy': Icons.local_pharmacy_rounded,
+  'salon': Icons.spa_rounded,
   'spa': Icons.spa_rounded,
-  'fitness_center': Icons.fitness_center_rounded,
   'hotel': Icons.hotel_rounded,
-  'car_repair': Icons.car_repair_rounded,
 };
 
-IconData shopTypeIcon(String? name) =>
-    shopTypeIconNames[name?.toLowerCase()] ?? Icons.storefront_rounded;
+IconData shopTypeIcon(String code) {
+  final key = code.toLowerCase();
+  for (final MapEntry(key: word, value: icon) in _shopTypeIcons.entries) {
+    if (key.contains(word)) return icon;
+  }
+  return Icons.storefront_rounded;
+}
 
 /// Opens the create (when [existing] is null) or edit form. [save] receives
 /// the request and should throw on failure; the form shows the error inline
@@ -61,10 +64,6 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
   late final _nameLo = TextEditingController(text: _name('lo'));
   late final _descEn = TextEditingController(text: _desc('en'));
   late final _descLo = TextEditingController(text: _desc('lo'));
-  late final _order = TextEditingController(
-    text: (widget.existing?.displayOrder ?? 0).toString(),
-  );
-  late String? _icon = widget.existing?.iconName;
   bool _saving = false;
   String? _error;
 
@@ -84,7 +83,7 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
 
   @override
   void dispose() {
-    for (final c in [_code, _nameEn, _nameLo, _descEn, _descLo, _order]) {
+    for (final c in [_code, _nameEn, _nameLo, _descEn, _descLo]) {
       c.dispose();
     }
     super.dispose();
@@ -125,7 +124,6 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
       _descLo.text,
     );
     final code = _code.text.trim().toUpperCase();
-    final order = int.tryParse(_order.text.trim());
     try {
       await widget.save(
         _isEdit
@@ -134,16 +132,14 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
                 code: code,
                 name: name,
                 description: description.isEmpty ? null : description,
-                iconName: _icon,
-                displayOrder: order,
               ),
         _isEdit
             ? UpdateShopTypeRequest(
                 code: code,
                 name: name,
                 description: description,
-                iconName: _icon,
-                displayOrder: order,
+                // Not editable here, but the update replaces them
+                features: widget.existing!.features,
               )
             : null,
       );
@@ -174,33 +170,19 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
         FormSection(
           title: 'Basics',
           children: [
-            FormRow(
-              flex: const [3, 2],
-              children: [
-                TextFormField(
-                  controller: _code,
-                  autofocus: !_isEdit,
-                  textCapitalization: TextCapitalization.characters,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9_]')),
-                  ],
-                  decoration: const InputDecoration(
-                    labelText: 'Code',
-                    hintText: 'RESTAURANT',
-                    helperText: 'Letters, numbers and _',
-                  ),
-                  validator: FormValidators.required('Code'),
-                ),
-                TextFormField(
-                  controller: _order,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Display order',
-                    helperText: 'Lower shows first',
-                  ),
-                  validator: FormValidators.optionalInt,
-                ),
+            TextFormField(
+              controller: _code,
+              autofocus: !_isEdit,
+              textCapitalization: TextCapitalization.characters,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9_]')),
               ],
+              decoration: const InputDecoration(
+                labelText: 'Code',
+                hintText: 'RESTAURANT',
+                helperText: 'Letters, numbers and _',
+              ),
+              validator: FormValidators.required('Code'),
             ),
           ],
         ),
@@ -252,79 +234,7 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
             ),
           ],
         ),
-        FormSection(
-          title: 'Icon',
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final entry in shopTypeIconNames.entries)
-                  _IconChoice(
-                    name: entry.key,
-                    icon: entry.value,
-                    selected: _icon == entry.key,
-                    onTap: () => setState(
-                      () => _icon = _icon == entry.key ? null : entry.key,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
       ],
-    );
-  }
-}
-
-class _IconChoice extends StatelessWidget {
-  final String name;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _IconChoice({
-    required this.name,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colors;
-    return Tooltip(
-      message: humanize(name),
-      child: Semantics(
-        selected: selected,
-        button: true,
-        label: humanize(name),
-        child: Material(
-          color: selected
-              ? scheme.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            side: BorderSide(
-              color: selected ? scheme.primary : scheme.outlineVariant,
-              width: selected ? 1.6 : 1,
-            ),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            onTap: onTap,
-            child: SizedBox(
-              width: 48,
-              height: 48,
-              child: Icon(
-                icon,
-                size: 22,
-                color: selected ? scheme.primary : scheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
