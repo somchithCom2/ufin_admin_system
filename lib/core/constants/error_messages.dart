@@ -72,6 +72,37 @@ abstract final class ErrorMessages {
         'The owner already has another shop with this name. Ask them to rename it first.',
     'ERR_INVALID_SHOP_STATUS': 'Unknown shop status.',
 
+    // --- Branch groups and ownership (link, unlink, change owner) ---
+    'ERR_SHOP_HAS_BRANCHES':
+        'This shop has live branches. Unlink or delete its branches first.',
+    'ERR_SHOP_ALREADY_A_BRANCH':
+        'This shop is already a branch. Unlink it first.',
+    'ERR_SHOP_IS_A_BRANCH': "A branch's owner is its group's. Unlink it first.",
+    'ERR_SHOP_NOT_A_BRANCH': 'This shop is not a branch.',
+    'ERR_PARENT_IS_A_BRANCH':
+        'The main shop is itself a branch. Groups are one level deep: pick its main shop.',
+    'ERR_SHOP_CANNOT_BE_OWN_PARENT': 'A shop cannot be its own main shop.',
+    'ERR_PARENT_SHOP_ID_REQUIRED': 'Choose the main shop.',
+    'ERR_PARENT_SHOP_NOT_FOUND': 'Main shop not found.',
+    'ERR_PARENT_SHOP_OWNER_DELETED':
+        "The main shop's owner account is deleted. Restore it first.",
+    'ERR_PARENT_PLAN_LACKS_MULTI_SHOP':
+        "The main shop's plan has no branches. Upgrade it, or link anyway for an agreed deal.",
+    'ERR_SHOP_OWNER_MISMATCH':
+        'The two shops have different owners. Turn on moving it to the main shop\'s owner.',
+    'ERR_SHOP_HAS_PAID_SUBSCRIPTION':
+        "This shop has paid time left on its own plan. Refund or carry it over, then link.",
+    'ERR_SHOP_NAME_CONFIRMATION_REQUIRED': 'Type the shop name to confirm.',
+    'ERR_SHOP_NAME_CONFIRMATION_MISMATCH':
+        'The name typed does not match the shop. Check you picked the right shop.',
+    'ERR_REASON_REQUIRED': 'Enter a reason.',
+    'ERR_REASON_TOO_LONG': 'The reason is too long (500 characters at most).',
+    'ERR_OWNER_USER_ID_REQUIRED': 'Choose the new owner.',
+    'ERR_USER_ALREADY_OWNER': 'That account already owns this shop.',
+    'ERR_USER_DELETED': 'That account is deleted.',
+    'ERR_INVALID_SHOP_OWNER':
+        'Only a shop staff account can own a shop, not a customer or admin account.',
+
     // --- Users ---
     'ERR_USER_NOT_FOUND': 'User not found.',
     'ERR_ACCOUNT_DELETED_USE_RESTORE':

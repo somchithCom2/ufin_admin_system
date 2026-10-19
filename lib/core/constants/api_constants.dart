@@ -39,6 +39,16 @@ class ApiConstants {
   static String adminShopStatus(int id) => '/admin/shops/$id/status';
   static String adminShopRestore(int id) => '/admin/shops/$id/restore';
 
+  // Branch groups and ownership
+  static String adminShopBranches(int id) => '/admin/shops/$id/branches';
+  static String adminShopLinkToParent(int id) =>
+      '/admin/shops/$id/link-to-parent';
+  static String adminShopUnlinkFromParent(int id) =>
+      '/admin/shops/$id/unlink-from-parent';
+  static String adminShopOwner(int id) => '/admin/shops/$id/owner';
+  static String adminShopOwnerHistory(int id) =>
+      '/admin/shops/$id/owner-history';
+
   // Users
   static const String adminUsers = '/admin/users';
   static const String adminUsersDeleted = '/admin/users/deleted';

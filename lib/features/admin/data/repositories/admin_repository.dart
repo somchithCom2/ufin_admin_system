@@ -90,6 +90,85 @@ class AdminRepository {
     }
   }
 
+  /// A shop's branches, deleted ones included
+  Future<List<AdminShop>> getBranches(int shopId) async {
+    try {
+      final response = await _dio.get(ApiConstants.adminShopBranches(shopId));
+      return _parseListResponse<AdminShop>(response, AdminShop.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Make an existing top-level shop a branch of another
+  Future<ShopOwnershipResult> linkAsBranch(
+    int shopId,
+    LinkBranchRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminShopLinkToParent(shopId),
+        data: request.toJson(),
+      );
+      return _parseResponse<ShopOwnershipResult>(
+        response,
+        ShopOwnershipResult.fromJson,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Turn a branch back into a top-level shop on Free
+  Future<ShopOwnershipResult> unlinkBranch(
+    int shopId,
+    UnlinkBranchRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminShopUnlinkFromParent(shopId),
+        data: request.toJson(),
+      );
+      return _parseResponse<ShopOwnershipResult>(
+        response,
+        ShopOwnershipResult.fromJson,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Hand a top-level shop to another account
+  Future<ShopOwnershipResult> changeShopOwner(
+    int shopId,
+    ChangeOwnerRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminShopOwner(shopId),
+        data: request.toJson(),
+      );
+      return _parseResponse<ShopOwnershipResult>(
+        response,
+        ShopOwnershipResult.fromJson,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Every owner change made from the admin console, newest first
+  Future<List<OwnerChange>> getOwnerHistory(int shopId) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminShopOwnerHistory(shopId),
+      );
+      return _parseListResponse<OwnerChange>(response, OwnerChange.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Soft delete shop
   Future<void> deleteShop(int id) async {
     try {

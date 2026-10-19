@@ -4,6 +4,7 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_products_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_ownership_forms.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class ShopsPage extends ConsumerStatefulWidget {
@@ -298,6 +299,67 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   ],
                 ),
               ),
+            const PopupMenuDivider(),
+            if (!shop.isBranch)
+              const PopupMenuItem(
+                value: 'branches',
+                child: Row(
+                  children: [
+                    Icon(Icons.account_tree_outlined),
+                    SizedBox(width: 8),
+                    Text('Branches'),
+                  ],
+                ),
+              ),
+            if (!shop.isDeleted && !shop.isBranch)
+              const PopupMenuItem(
+                value: 'link',
+                child: Row(
+                  children: [
+                    Icon(Icons.link_rounded),
+                    SizedBox(width: 8),
+                    Text('Link as branch…'),
+                  ],
+                ),
+              ),
+            if (!shop.isDeleted && shop.isBranch)
+              PopupMenuItem(
+                value: 'unlink',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.call_split_rounded,
+                      color: context.status.warning,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Unlink branch…'),
+                  ],
+                ),
+              ),
+            if (!shop.isDeleted && !shop.isBranch)
+              PopupMenuItem(
+                value: 'owner',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.swap_horiz_rounded,
+                      color: context.status.warning,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Change owner…'),
+                  ],
+                ),
+              ),
+            const PopupMenuItem(
+              value: 'owner_history',
+              child: Row(
+                children: [
+                  Icon(Icons.history_rounded),
+                  SizedBox(width: 8),
+                  Text('Owner history'),
+                ],
+              ),
+            ),
           ],
         ),
         onTap: () => _showShopDetails(shop),
@@ -337,7 +399,42 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       case 'restore':
         _showRestoreDialog(shop);
         break;
+      case 'branches':
+        showBranchesSheet(context, shop);
+        break;
+      case 'link':
+        _runOwnershipAction(
+          showLinkBranchForm(context, shop),
+          'Linked as a branch',
+        );
+        break;
+      case 'unlink':
+        _runOwnershipAction(
+          showUnlinkBranchForm(context, shop),
+          'Unlinked from the group',
+        );
+        break;
+      case 'owner':
+        _runOwnershipAction(
+          showChangeOwnerForm(context, shop),
+          'Owner changed',
+        );
+        break;
+      case 'owner_history':
+        showOwnerHistorySheet(context, shop);
+        break;
     }
+  }
+
+  /// Waits for an ownership form and, once it is saved, shows what changed and
+  /// which staff to review. A cancelled form shows nothing.
+  Future<void> _runOwnershipAction(
+    Future<ShopOwnershipResult?> form,
+    String title,
+  ) async {
+    final result = await form;
+    if (result == null || !mounted) return;
+    await showOwnershipResultDialog(context, title: title, result: result);
   }
 
   void _showShopDetails(AdminShop shop) {
