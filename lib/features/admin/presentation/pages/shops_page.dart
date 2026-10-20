@@ -226,14 +226,18 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               Text(
                 'Branch of: ${shop.parentShopName ?? '#${shop.parentShopId}'}',
               ),
-            Row(
+            // Wraps: a branch's plan chip names its main shop, which can be
+            // longer than a phone-width row.
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _buildStatusChip(_displayStatus(shop)),
-                const SizedBox(width: 8),
-                if (shop.subscriptionPlan != null)
+                if (shop.planLabel != null)
                   Chip(
                     label: Text(
-                      shop.subscriptionPlan!,
+                      shop.planLabel!,
                       style: const TextStyle(fontSize: 10),
                     ),
                     padding: EdgeInsets.zero,
@@ -525,11 +529,14 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               ]),
               const SizedBox(height: 16),
               _buildDetailSection('Subscription', [
-                _buildDetailRow('Plan', shop.subscriptionPlan ?? 'N/A'),
+                _buildDetailRow('Plan', shop.planLabel ?? 'N/A'),
                 _buildDetailRow('Status', shop.subscriptionStatus ?? 'N/A'),
                 _buildDetailRow(
                   'Expires',
-                  shop.subscriptionExpires?.toString().split(' ')[0] ?? 'N/A',
+                  shop.isBranch
+                      ? 'Same as main shop'
+                      : shop.subscriptionExpires?.toString().split(' ')[0] ??
+                            'N/A',
                 ),
               ]),
               const SizedBox(height: 16),

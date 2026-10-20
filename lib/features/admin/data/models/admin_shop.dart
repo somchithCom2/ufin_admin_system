@@ -147,4 +147,10 @@ class AdminShop {
 
   /// A branch of another shop
   bool get isBranch => parentShopId != null;
+
+  /// The plan to show. A branch has no plan of its own - its own plan column
+  /// always reads "free" - and runs on its main shop's, so name that instead.
+  String? get planLabel => isBranch
+      ? 'Plan of ${parentShopName ?? '#$parentShopId'}'
+      : subscriptionPlan;
 }

@@ -73,6 +73,8 @@ abstract final class ErrorMessages {
     'ERR_INVALID_SHOP_STATUS': 'Unknown shop status.',
 
     // --- Branch groups and ownership (link, unlink, change owner) ---
+    'ERR_SHOP_IS_BRANCH':
+        "This is a branch: it runs on its main shop's plan. Change the main shop's subscription instead.",
     'ERR_SHOP_HAS_BRANCHES':
         'This shop has live branches. Unlink or delete its branches first.',
     'ERR_SHOP_ALREADY_A_BRANCH':

@@ -247,6 +247,22 @@ void main() {
       expect(find.text('Somphone K'), findsOneWidget);
     });
 
+    testWidgets("a branch shows its main shop's plan, never its own free", (
+      tester,
+    ) async {
+      await _openShops(tester, _ShopsRepo());
+
+      expect(find.text('Plan of Noy Mart'), findsOneWidget);
+      expect(find.text('free'), findsNothing);
+    });
+
+    test('changing a branch subscription explains where its plan lives', () {
+      expect(
+        friendlyError(ApiException(message: 'ERR_SHOP_IS_BRANCH')),
+        contains("main shop's subscription"),
+      );
+    });
+
     testWidgets('every ownership form fits a phone screen', (tester) async {
       final repo = _ShopsRepo();
       await _openShops(tester, repo, size: const Size(390, 844));
@@ -290,6 +306,8 @@ class _ShopsRepo extends AdminRepository {
       parentShopName: 'Noy Mart',
       ownerId: 12,
       ownerUsername: 'old_owner',
+      // A branch's own plan column always reads free.
+      subscriptionPlan: 'free',
     ),
   ];
 

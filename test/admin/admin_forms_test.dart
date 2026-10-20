@@ -62,9 +62,7 @@ void main() {
       expect(saves, 0);
     });
 
-    testWidgets('create sends upper-cased code and both names', (
-      tester,
-    ) async {
+    testWidgets('create sends upper-cased code and both names', (tester) async {
       CreateShopTypeRequest? sent;
       final result = await _open(
         tester,
