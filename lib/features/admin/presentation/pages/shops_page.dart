@@ -364,6 +364,22 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 ],
               ),
             ),
+            if (!shop.isDeleted) ...[
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: context.colors.error),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Delete shop…',
+                      style: TextStyle(color: context.colors.error),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
         onTap: () => _showShopDetails(shop),
@@ -402,6 +418,9 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
         break;
       case 'restore':
         _showRestoreDialog(shop);
+        break;
+      case 'delete':
+        _showDeleteDialog(shop);
         break;
       case 'branches':
         showBranchesSheet(context, shop);
@@ -635,6 +654,34 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     } catch (e) {
       messenger.showError(
         'Could not restore "${shop.name}": ${friendlyError(e)}',
+      );
+    }
+  }
+
+  /// Soft delete: nothing is erased, and the shop can be restored from the
+  /// Deleted filter. A main shop with live branches is refused by the
+  /// backend (ERR_SHOP_HAS_BRANCHES), which [friendlyError] explains.
+  Future<void> _showDeleteDialog(AdminShop shop) async {
+    final confirmed = await AppDialogs.confirm(
+      context,
+      title: 'Delete shop',
+      message:
+          '"${shop.name}" will be closed: its owner and staff can no longer '
+          'use it. Its products, staff and sales history are kept, and you '
+          'can restore it from the Deleted filter.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      icon: Icons.delete_outline_rounded,
+    );
+    if (!confirmed || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(shopsProvider.notifier).deleteShop(shop.id);
+      messenger.showSuccess('"${shop.name}" has been deleted');
+    } catch (e) {
+      messenger.showError(
+        'Could not delete "${shop.name}": ${friendlyError(e)}',
       );
     }
   }

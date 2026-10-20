@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ufin_admin_system/core/services/dio_client.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
+import 'package:ufin_admin_system/core/widgets/app_ui.dart';
 
 void main() {
   late Dio dio;
@@ -257,6 +258,25 @@ void main() {
     expect(shop.isDeleted, isFalse);
     expect(shop.isBranch, isTrue);
     expect(shop.parentShopName, 'Noy Cafe');
+  });
+
+  test('deleting a shop uses DELETE and surfaces a refusal', () async {
+    responseBody = {'success': true, 'message': 'SHOP_DELETED'};
+    await repository.deleteShop(4);
+    expect(requests.single.method, 'DELETE');
+    expect(requests.single.path, '/admin/shops/4');
+
+    // A main shop with live branches: the backend answers with the code,
+    // which the console shows as readable text.
+    responseBody = {'success': false, 'message': 'ERR_SHOP_HAS_BRANCHES'};
+    Object? error;
+    try {
+      await repository.deleteShop(4);
+    } catch (e) {
+      error = e;
+    }
+    expect(error, isA<ApiException>());
+    expect(friendlyError(error), contains('branches'));
   });
 
   test('deleted shops in a list carry their deletion date', () {

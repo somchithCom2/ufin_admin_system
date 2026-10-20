@@ -182,6 +182,13 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
     loadShops(search: _search, status: _status);
   }
 
+  /// Soft-deletes a shop; it moves to the "Deleted" list on refresh. The
+  /// backend refuses a main shop that still has live branches.
+  Future<void> deleteShop(int shopId) async {
+    await _repository.deleteShop(shopId);
+    loadShops(search: _search, status: _status);
+  }
+
   /// Links [shopId] under another shop; the list shows its new place.
   Future<ShopOwnershipResult> linkAsBranch(
     int shopId,
