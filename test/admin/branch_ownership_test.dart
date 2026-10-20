@@ -256,6 +256,24 @@ void main() {
       expect(find.text('free'), findsNothing);
     });
 
+    test('every refusal the ownership tools can send reads as a sentence', () {
+      for (final code in const [
+        'ERR_SHOP_HAS_PAID_SUBSCRIPTION',
+        'ERR_SHOP_OWNER_MISMATCH',
+        'ERR_PARENT_PLAN_LACKS_MULTI_SHOP',
+        'ERR_SHOP_NAME_CONFIRMATION_MISMATCH',
+        'ERR_CONCURRENT_MODIFICATION',
+        'ERR_INTERNAL_SERVER_ERROR',
+        'ERR_ROLE_NOT_FOUND',
+        'ERR_USER_ALREADY_OWNER',
+        'ERR_INVALID_SHOP_OWNER',
+      ]) {
+        final text = friendlyError(ApiException(message: code));
+        expect(text, isNot(contains('ERR_')), reason: code);
+        expect(text, endsWith('.'), reason: code);
+      }
+    });
+
     test('changing a branch subscription explains where its plan lives', () {
       expect(
         friendlyError(ApiException(message: 'ERR_SHOP_IS_BRANCH')),

@@ -122,6 +122,12 @@ abstract final class ErrorMessages {
     'ERR_UNAUTHORIZED': 'You are not allowed to do that.',
     'ERR_NOT_AUTHORIZED': 'You are not allowed to do that.',
     'ERR_UNEXPECTED': 'Something went wrong. Please try again.',
+    'ERR_INTERNAL_SERVER_ERROR':
+        'Something went wrong on the server. Please try again.',
+    'ERR_CONCURRENT_MODIFICATION':
+        'Someone changed this at the same time. Refresh and try again.',
+    'ERR_ROLE_NOT_FOUND':
+        'The shop owner role is missing on the server. Nothing was changed; contact a developer.',
   };
 
   /// The readable text for [code], or `null` when the code is unknown.
