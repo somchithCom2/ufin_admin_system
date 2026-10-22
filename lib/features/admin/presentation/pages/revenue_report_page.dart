@@ -20,11 +20,12 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
   @override
   void initState() {
     super.initState();
-    // Default to last 30 days
+    // Default to the last 30 whole days, as the date range picker gives them:
+    // the backend counts any time of day sent with a date
     final now = DateTime.now();
     _dateRange = DateTimeRange(
-      start: now.subtract(const Duration(days: 30)),
-      end: now,
+      start: DateTime(now.year, now.month, now.day - 30),
+      end: DateTime(now.year, now.month, now.day),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref

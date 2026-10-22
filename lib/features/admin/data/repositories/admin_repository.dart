@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:ufin_admin_system/core/constants/api_constants.dart';
 import 'package:ufin_admin_system/core/services/dio_client.dart';
+import 'package:ufin_admin_system/core/utils/report_period.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
 /// Repository for admin API calls
@@ -804,7 +805,8 @@ class AdminRepository {
     }
   }
 
-  /// Get daily sales report
+  /// Get daily sales report: whole days, or narrowed to the times on
+  /// [startDate] and [endDate] (see report_period.dart)
   Future<DailySalesData> getDailySales({
     required DateTime startDate,
     required DateTime endDate,
@@ -813,8 +815,8 @@ class AdminRepository {
       final response = await _dio.get(
         ApiConstants.adminDailySales,
         queryParameters: {
-          'startDate': startDate.toIso8601String().split('T')[0],
-          'endDate': endDate.toIso8601String().split('T')[0],
+          'startDate': reportStartParam(startDate),
+          'endDate': reportEndParam(endDate),
         },
       );
       final salesResponse = DailySalesResponse.fromJson(response.data);

@@ -15,6 +15,7 @@ class DailySalesPage extends ConsumerStatefulWidget {
 }
 
 class _DailySalesPageState extends ConsumerState<DailySalesPage> {
+  /// Platform (Laos) wall-clock times; 00:00 to 23:59 is the whole day.
   late DateTime startDate;
   late DateTime endDate;
 
@@ -22,8 +23,8 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
   void initState() {
     super.initState();
     final today = DateTime.now();
-    startDate = today;
-    endDate = today;
+    startDate = DateTime(today.year, today.month, today.day);
+    endDate = DateTime(today.year, today.month, today.day, 23, 59);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
@@ -35,6 +36,41 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
   String _formatNumber(int number) {
     final formatter = NumberFormat('#,##0');
     return formatter.format(number);
+  }
+
+  /// The period on screen: its days, and its times when they narrow them.
+  String _periodLabel() {
+    final wholeDays =
+        startDate.hour == 0 &&
+        startDate.minute == 0 &&
+        endDate.hour == 23 &&
+        endDate.minute == 59;
+    final format = DateFormat(wholeDays ? 'dd/MM/yyyy' : 'dd/MM/yyyy HH:mm');
+    return '${format.format(startDate)} - ${format.format(endDate)}';
+  }
+
+  /// [time] on [day]'s date: a date picked keeps the time already set.
+  static DateTime _at(DateTime day, TimeOfDay time) =>
+      DateTime(day.year, day.month, day.day, time.hour, time.minute);
+
+  Widget _timeTile(
+    BuildContext context,
+    String title,
+    DateTime value,
+    ValueChanged<TimeOfDay> onPicked,
+  ) {
+    return ListTile(
+      title: Text(title),
+      subtitle: Text(DateFormat('HH:mm').format(value)),
+      trailing: const Icon(Icons.access_time),
+      onTap: () async {
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(value),
+        );
+        if (picked != null) onPicked(picked);
+      },
+    );
   }
 
   /// Net income per currency; a zero LAK line when there were no sales.
@@ -87,23 +123,38 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           border: Border.all(color: context.colors.outline),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: ListTile(
-                          title: const Text('Start Date'),
-                          subtitle: Text(formatter.format(startDate)),
-                          trailing: const Icon(Icons.calendar_today),
-                          onTap: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: startDate,
-                              firstDate: DateTime(2020),
-                              lastDate: endDate,
-                            );
-                            if (picked != null) {
-                              setModalState(() {
-                                startDate = picked;
-                              });
-                            }
-                          },
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: const Text('Start Date'),
+                              subtitle: Text(formatter.format(startDate)),
+                              trailing: const Icon(Icons.calendar_today),
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: startDate,
+                                  firstDate: DateTime(2020),
+                                  lastDate: endDate,
+                                );
+                                if (picked != null) {
+                                  setModalState(() {
+                                    startDate = _at(
+                                      picked,
+                                      TimeOfDay.fromDateTime(startDate),
+                                    );
+                                  });
+                                }
+                              },
+                            ),
+                            _timeTile(
+                              context,
+                              'Start Time',
+                              startDate,
+                              (time) => setModalState(
+                                () => startDate = _at(startDate, time),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -113,23 +164,38 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           border: Border.all(color: context.colors.outline),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: ListTile(
-                          title: const Text('End Date'),
-                          subtitle: Text(formatter.format(endDate)),
-                          trailing: const Icon(Icons.calendar_today),
-                          onTap: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: endDate,
-                              firstDate: startDate,
-                              lastDate: DateTime.now(),
-                            );
-                            if (picked != null) {
-                              setModalState(() {
-                                endDate = picked;
-                              });
-                            }
-                          },
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: const Text('End Date'),
+                              subtitle: Text(formatter.format(endDate)),
+                              trailing: const Icon(Icons.calendar_today),
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: endDate,
+                                  firstDate: startDate,
+                                  lastDate: DateTime.now(),
+                                );
+                                if (picked != null) {
+                                  setModalState(() {
+                                    endDate = _at(
+                                      picked,
+                                      TimeOfDay.fromDateTime(endDate),
+                                    );
+                                  });
+                                }
+                              },
+                            ),
+                            _timeTile(
+                              context,
+                              'End Time',
+                              endDate,
+                              (time) => setModalState(
+                                () => endDate = _at(endDate, time),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -146,6 +212,16 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () {
+                                if (endDate.isBefore(startDate)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'End must not be before start',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 ref
                                     .read(dailySalesProvider.notifier)
                                     .loadDailySales(
@@ -176,7 +252,6 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(dailySalesProvider);
     final shops = state.data?.shopSalesInOrder ?? const <ShopSalesData>[];
-    final formatter = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
       appBar: AppBar(
@@ -217,7 +292,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${formatter.format(startDate)} - ${formatter.format(endDate)}',
+                        _periodLabel(),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
