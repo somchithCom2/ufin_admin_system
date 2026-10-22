@@ -361,7 +361,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
             [
               '#${shop.id}',
               if (shop.ownerUsername != null) shop.ownerUsername!,
-              if (shop.subscriptionPlan != null) shop.subscriptionPlan!,
+              if (shop.planLabel != null) shop.planLabel!,
             ].join(' · '),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

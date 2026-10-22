@@ -4,6 +4,7 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_products_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_ownership_forms.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class ShopsPage extends ConsumerStatefulWidget {
@@ -225,14 +226,18 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               Text(
                 'Branch of: ${shop.parentShopName ?? '#${shop.parentShopId}'}',
               ),
-            Row(
+            // Wraps: a branch's plan chip names its main shop, which can be
+            // longer than a phone-width row.
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _buildStatusChip(_displayStatus(shop)),
-                const SizedBox(width: 8),
-                if (shop.subscriptionPlan != null)
+                if (shop.planLabel != null)
                   Chip(
                     label: Text(
-                      shop.subscriptionPlan!,
+                      shop.planLabel!,
                       style: const TextStyle(fontSize: 10),
                     ),
                     padding: EdgeInsets.zero,
@@ -298,6 +303,83 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   ],
                 ),
               ),
+            const PopupMenuDivider(),
+            if (!shop.isBranch)
+              const PopupMenuItem(
+                value: 'branches',
+                child: Row(
+                  children: [
+                    Icon(Icons.account_tree_outlined),
+                    SizedBox(width: 8),
+                    Text('Branches'),
+                  ],
+                ),
+              ),
+            if (!shop.isDeleted && !shop.isBranch)
+              const PopupMenuItem(
+                value: 'link',
+                child: Row(
+                  children: [
+                    Icon(Icons.link_rounded),
+                    SizedBox(width: 8),
+                    Text('Link as branch…'),
+                  ],
+                ),
+              ),
+            if (!shop.isDeleted && shop.isBranch)
+              PopupMenuItem(
+                value: 'unlink',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.call_split_rounded,
+                      color: context.status.warning,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Unlink branch…'),
+                  ],
+                ),
+              ),
+            if (!shop.isDeleted && !shop.isBranch)
+              PopupMenuItem(
+                value: 'owner',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.swap_horiz_rounded,
+                      color: context.status.warning,
+                    ),
+                    SizedBox(width: 8),
+                    Text('Change owner…'),
+                  ],
+                ),
+              ),
+            const PopupMenuItem(
+              value: 'owner_history',
+              child: Row(
+                children: [
+                  Icon(Icons.history_rounded),
+                  SizedBox(width: 8),
+                  Text('Owner history'),
+                ],
+              ),
+            ),
+            if (!shop.isDeleted) ...[
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: context.colors.error),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Delete shop…',
+                      style: TextStyle(color: context.colors.error),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
         onTap: () => _showShopDetails(shop),
@@ -337,7 +419,45 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       case 'restore':
         _showRestoreDialog(shop);
         break;
+      case 'delete':
+        _showDeleteDialog(shop);
+        break;
+      case 'branches':
+        showBranchesSheet(context, shop);
+        break;
+      case 'link':
+        _runOwnershipAction(
+          showLinkBranchForm(context, shop),
+          'Linked as a branch',
+        );
+        break;
+      case 'unlink':
+        _runOwnershipAction(
+          showUnlinkBranchForm(context, shop),
+          'Unlinked from the group',
+        );
+        break;
+      case 'owner':
+        _runOwnershipAction(
+          showChangeOwnerForm(context, shop),
+          'Owner changed',
+        );
+        break;
+      case 'owner_history':
+        showOwnerHistorySheet(context, shop);
+        break;
     }
+  }
+
+  /// Waits for an ownership form and, once it is saved, shows what changed and
+  /// which staff to review. A cancelled form shows nothing.
+  Future<void> _runOwnershipAction(
+    Future<ShopOwnershipResult?> form,
+    String title,
+  ) async {
+    final result = await form;
+    if (result == null || !mounted) return;
+    await showOwnershipResultDialog(context, title: title, result: result);
   }
 
   void _showShopDetails(AdminShop shop) {
@@ -428,11 +548,14 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               ]),
               const SizedBox(height: 16),
               _buildDetailSection('Subscription', [
-                _buildDetailRow('Plan', shop.subscriptionPlan ?? 'N/A'),
+                _buildDetailRow('Plan', shop.planLabel ?? 'N/A'),
                 _buildDetailRow('Status', shop.subscriptionStatus ?? 'N/A'),
                 _buildDetailRow(
                   'Expires',
-                  shop.subscriptionExpires?.toString().split(' ')[0] ?? 'N/A',
+                  shop.isBranch
+                      ? 'Same as main shop'
+                      : shop.subscriptionExpires?.toString().split(' ')[0] ??
+                            'N/A',
                 ),
               ]),
               const SizedBox(height: 16),
@@ -531,6 +654,34 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     } catch (e) {
       messenger.showError(
         'Could not restore "${shop.name}": ${friendlyError(e)}',
+      );
+    }
+  }
+
+  /// Soft delete: nothing is erased, and the shop can be restored from the
+  /// Deleted filter. A main shop with live branches is refused by the
+  /// backend (ERR_SHOP_HAS_BRANCHES), which [friendlyError] explains.
+  Future<void> _showDeleteDialog(AdminShop shop) async {
+    final confirmed = await AppDialogs.confirm(
+      context,
+      title: 'Delete shop',
+      message:
+          '"${shop.name}" will be closed: its owner and staff can no longer '
+          'use it. Its products, staff and sales history are kept, and you '
+          'can restore it from the Deleted filter.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      icon: Icons.delete_outline_rounded,
+    );
+    if (!confirmed || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(shopsProvider.notifier).deleteShop(shop.id);
+      messenger.showSuccess('"${shop.name}" has been deleted');
+    } catch (e) {
+      messenger.showError(
+        'Could not delete "${shop.name}": ${friendlyError(e)}',
       );
     }
   }

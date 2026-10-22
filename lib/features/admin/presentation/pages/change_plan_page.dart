@@ -352,9 +352,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      changeType == 'upgrade'
-                                          ? Icons.arrow_upward
-                                          : Icons.arrow_downward,
+                                      _actionIcon(changeType),
                                       size: 12,
                                       color: changeColor,
                                     ),
@@ -582,7 +580,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
   Widget _buildBottomAction(NumberFormat currencyFormat) {
     final changeType = _getChangeType(_selectedPlan!);
     final changeColor = _getChangeColor(changeType);
-    final isUpgrade = changeType == 'upgrade';
+    final action = _actionLabel(changeType);
 
     // Get price based on billing cycle
     final price =
@@ -616,17 +614,14 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    isUpgrade ? Icons.arrow_upward : Icons.arrow_downward,
-                    color: changeColor,
-                  ),
+                  Icon(_actionIcon(changeType), color: changeColor),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${isUpgrade ? 'Upgrade' : 'Downgrade'} to ${_selectedPlan!.name}',
+                          '$action to ${_selectedPlan!.name}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: changeColor,
@@ -673,7 +668,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
             const SizedBox(height: 12),
 
             // Warning for downgrade
-            if (!isUpgrade) ...[
+            if (changeType == 'downgrade') ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -718,7 +713,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                         ),
                       )
                     : Text(
-                        'Confirm ${isUpgrade ? 'Upgrade' : 'Downgrade'}',
+                        'Confirm $action',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -732,24 +727,39 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
     );
   }
 
+  /// Upgrade or downgrade, decided the way the server records it: by
+  /// comparing monthly prices with the shop's current plan. Plan codes are
+  /// admin-defined, so they say nothing about rank. Returns null when the
+  /// prices are equal or the current plan is not in the list.
   String? _getChangeType(AdminPlan plan) {
-    final hierarchy = {
-      'trial': 0,
-      'free': 0,
-      'basic': 1,
-      'standard': 2,
-      'premium': 3,
-      'enterprise': 4,
-    };
+    final sub = widget.subscription;
+    AdminPlan? currentPlan;
+    for (final p in ref.read(plansProvider).plans) {
+      if ((sub.planId != null && p.id == sub.planId) ||
+          p.code == sub.planCode) {
+        currentPlan = p;
+        break;
+      }
+    }
+    if (currentPlan == null) return null;
 
-    final currentLevel =
-        hierarchy[widget.subscription.planCode?.toLowerCase()] ?? 0;
-    final newLevel = hierarchy[plan.code.toLowerCase()] ?? 0;
-
-    if (newLevel > currentLevel) return 'upgrade';
-    if (newLevel < currentLevel) return 'downgrade';
+    final diff = plan.priceMonthly.compareTo(currentPlan.priceMonthly);
+    if (diff > 0) return 'upgrade';
+    if (diff < 0) return 'downgrade';
     return null;
   }
+
+  String _actionLabel(String? changeType) => switch (changeType) {
+    'upgrade' => 'Upgrade',
+    'downgrade' => 'Downgrade',
+    _ => 'Change',
+  };
+
+  IconData _actionIcon(String? changeType) => switch (changeType) {
+    'upgrade' => Icons.arrow_upward,
+    'downgrade' => Icons.arrow_downward,
+    _ => Icons.swap_horiz,
+  };
 
   Color _getChangeColor(String? changeType) {
     switch (changeType) {
@@ -764,7 +774,8 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
 
   void _confirmChange() {
     final changeType = _getChangeType(_selectedPlan!);
-    final isUpgrade = changeType == 'upgrade';
+    final changeColor = _getChangeColor(changeType);
+    final action = _actionLabel(changeType);
     final reasonController = TextEditingController();
     final currencyFormat = NumberFormat.currency(
       symbol: '₭ ',
@@ -786,14 +797,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            Icon(
-              isUpgrade ? Icons.arrow_upward : Icons.arrow_downward,
-              color: isUpgrade
-                  ? context.status.success
-                  : context.status.warning,
-            ),
+            Icon(_actionIcon(changeType), color: changeColor),
             const SizedBox(width: 8),
-            Text('Confirm ${isUpgrade ? 'Upgrade' : 'Downgrade'}'),
+            Text('Confirm $action'),
           ],
         ),
         content: Column(
@@ -819,9 +825,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                     text: _selectedPlan!.name,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isUpgrade
-                          ? context.status.success
-                          : context.status.warning,
+                      color: changeColor,
                     ),
                   ),
                   const TextSpan(text: '?'),
@@ -912,9 +916,11 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
 
                 if (!mounted) return;
                 setState(() => _isProcessing = false);
-                messenger.showSuccess(
-                  'Successfully ${isUpgrade ? 'upgraded' : 'downgraded'} to $planName',
-                );
+                messenger.showSuccess(switch (changeType) {
+                  'upgrade' => 'Successfully upgraded to $planName',
+                  'downgrade' => 'Successfully downgraded to $planName',
+                  _ => 'Successfully changed plan to $planName',
+                });
                 navigator.pop(true);
               } catch (e) {
                 if (!mounted) return;
@@ -924,12 +930,8 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                 );
               }
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: isUpgrade
-                  ? context.status.success
-                  : context.status.warning,
-            ),
-            child: Text(isUpgrade ? 'Upgrade' : 'Downgrade'),
+            style: FilledButton.styleFrom(backgroundColor: changeColor),
+            child: Text(action),
           ),
         ],
       ),

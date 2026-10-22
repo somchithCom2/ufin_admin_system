@@ -1,4 +1,5 @@
 // Admin models exports
+export 'admin_branch.dart';
 export 'admin_dashboard_stats.dart';
 export 'admin_payment.dart';
 export 'admin_plan.dart';

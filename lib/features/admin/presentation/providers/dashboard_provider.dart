@@ -181,6 +181,43 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
     await _repository.restoreShop(shopId);
     loadShops(search: _search, status: _status);
   }
+
+  /// Soft-deletes a shop; it moves to the "Deleted" list on refresh. The
+  /// backend refuses a main shop that still has live branches.
+  Future<void> deleteShop(int shopId) async {
+    await _repository.deleteShop(shopId);
+    loadShops(search: _search, status: _status);
+  }
+
+  /// Links [shopId] under another shop; the list shows its new place.
+  Future<ShopOwnershipResult> linkAsBranch(
+    int shopId,
+    LinkBranchRequest request,
+  ) async {
+    final result = await _repository.linkAsBranch(shopId, request);
+    loadShops(search: _search, status: _status);
+    return result;
+  }
+
+  /// Turns branch [shopId] back into a top-level shop.
+  Future<ShopOwnershipResult> unlinkBranch(
+    int shopId,
+    UnlinkBranchRequest request,
+  ) async {
+    final result = await _repository.unlinkBranch(shopId, request);
+    loadShops(search: _search, status: _status);
+    return result;
+  }
+
+  /// Hands top-level shop [shopId] to another account.
+  Future<ShopOwnershipResult> changeOwner(
+    int shopId,
+    ChangeOwnerRequest request,
+  ) async {
+    final result = await _repository.changeShopOwner(shopId, request);
+    loadShops(search: _search, status: _status);
+    return result;
+  }
 }
 
 final shopsProvider = StateNotifierProvider<ShopsNotifier, ShopsState>((ref) {
