@@ -406,7 +406,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
             children: [
               IconBadge(
                 icon: _getPaymentMethodIcon(payment.paymentMethod),
-                color: statusColor,
+                color: muted,
                 size: 40,
               ),
               const SizedBox(width: 12),
@@ -502,19 +502,14 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: context.colors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        border: Border(top: BorderSide(color: context.colors.outlineVariant)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left),
+            tooltip: 'Previous page',
+            icon: const Icon(Icons.chevron_left_rounded),
             onPressed: state.currentPage > 0
                 ? () => ref.read(paymentsProvider.notifier).loadPreviousPage()
                 : null,
@@ -524,7 +519,8 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           IconButton(
-            icon: const Icon(Icons.chevron_right),
+            tooltip: 'Next page',
+            icon: const Icon(Icons.chevron_right_rounded),
             onPressed: state.currentPage < state.totalPages - 1
                 ? () => ref.read(paymentsProvider.notifier).loadNextPage()
                 : null,

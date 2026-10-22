@@ -98,18 +98,6 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Handle bar
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: context.colors.outline,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
                       // Title
                       Text(
                         'Filter Daily Sales',
@@ -198,6 +186,13 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           ],
                         ),
                       ),
+                      if (endDate.isBefore(startDate)) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'End must not be before start.',
+                          style: TextStyle(color: context.colors.error),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       // Buttons
                       Row(
@@ -211,25 +206,17 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () {
-                                if (endDate.isBefore(startDate)) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'End must not be before start',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                ref
-                                    .read(dailySalesProvider.notifier)
-                                    .loadDailySales(
-                                      startDate: startDate,
-                                      endDate: endDate,
-                                    );
-                                Navigator.pop(context);
-                              },
+                              onPressed: endDate.isBefore(startDate)
+                                  ? null
+                                  : () {
+                                      ref
+                                          .read(dailySalesProvider.notifier)
+                                          .loadDailySales(
+                                            startDate: startDate,
+                                            endDate: endDate,
+                                          );
+                                      Navigator.pop(context);
+                                    },
                               icon: const Icon(Icons.search),
                               label: const Text('Search'),
                             ),
@@ -304,29 +291,14 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
               child: state.isLoading
                   ? const AppLoadingView()
                   : state.error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error,
-                            size: 48,
-                            color: context.colors.error,
+                  ? AppErrorView(
+                      error: state.error,
+                      onRetry: () => ref
+                          .read(dailySalesProvider.notifier)
+                          .loadDailySales(
+                            startDate: startDate,
+                            endDate: endDate,
                           ),
-                          const SizedBox(height: 16),
-                          Text(state.error!),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => ref
-                                .read(dailySalesProvider.notifier)
-                                .loadDailySales(
-                                  startDate: startDate,
-                                  endDate: endDate,
-                                ),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
                     )
                   : state.data == null
                   ? const AppEmptyView(

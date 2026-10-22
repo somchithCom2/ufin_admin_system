@@ -94,7 +94,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget _buildDashboard(AdminDashboardStats stats, String? username) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final status = context.status;
 
     return RefreshIndicator(
       onRefresh: () => ref.read(dashboardProvider.notifier).loadDashboard(),
@@ -138,7 +137,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     value: _number.format(stats.totalShops),
                     caption: '${_number.format(stats.activeShops)} active',
                     icon: Icons.storefront_rounded,
-                    color: scheme.primary,
                     onTap: () => _goTo(AdminSection.shops),
                   ),
                   StatCard(
@@ -146,7 +144,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     value: _number.format(stats.totalUsers),
                     caption: '${_number.format(stats.activeUsers)} active',
                     icon: Icons.people_rounded,
-                    color: status.success,
                     onTap: () => _goTo(AdminSection.users),
                   ),
                   StatCard(
@@ -155,7 +152,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     caption:
                         '${_number.format(stats.activeSubscriptions)} active',
                     icon: Icons.card_membership_rounded,
-                    color: Colors.indigo,
                     onTap: () => _goTo(AdminSection.subscriptions),
                   ),
                   StatCard(
@@ -166,7 +162,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         ? '+ ${stats.revenueThisMonthByCurrency.keys.skip(1).join(', ')}'
                         : '${_number.format(stats.totalPaymentsThisMonth)} payments',
                     icon: Icons.payments_rounded,
-                    color: status.warning,
                     onTap: () => _goTo(AdminSection.revenue),
                   ),
                 ],

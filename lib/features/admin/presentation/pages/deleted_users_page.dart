@@ -305,18 +305,6 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.colors.outline,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
               // Header
               Row(
                 children: [
@@ -486,42 +474,21 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
     );
   }
 
-  void _confirmRestore(AdminUser user) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Restore User'),
-        content: Text(
-          'Restore "${user.username}" to an active account?\n\nTheir status will be set back to active.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.status.success,
-            ),
-            icon: const Icon(Icons.restore),
-            label: const Text('Restore'),
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(this.context);
-              Navigator.pop(context);
-              try {
-                await ref
-                    .read(deletedUsersProvider.notifier)
-                    .restoreUser(user.id);
-                messenger.showSuccess('"${user.username}" has been restored.');
-              } catch (e) {
-                messenger.showError(
-                  'Failed to restore user: ${friendlyError(e)}',
-                );
-              }
-            },
-          ),
-        ],
-      ),
+  Future<void> _confirmRestore(AdminUser user) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'Restore "${user.username}"?',
+      message: 'The account becomes active again and can sign in.',
+      confirmLabel: 'Restore',
+      icon: Icons.restore_rounded,
     );
+    if (!ok || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(deletedUsersProvider.notifier).restoreUser(user.id);
+      messenger.showSuccess('"${user.username}" has been restored.');
+    } catch (e) {
+      messenger.showError('Failed to restore user: ${friendlyError(e)}');
+    }
   }
 }

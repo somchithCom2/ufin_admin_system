@@ -545,11 +545,11 @@ class _SubscriptionHistoryPageState
       case 'reactivate':
       case 'reactivated':
       case 'reactivation':
-        return Colors.teal;
+        return context.status.success;
       case 'create':
       case 'created':
       case 'creation':
-        return Colors.purple;
+        return context.colors.primary;
       case 'expire':
       case 'expired':
       case 'expiration':
@@ -569,7 +569,7 @@ class _SubscriptionHistoryPageState
       case 'payment_failed':
         return context.colors.error;
       default:
-        return Colors.blueGrey;
+        return context.status.neutral;
     }
   }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -16,24 +16,37 @@ class ChangePlanPage extends ConsumerStatefulWidget {
 
 class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
   AdminPlan? _selectedPlan;
-  String _selectedBillingCycle = 'monthly'; // 'monthly' or 'annual'
+  late String _selectedBillingCycle; // 'monthly' or 'annual'
   bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
+    // Start on the cycle the shop already pays on.
+    final cycle = widget.subscription.billingCycle?.toLowerCase();
+    _selectedBillingCycle = cycle == 'yearly' || cycle == 'annual'
+        ? 'annual'
+        : 'monthly';
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(plansProvider.notifier).loadPlans();
     });
   }
 
+  bool get _annual => _selectedBillingCycle == 'annual';
+
+  /// What the server will charge for [plan] on the selected cycle.
+  double _priceOf(AdminPlan plan) =>
+      _annual ? plan.priceYearly : plan.priceMonthly;
+
+  String _priceLabel(AdminPlan plan) {
+    final price = _priceOf(plan);
+    if (price == 0) return 'Free';
+    return '${MoneyFormat.format(price, plan.currency)} / ${_annual ? 'year' : 'month'}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final plansState = ref.watch(plansProvider);
-    final currencyFormat = NumberFormat.currency(
-      symbol: '₭ ',
-      decimalDigits: 0,
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -46,686 +59,255 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Current Plan Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Current Plan',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.workspace_premium,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.subscription.planName ?? 'No Plan',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${widget.subscription.shopName} • ${currencyFormat.format(widget.subscription.pricePaid)}/month',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+      body: ContentWidth(
+        maxWidth: 760,
+        child: Column(
+          children: [
+            Expanded(
+              child: plansState.isLoading
+                  ? const AppLoadingView()
+                  : plansState.error != null
+                  ? AppErrorView(
+                      error: plansState.error,
+                      onRetry: () =>
+                          ref.read(plansProvider.notifier).loadPlans(),
+                    )
+                  : plansState.plans.isEmpty
+                  ? const AppEmptyView(
+                      icon: Icons.inventory_2_outlined,
+                      title: 'No plans available',
+                    )
+                  : _buildPlansList(plansState.plans),
             ),
-          ),
+            if (_selectedPlan != null) _buildBottomAction(_selectedPlan!),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // Plans List
-          Expanded(
-            child: plansState.isLoading
-                ? const AppLoadingView()
-                : plansState.error != null
-                ? _buildErrorView(plansState.error!)
-                : plansState.plans.isEmpty
-                ? const AppEmptyView(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'No plans available',
-                  )
-                : Column(
-                    children: [
-                      // Billing Cycle Toggle
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: context.colors.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => setState(
-                                    () => _selectedBillingCycle = 'monthly',
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _selectedBillingCycle == 'monthly'
-                                          ? context.colors.surface
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                      boxShadow:
-                                          _selectedBillingCycle == 'monthly'
-                                          ? [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                                blurRadius: 4,
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'Monthly',
-                                        style: TextStyle(
-                                          fontWeight:
-                                              _selectedBillingCycle == 'monthly'
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                          color:
-                                              _selectedBillingCycle == 'monthly'
-                                              ? Theme.of(
-                                                  context,
-                                                ).colorScheme.primary
-                                              : context.colors.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () => setState(
-                                    () => _selectedBillingCycle = 'annual',
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _selectedBillingCycle == 'annual'
-                                          ? context.colors.surface
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(8),
-                                      boxShadow:
-                                          _selectedBillingCycle == 'annual'
-                                          ? [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                                blurRadius: 4,
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Center(
-                                      child: Column(
-                                        children: [
-                                          Text(
-                                            'Annual',
-                                            style: TextStyle(
-                                              fontWeight:
-                                                  _selectedBillingCycle ==
-                                                      'annual'
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                              color:
-                                                  _selectedBillingCycle ==
-                                                      'annual'
-                                                  ? Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary
-                                                  : context
-                                                        .colors
-                                                        .onSurfaceVariant,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Save up to 20%',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: context.status.success,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Plans List
-                      Expanded(
-                        child: _buildPlansList(
-                          plansState.plans,
-                          currencyFormat,
-                        ),
-                      ),
-                    ],
-                  ),
+  Widget _buildCurrentPlan() {
+    final sub = widget.subscription;
+    final muted = context.colors.onSurfaceVariant;
+    final cycle = sub.billingCycle == null
+        ? ''
+        : ' · ${humanize(sub.billingCycle!)}';
+    return SectionCard(
+      title: 'Current plan',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(sub.planName ?? 'No plan', style: context.text.titleLarge),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '${sub.shopName} · ${MoneyFormat.format(sub.pricePaid, sub.currency)} paid$cycle',
+            style: context.text.bodyMedium?.copyWith(color: muted),
           ),
-
-          // Bottom Action
-          if (_selectedPlan != null) _buildBottomAction(currencyFormat),
         ],
       ),
     );
   }
 
-  Widget _buildErrorView(String error) {
-    return AppErrorView(
-      error: error,
-      onRetry: () => ref.read(plansProvider.notifier).loadPlans(),
-    );
-  }
-
-  Widget _buildPlansList(List<AdminPlan> plans, NumberFormat currencyFormat) {
-    // Sort plans by price
+  Widget _buildPlansList(List<AdminPlan> plans) {
     final sortedPlans = List<AdminPlan>.from(plans)
       ..sort((a, b) => a.priceMonthly.compareTo(b.priceMonthly));
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sortedPlans.length,
-      itemBuilder: (context, index) {
-        final plan = sortedPlans[index];
-        return _buildPlanCard(plan, currencyFormat);
-      },
-    );
-  }
-
-  Widget _buildPlanCard(AdminPlan plan, NumberFormat currencyFormat) {
-    final isCurrentPlan = plan.code == widget.subscription.planCode;
-    final isSelected = _selectedPlan?.id == plan.id;
-    final changeType = _getChangeType(plan);
-    final changeColor = _getChangeColor(changeType);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected
-              ? changeColor
-              : isCurrentPlan
-              ? context.status.info
-              : Colors.transparent,
-          width: isSelected || isCurrentPlan ? 2 : 0,
-        ),
-      ),
-      child: InkWell(
-        onTap: isCurrentPlan
-            ? null
-            : () => setState(() => _selectedPlan = plan),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              plan.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            if (isCurrentPlan) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: context.status.info,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Text(
-                                  'CURRENT',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            if (!isCurrentPlan && changeType != null) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: changeColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _actionIcon(changeType),
-                                      size: 12,
-                                      color: changeColor,
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      changeType.toUpperCase(),
-                                      style: TextStyle(
-                                        color: changeColor,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        if (plan.description != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            plan.description!,
-                            style: TextStyle(
-                              color: context.colors.onSurfaceVariant,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (!isCurrentPlan)
-                    Checkbox(
-                      value: _selectedPlan?.id == plan.id,
-                      onChanged: (value) => setState(
-                        () => _selectedPlan = value == true ? plan : null,
-                      ),
-                      activeColor: changeColor,
-                      shape: const CircleBorder(),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Price - Show based on billing cycle
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (_selectedBillingCycle == 'annual' &&
-                      plan.priceYearly > 0) ...[
-                    // Annual price
-                    Text(
-                      currencyFormat.format(plan.priceYearly),
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: isCurrentPlan
-                            ? context.status.info
-                            : changeColor,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '/year',
-                        style: TextStyle(
-                          color: context.colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Show monthly equivalent
-                    if (plan.priceMonthly > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.status.success.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '${currencyFormat.format(plan.priceYearly / 12)}/mo',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: context.status.success,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                  ] else ...[
-                    // Monthly price
-                    Text(
-                      currencyFormat.format(plan.priceMonthly),
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: isCurrentPlan
-                            ? context.status.info
-                            : changeColor,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '/month',
-                        style: TextStyle(
-                          color: context.colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              // Show savings for annual
-              if (_selectedBillingCycle == 'annual' &&
-                  plan.priceYearly > 0 &&
-                  plan.priceMonthly > 0) ...[
-                const SizedBox(height: 4),
-                Builder(
-                  builder: (context) {
-                    final monthlyTotal = plan.priceMonthly * 12;
-                    final savings = monthlyTotal - plan.priceYearly;
-                    final savingsPercent = (savings / monthlyTotal * 100)
-                        .round();
-                    if (savings > 0) {
-                      return Text(
-                        'Save ${currencyFormat.format(savings)} (${savingsPercent}%)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.status.success,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
-
-              const SizedBox(height: 16),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
-
-              // Features
-              _buildFeatureRow(
-                Icons.people,
-                'Employees',
-                plan.maxEmployees == null || plan.maxEmployees == 0
-                    ? 'Unlimited'
-                    : '${plan.maxEmployees}',
-              ),
-              const SizedBox(height: 8),
-              _buildFeatureRow(
-                Icons.inventory_2,
-                'Products',
-                plan.maxProducts == null || plan.maxProducts == 0
-                    ? 'Unlimited'
-                    : '${plan.maxProducts}',
-              ),
-              if (plan.maxOrdersPerMonth != null) ...[
-                const SizedBox(height: 8),
-                _buildFeatureRow(
-                  Icons.receipt_long,
-                  'Orders/month',
-                  plan.maxOrdersPerMonth == 0
-                      ? 'Unlimited'
-                      : '${plan.maxOrdersPerMonth}',
-                ),
-              ],
-
-              // Badge
-              if (plan.badgeText != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: context.status.warningContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.star_rounded,
-                        size: 16,
-                        color: context.status.warning,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        plan.badgeText!,
-                        style: TextStyle(
-                          color: context.status.onWarningContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureRow(IconData icon, String label, String value) {
-    return Row(
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        Icon(icon, size: 16, color: context.colors.onSurfaceVariant),
-        const SizedBox(width: 8),
-        Text(label, style: TextStyle(color: context.colors.onSurfaceVariant)),
-        const Spacer(),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+        _buildCurrentPlan(),
+        const SizedBox(height: AppSpacing.xl),
+        Row(
+          children: [
+            Expanded(
+              child: Text('Choose a new plan', style: context.text.titleMedium),
+            ),
+            SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(value: 'monthly', label: Text('Monthly')),
+                ButtonSegment(value: 'annual', label: Text('Yearly')),
+              ],
+              selected: {_selectedBillingCycle},
+              onSelectionChanged: (s) =>
+                  setState(() => _selectedBillingCycle = s.first),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        for (final plan in sortedPlans) ...[
+          _buildPlanCard(plan),
+          const SizedBox(height: AppSpacing.sm),
+        ],
       ],
     );
   }
 
-  Widget _buildBottomAction(NumberFormat currencyFormat) {
-    final changeType = _getChangeType(_selectedPlan!);
-    final changeColor = _getChangeColor(changeType);
-    final action = _actionLabel(changeType);
+  Widget _buildPlanCard(AdminPlan plan) {
+    final isCurrentPlan = plan.code == widget.subscription.planCode;
+    final isSelected = _selectedPlan?.id == plan.id;
+    final changeType = _getChangeType(plan);
+    final scheme = context.colors;
+    final muted = scheme.onSurfaceVariant;
 
-    // Get price based on billing cycle
-    final price =
-        _selectedBillingCycle == 'annual' && _selectedPlan!.priceYearly > 0
-        ? _selectedPlan!.priceYearly
-        : _selectedPlan!.priceMonthly;
-    final billingLabel = _selectedBillingCycle == 'annual' ? 'year' : 'month';
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        side: BorderSide(
+          color: isSelected ? scheme.primary : scheme.outlineVariant,
+          width: isSelected ? 1.6 : 1,
+        ),
       ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Summary
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: changeColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: isCurrentPlan || _isProcessing
+            ? null
+            : () => setState(() => _selectedPlan = isSelected ? null : plan),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(
+                  isCurrentPlan
+                      ? Icons.check_circle_rounded
+                      : isSelected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 20,
+                  color: isSelected || isCurrentPlan ? scheme.primary : muted,
+                ),
               ),
-              child: Row(
-                children: [
-                  Icon(_actionIcon(changeType), color: changeColor),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text(
-                          '$action to ${_selectedPlan!.name}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: changeColor,
+                        Text(plan.name, style: context.text.titleMedium),
+                        if (isCurrentPlan)
+                          const StatusBadge(
+                            label: 'Current',
+                            tone: StatusTone.primary,
+                          )
+                        else if (changeType != null)
+                          StatusBadge(
+                            label: _actionLabel(changeType),
+                            tone: StatusTone.neutral,
+                            icon: _actionIcon(changeType),
                           ),
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              '${currencyFormat.format(price)}/$billingLabel',
-                              style: TextStyle(
-                                color: changeColor.withValues(alpha: 0.8),
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: changeColor.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                _selectedBillingCycle == 'annual'
-                                    ? 'Annual'
-                                    : 'Monthly',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: changeColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        if (plan.badgeText != null &&
+                            plan.badgeText!.isNotEmpty)
+                          StatusBadge(
+                            label: plan.badgeText!,
+                            tone: StatusTone.neutral,
+                          ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Warning for downgrade
-            if (changeType == 'downgrade') ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: context.status.warningContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning_amber, color: context.status.warning),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Downgrading may limit features. Changes apply at next billing cycle.',
-                        style: TextStyle(
-                          color: context.status.warning,
-                          fontSize: 12,
-                        ),
+                    if (plan.description != null &&
+                        plan.description!.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        plan.description!,
+                        style: context.text.bodySmall?.copyWith(color: muted),
                       ),
+                    ],
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(_priceLabel(plan), style: context.text.titleSmall),
+                        if (_annual) ?_yearlySaving(plan),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      [
+                        _limit(plan.maxEmployees, 'employees'),
+                        _limit(plan.maxProducts, 'products'),
+                        if (plan.maxOrdersPerMonth != null)
+                          _limit(plan.maxOrdersPerMonth, 'orders / month'),
+                      ].join(' · '),
+                      style: context.text.bodySmall?.copyWith(color: muted),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
             ],
+          ),
+        ),
+      ),
+    );
+  }
 
-            // Confirm Button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _isProcessing ? null : () => _confirmChange(),
-                style: FilledButton.styleFrom(
-                  backgroundColor: changeColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: _isProcessing
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Text(
-                        'Confirm $action',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+  /// Null means no limit; 0 is a real limit of zero.
+  String _limit(int? value, String unit) =>
+      value == null ? 'Unlimited $unit' : '$value $unit';
+
+  /// The saving against twelve monthly payments, when there is one.
+  Widget? _yearlySaving(AdminPlan plan) {
+    final twelveMonths = plan.priceMonthly * 12;
+    final saving = twelveMonths - plan.priceYearly;
+    if (plan.priceYearly <= 0 || saving <= 0) return null;
+    return Text(
+      'Saves ${(saving / twelveMonths * 100).round()}%',
+      style: context.text.bodySmall?.copyWith(color: context.status.success),
+    );
+  }
+
+  Widget _buildBottomAction(AdminPlan plan) {
+    final action = _actionLabel(_getChangeType(plan));
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        border: Border(top: BorderSide(color: context.colors.outlineVariant)),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '$action to ${plan.name} · ${_priceLabel(plan)}',
+              style: context.text.titleSmall,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              _effectNote(),
+              style: context.text.bodySmall?.copyWith(
+                color: context.colors.onSurfaceVariant,
               ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton(
+              onPressed: _isProcessing ? null : _confirmChange,
+              child: _isProcessing
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text('$action plan'),
             ),
           ],
         ),
       ),
     );
   }
+
+  /// What the server does on a plan change with a billing cycle: the new plan
+  /// applies at once and a fresh period starts today.
+  String _effectNote() =>
+      'Applies immediately. A new ${_annual ? 'one-year' : 'one-month'} '
+      'period starts today and the subscription becomes active.';
 
   /// Upgrade or downgrade, decided the way the server records it: by
   /// comparing monthly prices with the shop's current plan. Plan codes are
@@ -756,185 +338,52 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
   };
 
   IconData _actionIcon(String? changeType) => switch (changeType) {
-    'upgrade' => Icons.arrow_upward,
-    'downgrade' => Icons.arrow_downward,
-    _ => Icons.swap_horiz,
+    'upgrade' => Icons.arrow_upward_rounded,
+    'downgrade' => Icons.arrow_downward_rounded,
+    _ => Icons.swap_horiz_rounded,
   };
 
-  Color _getChangeColor(String? changeType) {
-    switch (changeType) {
-      case 'upgrade':
-        return context.status.success;
-      case 'downgrade':
-        return context.status.warning;
-      default:
-        return context.status.info;
-    }
-  }
-
-  void _confirmChange() {
-    final changeType = _getChangeType(_selectedPlan!);
-    final changeColor = _getChangeColor(changeType);
+  Future<void> _confirmChange() async {
+    final plan = _selectedPlan!;
+    final changeType = _getChangeType(plan);
     final action = _actionLabel(changeType);
-    final reasonController = TextEditingController();
-    final currencyFormat = NumberFormat.currency(
-      symbol: '₭ ',
-      decimalDigits: 0,
+
+    final reason = await AppDialogs.confirmWithReason(
+      context,
+      title: '$action plan?',
+      message:
+          '${widget.subscription.shopName} moves from '
+          '${widget.subscription.planName ?? 'no plan'} to ${plan.name} '
+          'at ${_priceLabel(plan)}. ${_effectNote()}',
+      confirmLabel: action,
+      icon: _actionIcon(changeType),
+      destructive: changeType == 'downgrade',
     );
+    if (reason == null || !mounted) return;
 
-    // Get price based on billing cycle
-    final price =
-        _selectedBillingCycle == 'annual' && _selectedPlan!.priceYearly > 0
-        ? _selectedPlan!.priceYearly
-        : _selectedPlan!.priceMonthly;
-    final billingLabel = _selectedBillingCycle == 'annual' ? 'year' : 'month';
-
-    // Capture page context for snackbar
-    final pageContext = context;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(_actionIcon(changeType), color: changeColor),
-            const SizedBox(width: 8),
-            Text('Confirm $action'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            RichText(
-              text: TextSpan(
-                style: Theme.of(dialogContext).textTheme.bodyMedium,
-                children: [
-                  const TextSpan(text: 'Change '),
-                  TextSpan(
-                    text: widget.subscription.shopName,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const TextSpan(text: ' from '),
-                  TextSpan(
-                    text: widget.subscription.planName,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const TextSpan(text: ' to '),
-                  TextSpan(
-                    text: _selectedPlan!.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: changeColor,
-                    ),
-                  ),
-                  const TextSpan(text: '?'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.colors.surfaceContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.payments_outlined,
-                    size: 20,
-                    color: context.colors.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${currencyFormat.format(price)}/$billingLabel',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        dialogContext,
-                      ).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      _selectedBillingCycle == 'annual' ? 'Annual' : 'Monthly',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(
-                          dialogContext,
-                        ).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(labelText: 'Reason (optional)'),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              setState(() => _isProcessing = true);
-              final messenger = ScaffoldMessenger.of(pageContext);
-              final navigator = Navigator.of(pageContext);
-              final planName = _selectedPlan!.name;
-
-              debugPrint(
-                '🔄 Changing plan with billingCycle: $_selectedBillingCycle',
-              );
-
-              try {
-                await ref
-                    .read(subscriptionsProvider.notifier)
-                    .changePlan(
-                      widget.subscription.shopId,
-                      _selectedPlan!.code,
-                      billingCycle: _selectedBillingCycle,
-                      reason: reasonController.text.isNotEmpty
-                          ? reasonController.text
-                          : null,
-                    );
-
-                if (!mounted) return;
-                setState(() => _isProcessing = false);
-                messenger.showSuccess(switch (changeType) {
-                  'upgrade' => 'Successfully upgraded to $planName',
-                  'downgrade' => 'Successfully downgraded to $planName',
-                  _ => 'Successfully changed plan to $planName',
-                });
-                navigator.pop(true);
-              } catch (e) {
-                if (!mounted) return;
-                setState(() => _isProcessing = false);
-                messenger.showError(
-                  'Failed to change plan: ${friendlyError(e)}',
-                );
-              }
-            },
-            style: FilledButton.styleFrom(backgroundColor: changeColor),
-            child: Text(action),
-          ),
-        ],
-      ),
-    );
+    setState(() => _isProcessing = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      await ref
+          .read(subscriptionsProvider.notifier)
+          .changePlan(
+            widget.subscription.shopId,
+            plan.code,
+            billingCycle: _selectedBillingCycle,
+            reason: reason.isEmpty ? null : reason,
+          );
+      if (!mounted) return;
+      messenger.showSuccess(switch (changeType) {
+        'upgrade' => 'Upgraded to ${plan.name}',
+        'downgrade' => 'Downgraded to ${plan.name}',
+        _ => 'Plan changed to ${plan.name}',
+      });
+      navigator.pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+      messenger.showError('Failed to change plan: ${friendlyError(e)}');
+    }
   }
 }

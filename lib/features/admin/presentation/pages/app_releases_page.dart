@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
@@ -35,6 +36,18 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
   }
 
   Future<void> _publishRelease(AppRelease release) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'Publish ${release.versionName}?',
+      message: release.isMandatory
+          ? 'Every ${release.platform} shop on an older version will be '
+                'required to update before using the app.'
+          : 'Every ${release.platform} shop on an older version will be '
+                'offered this update.',
+      confirmLabel: 'Publish',
+      icon: Icons.publish_rounded,
+    );
+    if (!ok || !mounted) return;
     try {
       await _repository.publishAppRelease(release.id);
       ref.invalidate(appReleasesProvider);
@@ -48,6 +61,16 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
   }
 
   Future<void> _unpublishRelease(AppRelease release) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'Unpublish ${release.versionName}?',
+      message:
+          'Shops will stop being offered this update. Shops that already '
+          'installed it are not affected.',
+      confirmLabel: 'Unpublish',
+      icon: Icons.unpublished_outlined,
+    );
+    if (!ok || !mounted) return;
     try {
       await _repository.unpublishAppRelease(release.id);
       ref.invalidate(appReleasesProvider);
@@ -61,30 +84,15 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
   }
 
   Future<void> _deleteRelease(AppRelease release) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Release'),
-        content: Text(
-          'Are you sure you want to delete ${release.versionName}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Delete',
-              style: TextStyle(color: context.colors.error),
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await AppDialogs.confirm(
+      context,
+      title: 'Delete ${release.versionName}?',
+      message: 'This release is removed permanently.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      icon: Icons.delete_outline_rounded,
     );
-
-    if (confirmed != true) return;
+    if (!confirmed || !mounted) return;
 
     try {
       await _repository.deleteAppRelease(release.id);
@@ -205,11 +213,6 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
   }
 
   Widget _buildReleaseCard(AppRelease release) {
-    final statusColor = release.isPublished
-        ? context.status.success
-        : context.status.warning;
-    final statusText = release.isPublished ? 'Published' : 'Draft';
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -228,21 +231,21 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.xs,
                         children: [
-                          Chip(
-                            label: Text(release.platform),
-                            backgroundColor: context.status.info.withAlpha(100),
+                          StatusBadge(
+                            label: humanize(release.platform),
+                            tone: StatusTone.neutral,
                           ),
-                          const SizedBox(width: 8),
-                          Chip(
-                            label: Text(statusText),
-                            backgroundColor: statusColor.withAlpha(100),
+                          StatusBadge.fromStatus(
+                            release.isPublished ? 'published' : 'draft',
                           ),
                           if (release.isMandatory)
-                            Chip(
-                              label: Text('Mandatory'),
-                              backgroundColor: context.colors.error,
+                            const StatusBadge(
+                              label: 'Mandatory',
+                              tone: StatusTone.danger,
                             ),
                         ],
                       ),
@@ -327,7 +330,7 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 Text(
-                  'Released: ${release.releasedAt.toString().split('.')[0]}',
+                  'Released ${DateFormat('d MMM y, HH:mm').format(release.releasedAt.toLocal())}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

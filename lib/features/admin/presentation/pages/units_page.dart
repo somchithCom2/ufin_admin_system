@@ -180,7 +180,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
                 child: state.isLoading
-                    ? const CircularProgressIndicator()
+                    ? const LoadMoreIndicator()
                     : const SizedBox(),
               ),
             );
@@ -319,7 +319,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 value: 'set-default',
                 child: Row(
                   children: [
-                    Icon(Icons.star, color: Colors.amber),
+                    Icon(Icons.star_outline_rounded),
                     SizedBox(width: 8),
                     Text('Set as Default'),
                   ],
@@ -332,16 +332,6 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                     Icon(Icons.delete, color: context.colors.error),
                     SizedBox(width: 8),
                     Text('Delete'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'restore',
-                child: Row(
-                  children: [
-                    Icon(Icons.restore, color: context.status.info),
-                    SizedBox(width: 8),
-                    Text('Restore'),
                   ],
                 ),
               ),
@@ -396,9 +386,6 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
       case 'delete':
         _showDeleteDialog(unit);
         break;
-      case 'restore':
-        _showRestoreDialog(unit);
-        break;
       case 'set-default':
         _showSetDefaultDialog(unit);
         break;
@@ -423,17 +410,6 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.colors.outline,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
               Row(
                 children: [
                   CircleAvatar(
@@ -568,185 +544,95 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
     }
   }
 
-  void _showActivateDialog(Unit unit) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Activate Unit'),
-        content: Text(
-          'Are you sure you want to activate "${unit.displayName()}"?\n\n'
-          'This unit will be available for use immediately.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.status.success,
-            ),
-            onPressed: () async {
-              Navigator.pop(context);
-              final messenger = ScaffoldMessenger.of(context);
-              final success = await ref
-                  .read(unitsProvider.notifier)
-                  .activateUnit(unit.id);
-              if (success) {
-                messenger.showSuccess('Unit activated successfully');
-              } else {
-                messenger.showError('Failed to activate unit');
-              }
-            },
-            child: const Text('Activate'),
-          ),
-        ],
-      ),
+  /// Confirms, runs [action], and reports the outcome with the server's reason
+  /// on failure.
+  Future<void> _confirmUnitAction(
+    Unit unit, {
+    required String title,
+    required String message,
+    required String confirmLabel,
+    required IconData icon,
+    required String done,
+    required String failed,
+    required Future<bool> Function(UnitsNotifier notifier) action,
+    bool destructive = false,
+  }) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      destructive: destructive,
+      icon: icon,
     );
+    if (!ok || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final success = await action(ref.read(unitsProvider.notifier));
+    if (success) {
+      messenger.showSuccess(done);
+    } else {
+      final reason = ref.read(unitsProvider).error;
+      messenger.showError(
+        reason == null ? failed : '$failed: ${friendlyError(reason)}',
+      );
+    }
   }
 
-  void _showDeactivateDialog(Unit unit) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Deactivate Unit'),
-        content: Text(
-          'Are you sure you want to deactivate "${unit.displayName()}"?\n\n'
-          'This unit will not be available for use, but can be reactivated later.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.status.warning,
-            ),
-            onPressed: () async {
-              Navigator.pop(context);
-              final messenger = ScaffoldMessenger.of(context);
-              final success = await ref
-                  .read(unitsProvider.notifier)
-                  .deactivateUnit(unit.id);
-              if (success) {
-                messenger.showSuccess('Unit deactivated successfully');
-              } else {
-                messenger.showError('Failed to deactivate unit');
-              }
-            },
-            child: const Text('Deactivate'),
-          ),
-        ],
-      ),
-    );
-  }
+  void _showActivateDialog(Unit unit) => _confirmUnitAction(
+    unit,
+    title: 'Activate "${unit.displayName()}"?',
+    message: 'The unit becomes available for use immediately.',
+    confirmLabel: 'Activate',
+    icon: Icons.visibility_outlined,
+    done: 'Unit activated',
+    failed: 'Could not activate unit',
+    action: (n) => n.activateUnit(unit.id),
+  );
 
-  void _showDeleteDialog(Unit unit) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Unit'),
-        content: Text(
-          'Are you sure you want to delete "${unit.displayName()}"?\n\n'
-          'This action CANNOT be undone. The unit will be removed from the system and hidden from queries. '
-          'An audit trail will be maintained for compliance.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.colors.error,
-            ),
-            onPressed: () async {
-              Navigator.pop(context);
-              final messenger = ScaffoldMessenger.of(context);
-              final success = await ref
-                  .read(unitsProvider.notifier)
-                  .deleteUnit(unit.id);
-              if (success) {
-                messenger.showSuccess('Unit deleted successfully');
-              } else {
-                messenger.showError('Failed to delete unit');
-              }
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
+  void _showDeactivateDialog(Unit unit) => _confirmUnitAction(
+    unit,
+    title: 'Deactivate "${unit.displayName()}"?',
+    message: 'The unit can no longer be used. You can activate it again later.',
+    confirmLabel: 'Deactivate',
+    icon: Icons.visibility_off_outlined,
+    done: 'Unit deactivated',
+    failed: 'Could not deactivate unit',
+    action: (n) => n.deactivateUnit(unit.id),
+  );
 
-  void _showRestoreDialog(Unit unit) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Restore Unit'),
-        content: Text(
-          'Are you sure you want to restore "${unit.displayName()}"?\n\n'
-          'This will recover the deleted unit and make it available again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: context.status.info),
-            onPressed: () async {
-              Navigator.pop(context);
-              final messenger = ScaffoldMessenger.of(context);
-              final success = await ref
-                  .read(unitsProvider.notifier)
-                  .restoreUnit(unit.id);
-              if (success) {
-                messenger.showSuccess('Unit restored successfully');
-              } else {
-                messenger.showError('Failed to restore unit');
-              }
-            },
-            child: const Text('Restore'),
-          ),
-        ],
-      ),
-    );
-  }
+  void _showDeleteDialog(Unit unit) => _confirmUnitAction(
+    unit,
+    title: 'Delete "${unit.displayName()}"?',
+    message:
+        'The unit is removed from every list. It cannot be restored from '
+        'this console.',
+    confirmLabel: 'Delete',
+    destructive: true,
+    icon: Icons.delete_outline_rounded,
+    done: 'Unit deleted',
+    failed: 'Could not delete unit',
+    action: (n) => n.deleteUnit(unit.id),
+  );
 
-  void _showSetDefaultDialog(Unit unit) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Set as Default'),
-        content: Text(
-          'Are you sure you want to set "${unit.displayName()}" as the default unit for the ${unit.category} category?\n\n'
-          'This will remove the default from any other unit in this category.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.amber),
-            onPressed: () async {
-              Navigator.pop(context);
-              final messenger = ScaffoldMessenger.of(context);
-              final success = await ref
-                  .read(unitsProvider.notifier)
-                  .setUnitDefault(unit.id);
-              if (success) {
-                messenger.showSuccess('Unit set as default');
-              } else {
-                messenger.showError('Failed to set default unit');
-              }
-            },
-            child: const Text('Set as Default'),
-          ),
-        ],
-      ),
+  Future<void> _showSetDefaultDialog(Unit unit) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'Set as default?',
+      message:
+          '"${unit.displayName()}" becomes the default unit for the '
+          '${unit.category} category, replacing the current default.',
+      confirmLabel: 'Set as default',
+      icon: Icons.star_outline_rounded,
     );
+    if (!ok || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final success = await ref
+        .read(unitsProvider.notifier)
+        .setUnitDefault(unit.id);
+    if (success) {
+      messenger.showSuccess('Unit set as default');
+    } else {
+      messenger.showError('Failed to set default unit');
+    }
   }
 }

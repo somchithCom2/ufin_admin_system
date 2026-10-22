@@ -150,36 +150,18 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.xs,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Text(
-                              plan.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
+                            Text(plan.name, style: context.text.titleMedium),
+                            if (plan.badgeText != null &&
+                                plan.badgeText!.isNotEmpty)
+                              StatusBadge(
+                                label: plan.badgeText!,
+                                tone: StatusTone.neutral,
                               ),
-                            ),
-                            if (plan.badgeText != null) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: context.status.warning,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  plan.badgeText!,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                         Text(

@@ -121,7 +121,6 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
       context,
       request: request,
       approve: approve,
-      initialNote: note,
     );
     if (confirmed == null) return;
 
@@ -130,9 +129,15 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
     final notifier = ref.read(upgradeRequestsProvider.notifier);
     try {
       if (approve) {
-        await notifier.approveRequest(request.id, reviewNote: confirmed);
+        await notifier.approveRequest(
+          request.id,
+          reviewNote: confirmed.isEmpty ? null : confirmed,
+        );
       } else {
-        await notifier.rejectRequest(request.id, reviewNote: confirmed);
+        await notifier.rejectRequest(
+          request.id,
+          reviewNote: confirmed.isEmpty ? null : confirmed,
+        );
       }
       messenger.showSuccess(
         approve
@@ -169,14 +174,16 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
-            icon: const Icon(Icons.chevron_left),
+            tooltip: 'Previous page',
+            icon: const Icon(Icons.chevron_left_rounded),
             onPressed: _currentPage > 0
                 ? () => _load(page: _currentPage - 1)
                 : null,
           ),
           Text('Page ${_currentPage + 1} of ${state.totalPages}'),
           IconButton(
-            icon: const Icon(Icons.chevron_right),
+            tooltip: 'Next page',
+            icon: const Icon(Icons.chevron_right_rounded),
             onPressed: _currentPage < state.totalPages - 1
                 ? () => _load(page: _currentPage + 1)
                 : null,
@@ -187,67 +194,26 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
   }
 }
 
-/// Dialog that collects an optional reviewNote and returns it on confirm.
-/// Returns null if cancelled.
+/// Asks for confirmation and an optional review note. Returns the note
+/// (possibly empty) on confirm, or null if cancelled.
 Future<String?> _showReviewDialog(
   BuildContext context, {
   required UpgradeRequestDto request,
   required bool approve,
-  String? initialNote,
 }) {
-  final controller = TextEditingController(text: initialNote);
-  final title = approve ? 'Approve Request' : 'Reject Request';
-  final actionLabel = approve ? 'Approve' : 'Reject';
-  final actionColor = approve ? context.status.success : context.colors.error;
-
-  return showDialog<String>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          RichText(
-            text: TextSpan(
-              style: DefaultTextStyle.of(ctx).style,
-              children: [
-                const TextSpan(text: 'Shop: '),
-                TextSpan(
-                  text: request.shopName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${request.fromPlanName['en'] ?? request.fromPlanCode} → '
-            '${request.toPlanName['en'] ?? request.toPlanCode}',
-            style: TextStyle(color: context.colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: 'Review note (optional)',
-            ),
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: actionColor),
-          onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-          child: Text(actionLabel, style: const TextStyle(color: Colors.white)),
-        ),
-      ],
-    ),
+  final from = request.fromPlanName['en'] ?? request.fromPlanCode;
+  final to = request.toPlanName['en'] ?? request.toPlanCode;
+  return AppDialogs.confirmWithReason(
+    context,
+    title: approve ? 'Approve request?' : 'Reject request?',
+    message: approve
+        ? '${request.shopName} moves from $from to $to '
+              '(${request.billingCycle}).'
+        : '${request.shopName} stays on $from. The shop sees your note.',
+    confirmLabel: approve ? 'Approve' : 'Reject',
+    reasonLabel: 'Review note',
+    destructive: !approve,
+    icon: approve ? Icons.check_rounded : Icons.close_rounded,
   );
 }
 
@@ -269,7 +235,6 @@ class _RequestCard extends StatelessWidget {
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
     return Card(
-      elevation: 1,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -292,21 +257,20 @@ class _RequestCard extends StatelessWidget {
             const SizedBox(height: 8),
 
             // Plan change
-            Row(
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _PlanBadge(
                   label: request.fromPlanName['en'] ?? request.fromPlanCode,
                   color: context.status.neutral,
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.arrow_forward, size: 16),
-                ),
+                const Icon(Icons.arrow_forward_rounded, size: 16),
                 _PlanBadge(
                   label: request.toPlanName['en'] ?? request.toPlanCode,
-                  color: context.status.info,
+                  color: context.colors.primary,
                 ),
-                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -366,14 +330,10 @@ class _RequestCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton.icon(
+                  FilledButton.icon(
                     onPressed: () => onApprove(null),
-                    icon: const Icon(Icons.check, size: 16),
+                    icon: const Icon(Icons.check_rounded, size: 16),
                     label: const Text('Approve'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.status.success,
-                      foregroundColor: Colors.white,
-                    ),
                   ),
                 ],
               ),
@@ -396,14 +356,13 @@ class _PlanBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: context.colors.outlineVariant),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: color.withValues(alpha: 0.9),
+          color: color,
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),

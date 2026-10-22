@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
+import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_detail_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -18,6 +20,9 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _expiringDaysFilter = 30;
+
+  /// Shop whose subscription is being fetched to open its detail page.
+  int? _openingShopId;
 
   @override
   void initState() {
@@ -56,8 +61,8 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'Overview', icon: Icon(Icons.bar_chart)),
-            Tab(text: 'Expiring', icon: Icon(Icons.timer)),
+            Tab(text: 'Overview'),
+            Tab(text: 'Expiring'),
           ],
         ),
       ),
@@ -72,28 +77,14 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
 
   Widget _buildOverviewTab() {
     final state = ref.watch(subscriptionStatsProvider);
+    final notifier = ref.read(subscriptionStatsProvider.notifier);
 
     if (state.isLoading) {
       return const AppLoadingView();
     }
 
     if (state.error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error, size: 48, color: context.colors.error),
-            const SizedBox(height: 16),
-            Text(state.error!),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () =>
-                  ref.read(subscriptionStatsProvider.notifier).refresh(),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
+      return AppErrorView(error: state.error, onRetry: notifier.refresh);
     }
 
     final stats = state.stats;
@@ -105,132 +96,86 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
       );
     }
     final currencies = _revenueCurrencies(stats);
+    final status = context.status;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return RefreshIndicator(
+      onRefresh: notifier.loadStatistics,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          // Summary cards
-          Row(
+          ResponsiveGrid(
+            minItemWidth: 180,
             children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  'Total',
-                  stats.totalSubscriptions.toString(),
-                  Icons.subscriptions,
-                  context.status.info,
-                ),
+              StatCard(
+                label: 'Total',
+                value: stats.totalSubscriptions.toString(),
+                icon: Icons.card_membership_rounded,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildSummaryCard(
-                  'Active',
-                  stats.activeSubscriptions.toString(),
-                  Icons.check_circle,
-                  context.status.success,
-                ),
+              StatCard(
+                label: 'Active',
+                value: stats.activeSubscriptions.toString(),
+                icon: Icons.check_circle_outline_rounded,
+                color: status.success,
+              ),
+              StatCard(
+                label: 'Trial',
+                value: stats.trialSubscriptions.toString(),
+                icon: Icons.hourglass_top_rounded,
+                color: status.info,
+              ),
+              StatCard(
+                label: 'Expiring soon',
+                value: stats.expiringSoon.toString(),
+                caption: 'Within 30 days',
+                icon: Icons.schedule_rounded,
+                color: stats.expiringSoon > 0 ? status.warning : null,
+                onTap: () => _tabController.animateTo(1),
+              ),
+              StatCard(
+                label: 'Expired',
+                value: stats.expiredSubscriptions.toString(),
+                icon: Icons.timer_off_outlined,
+              ),
+              StatCard(
+                label: 'Cancelled',
+                value: stats.cancelledSubscriptions.toString(),
+                icon: Icons.cancel_outlined,
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  'Expired',
-                  stats.expiredSubscriptions.toString(),
-                  Icons.timer_off,
-                  context.status.warning,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildSummaryCard(
-                  'Cancelled',
-                  stats.cancelledSubscriptions.toString(),
-                  Icons.cancel,
-                  context.colors.error,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  'Trial',
-                  stats.trialSubscriptions.toString(),
-                  Icons.stars,
-                  Colors.purple,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildSummaryCard(
-                  'Expiring Soon',
-                  stats.expiringSoon.toString(),
-                  Icons.warning,
-                  Colors.amber,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // Revenue section
-          _buildSectionTitle('Revenue'),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.status.successContainer,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: context.status.success.withValues(alpha: 0.3),
-              ),
-            ),
+          const SizedBox(height: AppSpacing.lg),
+          SectionCard(
+            title: 'Revenue',
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // One block per currency; LAK first.
                 for (final (i, currency) in currencies.indexed) ...[
-                  if (i > 0) const Divider(height: 24),
+                  if (i > 0) const Divider(height: AppSpacing.xl),
                   if (currencies.length > 1)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        currency,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: Text(currency, style: context.text.titleSmall),
                     ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    spacing: AppSpacing.xxl,
+                    runSpacing: AppSpacing.md,
                     children: [
                       _buildRevenueItem(
-                        'Total Revenue',
+                        'Total revenue',
                         stats.totalRevenue[currency] ?? 0,
                         currency,
-                        context.status.success,
                       ),
                       _buildRevenueItem(
-                        'MRR',
+                        'Monthly recurring (MRR)',
                         stats.monthlyRecurringRevenue[currency] ?? 0,
                         currency,
-                        context.status.info,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
                       _buildRevenueItem(
-                        'ARPU',
+                        'Average per paying shop (ARPU)',
                         stats.averageRevenuePerUser[currency] ?? 0,
                         currency,
-                        Colors.purple[700]!,
                       ),
                     ],
                   ),
@@ -238,36 +183,40 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
               ],
             ),
           ),
-
-          const SizedBox(height: 24),
-
-          // By Plan
           if (stats.byPlan.isNotEmpty) ...[
-            _buildSectionTitle('By Plan'),
-            const SizedBox(height: 12),
-            ...stats.byPlan.entries.map(
-              (entry) => _buildPlanBar(
-                entry.key,
-                entry.value,
-                stats.totalSubscriptions,
+            const SizedBox(height: AppSpacing.lg),
+            SectionCard(
+              title: 'Active and trial by plan',
+              child: Column(
+                children: [
+                  for (final entry in stats.byPlan.entries)
+                    _buildPlanBar(
+                      entry.key,
+                      entry.value,
+                      stats.totalSubscriptions,
+                    ),
+                ],
               ),
             ),
           ],
-
-          const SizedBox(height: 24),
-
-          // By Status
           if (stats.byStatus.isNotEmpty) ...[
-            _buildSectionTitle('By Status'),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: stats.byStatus.entries
-                  .map((entry) => _buildStatusChip(entry.key, entry.value))
-                  .toList(),
+            const SizedBox(height: AppSpacing.lg),
+            SectionCard(
+              title: 'By status',
+              child: Wrap(
+                spacing: AppSpacing.lg,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  for (final entry in stats.byStatus.entries)
+                    StatusBadge(
+                      label: '${humanize(entry.key)} · ${entry.value}',
+                      tone: StatusTone.fromStatus(entry.key),
+                    ),
+                ],
+              ),
             ),
           ],
+          const SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );
@@ -275,218 +224,90 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
 
   Widget _buildExpiringTab() {
     final state = ref.watch(expiringSubscriptionsProvider);
+    final notifier = ref.read(expiringSubscriptionsProvider.notifier);
 
     return Column(
       children: [
-        // Days filter
-        Container(
-          padding: const EdgeInsets.all(12),
-          color: context.colors.surfaceContainer,
-          child: Row(
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Text('Show expiring within: '),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('7 days'),
-                selected: _expiringDaysFilter == 7,
-                onSelected: (_) {
-                  setState(() => _expiringDaysFilter = 7);
-                  ref
-                      .read(expiringSubscriptionsProvider.notifier)
-                      .setDaysFilter(7);
+              SegmentedButton<int>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(value: 7, label: Text('7 days')),
+                  ButtonSegment(value: 14, label: Text('14 days')),
+                  ButtonSegment(value: 30, label: Text('30 days')),
+                ],
+                selected: {_expiringDaysFilter},
+                onSelectionChanged: (s) {
+                  setState(() => _expiringDaysFilter = s.first);
+                  notifier.setDaysFilter(s.first);
                 },
               ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('14 days'),
-                selected: _expiringDaysFilter == 14,
-                onSelected: (_) {
-                  setState(() => _expiringDaysFilter = 14);
-                  ref
-                      .read(expiringSubscriptionsProvider.notifier)
-                      .setDaysFilter(14);
-                },
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('30 days'),
-                selected: _expiringDaysFilter == 30,
-                onSelected: (_) {
-                  setState(() => _expiringDaysFilter = 30);
-                  ref
-                      .read(expiringSubscriptionsProvider.notifier)
-                      .setDaysFilter(30);
-                },
-              ),
+              if (!state.isLoading && state.subscriptions.isNotEmpty)
+                Text(
+                  '${state.subscriptions.length} expiring · '
+                  '${state.urgentCount} within 7 days · '
+                  '${state.criticalCount} within 3 days',
+                  style: context.text.bodySmall?.copyWith(
+                    color: context.colors.onSurfaceVariant,
+                  ),
+                ),
             ],
           ),
         ),
-
-        // Summary
-        if (!state.isLoading && state.subscriptions.isNotEmpty)
-          Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.status.warningContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Column(
-                  children: [
-                    Text(
-                      '${state.subscriptions.length}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'Total',
-                      style: TextStyle(color: context.colors.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-                Column(
-                  children: [
-                    Text(
-                      '${state.urgentCount}',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: context.status.warning,
-                      ),
-                    ),
-                    Text(
-                      '≤7 days',
-                      style: TextStyle(color: context.colors.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-                Column(
-                  children: [
-                    Text(
-                      '${state.criticalCount}',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: context.colors.error,
-                      ),
-                    ),
-                    Text(
-                      '≤3 days',
-                      style: TextStyle(color: context.colors.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-        // List
+        const Divider(),
         Expanded(
           child: state.isLoading
               ? const AppLoadingView()
               : state.error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error, size: 48, color: context.colors.error),
-                      const SizedBox(height: 16),
-                      Text(state.error!),
-                      ElevatedButton(
-                        onPressed: () => ref
-                            .read(expiringSubscriptionsProvider.notifier)
-                            .refresh(),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
+              ? AppErrorView(error: state.error, onRetry: notifier.refresh)
               : state.subscriptions.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        size: 64,
-                        color: context.status.success,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text('No subscriptions expiring soon!'),
-                    ],
-                  ),
+              ? AppEmptyView(
+                  icon: Icons.event_available_outlined,
+                  title: 'Nothing expiring',
+                  message:
+                      'No subscription expires in the next $_expiringDaysFilter days.',
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: state.subscriptions.length,
-                  itemBuilder: (context, index) {
-                    final sub = state.subscriptions[index];
-                    return _buildExpiringCard(sub);
-                  },
+              : RefreshIndicator(
+                  onRefresh: notifier.loadExpiringSubscriptions,
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.sm,
+                    ),
+                    itemCount: state.subscriptions.length,
+                    separatorBuilder: (_, _) => const Divider(indent: 72),
+                    itemBuilder: (context, index) =>
+                        _buildExpiringTile(state.subscriptions[index]),
+                  ),
                 ),
         ),
       ],
     );
   }
 
-  Widget _buildSummaryCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 24),
+  Widget _buildRevenueItem(String label, double value, String currency) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          MoneyFormat.format(value, currency),
+          style: context.text.titleLarge?.copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Text(
-                title,
-                style: TextStyle(
-                  color: context.colors.onSurfaceVariant,
-                  fontSize: 12,
-                ),
-              ),
-            ],
+        ),
+        Text(
+          label,
+          style: context.text.bodySmall?.copyWith(
+            color: context.colors.onSurfaceVariant,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 
@@ -499,146 +320,98 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
     return codes.isEmpty ? const ['LAK'] : codes;
   }
 
-  Widget _buildRevenueItem(
-    String label,
-    double value,
-    String currency,
-    Color color,
-  ) {
-    return Column(
-      children: [
-        Text(
-          MoneyFormat.format(value, currency),
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: context.colors.onSurfaceVariant,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildPlanBar(String planName, int count, int total) {
     final percentage = total > 0 ? (count / total) : 0.0;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Text(humanize(planName), style: context.text.bodyMedium),
               Text(
-                planName,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                '$count · ${(percentage * 100).toStringAsFixed(1)}%',
+                style: context.text.bodySmall?.copyWith(
+                  color: context.colors.onSurfaceVariant,
+                ),
               ),
-              Text('$count (${(percentage * 100).toStringAsFixed(1)}%)'),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           LinearProgressIndicator(
             value: percentage,
-            backgroundColor: context.colors.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(4),
+            minHeight: 4,
+            borderRadius: BorderRadius.circular(2),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusChip(String status, int count) {
-    final color = _getStatusColor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$status: $count',
-            style: TextStyle(fontWeight: FontWeight.w500, color: color),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpiringCard(sub) {
-    final urgencyColor = sub.isCritical
+  Widget _buildExpiringTile(ExpiringSubscription sub) {
+    final urgency = sub.isCritical
         ? context.colors.error
         : sub.isUrgent
         ? context.status.warning
-        : Colors.amber;
+        : context.colors.onSurfaceVariant;
+    final opening = _openingShopId == sub.shopId;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: urgencyColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${sub.daysUntilExpiry}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: urgencyColor,
-                ),
-              ),
-              Text('days', style: TextStyle(fontSize: 10, color: urgencyColor)),
-            ],
-          ),
-        ),
-        title: Text(
-          sub.shopName,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      leading: SizedBox(
+        width: 40,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(sub.planName),
             Text(
-              'Expires: ${DateFormat('MMM d, yyyy').format(sub.endDate)}',
-              style: TextStyle(
-                color: context.colors.onSurfaceVariant,
-                fontSize: 12,
-              ),
+              '${sub.daysUntilExpiry}',
+              style: context.text.titleMedium?.copyWith(color: urgency),
+            ),
+            Text(
+              sub.daysUntilExpiry == 1 ? 'day' : 'days',
+              style: context.text.labelSmall?.copyWith(color: urgency),
             ),
           ],
         ),
-        trailing: Icon(Icons.chevron_right, color: context.colors.outline),
-        onTap: () {
-          // Navigate to subscription detail or show action sheet
-        },
       ),
+      title: Text(sub.shopName, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        '${sub.planName} · expires ${DateFormat('d MMM y').format(sub.endDate)}',
+      ),
+      trailing: opening
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.chevron_right_rounded),
+      onTap: _openingShopId == null ? () => _openSubscription(sub) : null,
     );
   }
 
-  Color _getStatusColor(String status) {
-    return StatusTone.fromStatus(status).foreground(context);
+  /// Loads the shop's full subscription and opens its detail page, where it
+  /// can be extended or renewed.
+  Future<void> _openSubscription(ExpiringSubscription sub) async {
+    setState(() => _openingShopId = sub.shopId);
+    try {
+      final subscription = await ref
+          .read(adminRepositoryProvider)
+          .getSubscriptionByShop(sub.shopId);
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => SubscriptionDetailPage(subscription: subscription),
+        ),
+      );
+      if (mounted) {
+        ref.read(expiringSubscriptionsProvider.notifier).refresh();
+      }
+    } catch (e) {
+      if (mounted) AppFeedback.error(context, e);
+    } finally {
+      if (mounted) setState(() => _openingShopId = null);
+    }
   }
 }

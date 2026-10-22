@@ -142,33 +142,21 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.xs,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   plan.name,
                                   style: Theme.of(context).textTheme.titleLarge,
                                 ),
-                                if (plan.badgeText != null) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: context.status.warning,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      plan.badgeText!,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                if (plan.badgeText != null &&
+                                    plan.badgeText!.isNotEmpty)
+                                  StatusBadge(
+                                    label: plan.badgeText!,
+                                    tone: StatusTone.neutral,
                                   ),
-                                ],
                               ],
                             ),
                             const SizedBox(height: 4),
@@ -181,25 +169,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: plan.isActive
-                              ? context.status.success
-                              : context.status.neutral,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          plan.isActive ? 'ACTIVE' : 'INACTIVE',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
+                      StatusBadge.fromStatus(
+                        plan.isActive ? 'active' : 'inactive',
                       ),
                     ],
                   ),

@@ -226,6 +226,18 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
   }
 
   Future<void> _toggleShopType(ShopType shopType) async {
+    if (shopType.enabled) {
+      final ok = await AppDialogs.confirm(
+        context,
+        title: 'Disable "${shopType.name}"?',
+        message:
+            'New shops can no longer choose this type. Shops already using '
+            'it keep it.',
+        confirmLabel: 'Disable',
+        icon: Icons.toggle_off_outlined,
+      );
+      if (!ok || !mounted) return;
+    }
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(shopTypesProvider.notifier).toggleShopType(shopType.id);
@@ -255,17 +267,6 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.colors.outline,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
               Row(
                 children: [
                   CircleAvatar(
@@ -422,42 +423,26 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
     }
   }
 
-  void _showDeleteDialog(ShopType shopType) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Shop Type'),
-        content: Text(
-          'Are you sure you want to delete "${shopType.name}"?\n\n'
-          'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.colors.error,
-            ),
-            onPressed: () async {
-              Navigator.pop(context);
-              final messenger = ScaffoldMessenger.of(context);
-              final notifier = ref.read(shopTypesProvider.notifier);
-              final success = await notifier.deleteShopType(shopType.id);
-              if (success) {
-                messenger.showSuccess('Shop type deleted');
-              } else {
-                messenger.showError(
-                  'Could not delete shop type: '
-                  '${friendlyError(ref.read(shopTypesProvider).error)}',
-                );
-              }
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+  Future<void> _showDeleteDialog(ShopType shopType) async {
+    final ok = await AppDialogs.confirm(
+      context,
+      title: 'Delete "${shopType.name}"?',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      icon: Icons.delete_outline_rounded,
     );
+    if (!ok || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final notifier = ref.read(shopTypesProvider.notifier);
+    final success = await notifier.deleteShopType(shopType.id);
+    if (success) {
+      messenger.showSuccess('Shop type deleted');
+    } else {
+      messenger.showError(
+        'Could not delete shop type: '
+        '${friendlyError(ref.read(shopTypesProvider).error)}',
+      );
+    }
   }
 }

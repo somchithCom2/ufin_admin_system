@@ -358,7 +358,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   value: 'reset_password',
                   child: Row(
                     children: [
-                      Icon(Icons.lock_reset, color: Colors.purple),
+                      Icon(Icons.lock_reset_rounded),
                       SizedBox(width: 8),
                       Text('Reset Password'),
                     ],
@@ -628,17 +628,6 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.colors.outline,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
               Row(
                 children: [
                   CircleAvatar(
@@ -788,6 +777,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   decoration: InputDecoration(
                     labelText: 'New Password',
                     suffixIcon: IconButton(
+                      tooltip: obscure ? 'Show password' : 'Hide password',
                       icon: Icon(
                         obscure ? Icons.visibility : Icons.visibility_off,
                       ),

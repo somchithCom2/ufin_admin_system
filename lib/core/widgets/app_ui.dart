@@ -380,10 +380,10 @@ class AppMessageView extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconBadge(
-                        icon: icon,
+                      Icon(
+                        icon,
                         color: color ?? scheme.onSurfaceVariant,
-                        size: 56,
+                        size: 40,
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
@@ -643,13 +643,18 @@ class StatusBadge extends StatelessWidget {
             ),
             const SizedBox(width: 6),
           ],
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              height: 1.2,
+          // Long labels truncate rather than overflow narrow rows.
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+              ),
             ),
           ),
         ],
@@ -688,7 +693,8 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final accent = color ?? scheme.primary;
+    // Neutral unless the caller marks the metric with a status color.
+    final accent = color ?? scheme.onSurfaceVariant;
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -711,7 +717,7 @@ class StatCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  IconBadge(icon: icon, color: accent, size: 34),
+                  Icon(icon, color: accent, size: 18),
                 ],
               ),
               const SizedBox(height: AppSpacing.md),

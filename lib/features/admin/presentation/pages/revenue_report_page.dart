@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
+import 'package:ufin_admin_system/features/admin/data/models/admin_revenue_report.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -41,6 +42,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(revenueReportProvider);
+    final notifier = ref.read(revenueReportProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
@@ -50,49 +52,30 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.read(revenueReportProvider.notifier).refresh(),
+            onPressed: state.isLoading ? null : notifier.refresh,
           ),
         ],
       ),
       body: ContentWidth(
         child: Column(
           children: [
-            // Filters
             _buildFilters(state),
-
-            // Content
+            const Divider(),
             Expanded(
               child: state.isLoading
                   ? const AppLoadingView()
                   : state.error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error,
-                            size: 48,
-                            color: context.colors.error,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(state.error!),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => ref
-                                .read(revenueReportProvider.notifier)
-                                .refresh(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    )
+                  ? AppErrorView(error: state.error, onRetry: notifier.refresh)
                   : state.report == null
                   ? const AppEmptyView(
                       icon: Icons.insights_outlined,
                       title: 'No data available',
                       message: 'There is nothing to show for this period.',
                     )
-                  : _buildReport(state),
+                  : RefreshIndicator(
+                      onRefresh: notifier.loadRevenueReport,
+                      child: _buildReport(state.report!),
+                    ),
             ),
           ],
         ),
@@ -108,523 +91,349 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
 
   Widget _buildFilters(RevenueReportState state) {
     final currencies = state.report?.availableCurrencies ?? const <String>[];
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: context.colors.surfaceContainer,
+    final range = _dateRange;
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          OutlinedButton.icon(
+            onPressed: _selectDateRange,
+            icon: const Icon(Icons.date_range_rounded, size: 18),
+            label: Text(
+              range == null
+                  ? 'Select dates'
+                  : '${DateFormat('d MMM y').format(range.start)} – '
+                        '${DateFormat('d MMM y').format(range.end)}',
+            ),
+          ),
+          SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: 'day', label: Text('Day')),
+              ButtonSegment(value: 'week', label: Text('Week')),
+              ButtonSegment(value: 'month', label: Text('Month')),
+            ],
+            selected: {_groupBy},
+            onSelectionChanged: (s) => _setGroupBy(s.first),
+          ),
+          // Payments in different currencies are reported apart, one at a time.
+          if (currencies.length > 1)
+            SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: [
+                for (final code in currencies)
+                  ButtonSegment(value: code, label: Text(code)),
+              ],
+              selected: {state.currency},
+              onSelectionChanged: (s) =>
+                  ref.read(revenueReportProvider.notifier).setCurrency(s.first),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReport(AdminRevenueReport report) {
+    final textTheme = context.text;
+    final muted = context.colors.onSurfaceVariant;
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total revenue · ${report.currency}',
+                  style: textTheme.bodyMedium?.copyWith(color: muted),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _money(report.totalRevenue),
+                    style: textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.xl,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    _miniStat('Subscriptions', report.subscriptionRevenue),
+                    _miniStat('Other', report.otherRevenue),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        ResponsiveGrid(
+          children: [
+            StatCard(
+              label: 'Transactions',
+              value: report.totalTransactions.toString(),
+              icon: Icons.receipt_long_rounded,
+            ),
+            StatCard(
+              label: 'Success rate',
+              value: '${report.successRate.toStringAsFixed(1)}%',
+              caption: '${report.successfulTransactions} successful',
+              icon: Icons.check_circle_outline_rounded,
+              color: context.status.success,
+            ),
+            StatCard(
+              label: 'Failed',
+              value: report.failedTransactions.toString(),
+              icon: Icons.error_outline_rounded,
+              color: report.failedTransactions > 0
+                  ? context.colors.error
+                  : null,
+            ),
+            StatCard(
+              label: 'Average transaction',
+              value: _money(report.averageTransactionValue),
+              icon: Icons.functions_rounded,
+            ),
+          ],
+        ),
+        if (report.revenueByPeriod.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          SectionCard(
+            title: 'Revenue by period',
+            child: SizedBox(
+              height: 180,
+              child: _buildBarChart(report.revenueByPeriod),
+            ),
+          ),
+        ],
+        if (report.revenueByPlan.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          SectionCard(
+            title: 'Revenue by current plan',
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (final (i, plan) in report.revenueByPlan.indexed) ...[
+                  if (i > 0) const Divider(),
+                  _breakdownRow(
+                    title: plan.planName,
+                    subtitle: '${plan.subscriptionCount} payments',
+                    amount: plan.revenue,
+                    percentage: plan.percentage,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+        if (report.revenueByPaymentMethod.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          SectionCard(
+            title: 'Revenue by payment method',
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                for (final (i, method)
+                    in report.revenueByPaymentMethod.indexed) ...[
+                  if (i > 0) const Divider(),
+                  _breakdownRow(
+                    icon: _getPaymentMethodIcon(method.paymentMethod),
+                    title: method.paymentMethodDisplay,
+                    subtitle: '${method.transactionCount} transactions',
+                    amount: method.revenue,
+                    percentage: method.percentage,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.xxl),
+      ],
+    );
+  }
+
+  Widget _miniStat(String label, double value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _money(value),
+          style: context.text.titleMedium?.copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+        Text(
+          label,
+          style: context.text.bodySmall?.copyWith(
+            color: context.colors.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// One line of a breakdown: name and count on the left, amount and share
+  /// on the right, with a thin bar showing the share.
+  Widget _breakdownRow({
+    IconData? icon,
+    required String title,
+    required String subtitle,
+    required double amount,
+    required double percentage,
+  }) {
+    final muted = context.colors.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              // Date range picker
+              if (icon != null) ...[
+                Icon(icon, size: 20, color: muted),
+                const SizedBox(width: AppSpacing.md),
+              ],
               Expanded(
-                child: InkWell(
-                  onTap: _selectDateRange,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: context.text.titleSmall),
+                    Text(
+                      subtitle,
+                      style: context.text.bodySmall?.copyWith(color: muted),
                     ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: context.colors.outline),
-                      borderRadius: BorderRadius.circular(8),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _money(amount),
+                    style: context.text.titleSmall?.copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
-                    child: Row(
+                  ),
+                  Text(
+                    '${percentage.toStringAsFixed(1)}%',
+                    style: context.text.bodySmall?.copyWith(color: muted),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: (percentage / 100).clamp(0.0, 1.0),
+              minHeight: 4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBarChart(List<RevenueByPeriod> data) {
+    final maxValue = data.map((e) => e.revenue).reduce((a, b) => a > b ? a : b);
+    // Label every bar only while they fit; otherwise every nth one.
+    final labelEvery = (data.length / 10).ceil().clamp(1, data.length);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final barArea = constraints.maxHeight - 20;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            for (final (i, item) in data.indexed)
+              Expanded(
+                child: Tooltip(
+                  message:
+                      '${_formatPeriodLabel(item.period)}: ${_money(item.revenue)}'
+                      ' · ${item.transactionCount} transactions',
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Icon(
-                          Icons.date_range,
-                          size: 18,
-                          color: context.colors.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _dateRange != null
-                              ? '${DateFormat('MMM d').format(_dateRange!.start)} - ${DateFormat('MMM d').format(_dateRange!.end)}'
-                              : 'Select dates',
-                          style: TextStyle(
-                            color: context.colors.onSurfaceVariant,
+                        Container(
+                          height: maxValue > 0
+                              ? (barArea * item.revenue / maxValue).clamp(
+                                  item.revenue > 0 ? 2.0 : 0.0,
+                                  barArea,
+                                )
+                              : 0,
+                          decoration: BoxDecoration(
+                            color: context.colors.primary,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(3),
+                            ),
                           ),
+                        ),
+                        SizedBox(
+                          height: 20,
+                          child: i % labelEvery == 0
+                              ? Text(
+                                  _formatPeriodLabel(item.period),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.clip,
+                                  style: context.text.labelSmall?.copyWith(
+                                    color: context.colors.onSurfaceVariant,
+                                  ),
+                                )
+                              : null,
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Text('Group by: '),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Day'),
-                selected: _groupBy == 'day',
-                onSelected: (_) => _setGroupBy('day'),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Week'),
-                selected: _groupBy == 'week',
-                onSelected: (_) => _setGroupBy('week'),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Month'),
-                selected: _groupBy == 'month',
-                onSelected: (_) => _setGroupBy('month'),
-              ),
-            ],
-          ),
-          // Payments in different currencies are reported apart, one at a time.
-          if (currencies.length > 1) ...[
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  const Text('Currency: '),
-                  const SizedBox(width: 8),
-                  for (final code in currencies) ...[
-                    ChoiceChip(
-                      label: Text(code),
-                      selected: state.currency == code,
-                      onSelected: (_) => ref
-                          .read(revenueReportProvider.notifier)
-                          .setCurrency(code),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ],
-              ),
-            ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReport(RevenueReportState state) {
-    final report = state.report!;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Total Revenue Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: const [Color(0xFF2563EB), Color(0xFF4F46E5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.25),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Total Revenue (${report.currency})',
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _money(report.totalRevenue),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _buildMiniStat(
-                      'Subscriptions',
-                      report.subscriptionRevenue,
-                      Colors.white70,
-                    ),
-                    const SizedBox(width: 24),
-                    _buildMiniStat(
-                      'Other',
-                      report.otherRevenue,
-                      Colors.white70,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Transaction Stats
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Total Transactions',
-                  report.totalTransactions.toString(),
-                  Icons.receipt_long,
-                  context.status.info,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'Success Rate',
-                  '${report.successRate.toStringAsFixed(1)}%',
-                  Icons.check_circle,
-                  context.status.success,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Successful',
-                  report.successfulTransactions.toString(),
-                  Icons.done_all,
-                  context.status.success,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'Failed',
-                  report.failedTransactions.toString(),
-                  Icons.error_outline,
-                  context.colors.error,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          _buildStatCard(
-            'Average Transaction',
-            _money(report.averageTransactionValue),
-            Icons.analytics,
-            Colors.purple,
-          ),
-
-          const SizedBox(height: 24),
-
-          // Revenue by Period
-          if (report.revenueByPeriod.isNotEmpty) ...[
-            _buildSectionTitle('Revenue by Period'),
-            const SizedBox(height: 12),
-            Container(
-              height: 200,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.colors.surfaceContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: _buildSimpleBarChart(report.revenueByPeriod),
-            ),
-          ],
-
-          const SizedBox(height: 24),
-
-          // Revenue by Plan
-          if (report.revenueByPlan.isNotEmpty) ...[
-            _buildSectionTitle('Revenue by Current Plan'),
-            const SizedBox(height: 12),
-            ...report.revenueByPlan.map(_buildPlanRevenueCard),
-          ],
-
-          const SizedBox(height: 24),
-
-          // Revenue by Payment Method
-          if (report.revenueByPaymentMethod.isNotEmpty) ...[
-            _buildSectionTitle('Revenue by Payment Method'),
-            const SizedBox(height: 12),
-            ...report.revenueByPaymentMethod.map(_buildPaymentMethodCard),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMiniStat(String label, double value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _money(value),
-          style: TextStyle(
-            color: color,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: context.colors.onSurfaceVariant,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    );
-  }
-
-  Widget _buildSimpleBarChart(List<dynamic> data) {
-    if (data.isEmpty) return const SizedBox();
-
-    final maxValue = data
-        .map((e) => e.revenue as double)
-        .reduce((a, b) => a > b ? a : b);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: data.map((item) {
-        final heightRatio = maxValue > 0 ? (item.revenue / maxValue) : 0.0;
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  height: (140 * heightRatio).toDouble(),
-                  decoration: BoxDecoration(
-                    color: context.status.success,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatPeriodLabel(item.period),
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: context.colors.onSurfaceVariant,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
         );
-      }).toList(),
-    );
-  }
-
-  Widget _buildPlanRevenueCard(dynamic plan) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.colors.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  plan.planName,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '${plan.subscriptionCount} payments',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _money(plan.revenue),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: context.status.success,
-                ),
-              ),
-              Text(
-                '${plan.percentage.toStringAsFixed(1)}%',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.colors.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentMethodCard(dynamic method) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.colors.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: context.status.infoContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              _getPaymentMethodIcon(method.paymentMethod),
-              color: context.status.info,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  method.paymentMethodDisplay,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '${method.transactionCount} transactions',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _money(method.revenue),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: context.status.success,
-                ),
-              ),
-              Text(
-                '${method.percentage.toStringAsFixed(1)}%',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: context.colors.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      },
     );
   }
 
   String _formatPeriodLabel(String period) {
     try {
       final date = DateTime.parse(period);
-      return DateFormat('M/d').format(date);
+      return DateFormat('d MMM').format(date);
     } catch (_) {
-      return period.length > 5 ? period.substring(0, 5) : period;
+      return period;
     }
   }
 
   IconData _getPaymentMethodIcon(String method) {
     switch (method.toLowerCase()) {
       case 'cash':
-        return Icons.money;
+        return Icons.payments_outlined;
       case 'bank_transfer':
-        return Icons.account_balance;
+        return Icons.account_balance_outlined;
       case 'qr_code':
-        return Icons.qr_code;
+        return Icons.qr_code_rounded;
       case 'card':
       case 'credit_card':
-        return Icons.credit_card;
+        return Icons.credit_card_rounded;
       default:
-        return Icons.payment;
+        return Icons.payment_rounded;
     }
   }
 

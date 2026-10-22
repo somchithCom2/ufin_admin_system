@@ -75,18 +75,11 @@ class AppLogo extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.28),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            scheme.primary,
-            Color.lerp(scheme.primary, Colors.indigo, 0.5)!,
-          ],
-        ),
+        color: scheme.primary,
       ),
       child: Icon(
         Icons.admin_panel_settings_rounded,
-        color: Colors.white,
+        color: scheme.onPrimary,
         size: size * 0.56,
       ),
     );
