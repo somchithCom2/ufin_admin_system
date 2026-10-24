@@ -25,6 +25,8 @@ Map<String, dynamic> _reset({required bool done}) => {
     'categories': 9,
   },
   'totalRows': 1888,
+  'files': 40,
+  'filesFailed': done ? 2 : 0,
 };
 
 /// Admin console side of the shop data reset: the requests it sends, what it
@@ -96,6 +98,26 @@ void main() {
     });
   });
 
+  test('files are optional, and a shop with only pictures is not empty', () {
+    final unreachable = ShopDataReset.fromJson({
+      'shopId': 7,
+      'rows': {'products': 0},
+      'totalRows': 0,
+    });
+    expect(unreachable.files, isNull);
+    expect(unreachable.filesFailed, 0);
+    expect(unreachable.isEmpty, isTrue);
+    expect(
+      ShopDataReset.fromJson({
+        'shopId': 7,
+        'rows': {'products': 0},
+        'totalRows': 0,
+        'files': 3,
+      }).isEmpty,
+      isFalse,
+    );
+  });
+
   test('summary names what an operator knows and folds the rest', () {
     final reset = ShopDataReset.fromJson(_reset(done: false));
     expect(reset.summary, [
@@ -143,6 +165,8 @@ void main() {
       expect(find.text('85'), findsOneWidget);
       expect(find.text('Linked records'), findsOneWidget);
       expect(find.text('1,888'), findsOneWidget);
+      expect(find.text('Pictures in storage'), findsOneWidget);
+      expect(find.text('40'), findsOneWidget);
       expect(repo.resets, isEmpty);
     });
 
@@ -170,6 +194,13 @@ void main() {
       expect(find.text('Shop data reset'), findsOneWidget);
       expect(
         find.text('"Test Café" is empty and ready to be keyed in again.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          '2 pictures could not be deleted from storage. Nothing shows them '
+          'any more.',
+        ),
         findsOneWidget,
       );
     });

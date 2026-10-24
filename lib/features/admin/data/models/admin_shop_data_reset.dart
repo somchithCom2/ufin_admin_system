@@ -26,13 +26,26 @@ class ShopDataReset {
   final Map<String, int> rows;
   final int totalRows;
 
+  /// Product pictures and category icons in storage: to be removed (preview)
+  /// or removed. Null when the backend could not reach storage. A picture a
+  /// branch still shows from a catalog copy is kept and not counted.
+  final int? files;
+
+  /// Pictures a reset could not remove. Nothing shows them any more.
+  final int filesFailed;
+
   const ShopDataReset({
     required this.shopId,
     required this.shopName,
     required this.done,
     required this.rows,
     required this.totalRows,
+    this.files,
+    this.filesFailed = 0,
   });
+
+  /// Nothing in the database or in storage to remove.
+  bool get isEmpty => totalRows == 0 && (files ?? 0) == 0;
 
   factory ShopDataReset.fromJson(Map<String, dynamic> json) => ShopDataReset(
     shopId: json['shopId'] as int,
@@ -42,6 +55,8 @@ class ShopDataReset {
       (table, count) => MapEntry(table, (count as num).toInt()),
     ),
     totalRows: (json['totalRows'] as num?)?.toInt() ?? 0,
+    files: (json['files'] as num?)?.toInt(),
+    filesFailed: (json['filesFailed'] as num?)?.toInt() ?? 0,
   );
 
   /// The tables an operator recognises, by the name the shop app gives them.

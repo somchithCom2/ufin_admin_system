@@ -37,11 +37,11 @@ Future<void> showShopDataResetResultDialog(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            result.totalRows == 0
+            result.isEmpty
                 ? '"${result.shopName}" had nothing to remove.'
                 : '"${result.shopName}" is empty and ready to be keyed in again.',
           ),
-          if (result.totalRows > 0) ...[
+          if (!result.isEmpty) ...[
             const SizedBox(height: 12),
             _CountList(result),
           ],
@@ -57,7 +57,7 @@ Future<void> showShopDataResetResultDialog(
   ),
 );
 
-/// One line per kind of record, then the total.
+/// One line per kind of record, the total, then the pictures in storage.
 class _CountList extends StatelessWidget {
   final ShopDataReset reset;
   const _CountList(this.reset);
@@ -79,12 +79,32 @@ class _CountList extends StatelessWidget {
       );
     }
 
+    Widget note(String text) => Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(text, style: context.text.bodySmall),
+    );
+
+    final files = reset.files;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final (label, count) in reset.summary) line(label, count),
         const Divider(height: 16),
         line('Total records', reset.totalRows, bold: true),
+        if (files != null && files > 0) line('Pictures in storage', files),
+        if (files == null)
+          note(
+            reset.done
+                ? 'Storage could not be reached, so its pictures were left '
+                      'there. Nothing shows them any more.'
+                : 'Pictures in storage could not be counted now. The reset '
+                      'still deletes them.',
+          ),
+        if (reset.filesFailed > 0)
+          note(
+            '${_count.format(reset.filesFailed)} pictures could not be '
+            'deleted from storage. Nothing shows them any more.',
+          ),
       ],
     );
   }
@@ -191,7 +211,7 @@ class _ResetShopDataFormState extends ConsumerState<_ResetShopDataForm> {
                   );
                 }
                 final preview = snapshot.data!;
-                if (preview.totalRows == 0) {
+                if (preview.isEmpty) {
                   return Text(
                     'Nothing to remove: the shop has no products, sales or '
                     'customers.',
@@ -210,7 +230,8 @@ class _ResetShopDataFormState extends ConsumerState<_ResetShopDataForm> {
               'The shop and its settings, receipt settings, staff and roles, '
               'payment methods, bank accounts, exchange rates, restaurant '
               'areas and tables, expense categories, the subscription and '
-              'its payments. Branches are not touched.',
+              'its payments, the shop logo and bank QR codes. Branches are not '
+              "touched, and pictures a branch still shows are kept.",
               style: context.text.bodyMedium,
             ),
           ],
