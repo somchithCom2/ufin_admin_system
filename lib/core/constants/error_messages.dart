@@ -71,6 +71,8 @@ abstract final class ErrorMessages {
     'ERR_SHOP_NAME_ALREADY_EXISTS':
         'The owner already has another shop with this name. Ask them to rename it first.',
     'ERR_INVALID_SHOP_STATUS': 'Unknown shop status.',
+    'ERR_SHOP_DATA_RESET_CONFLICT':
+        'The shop changed while resetting, maybe a till just sent a sale. Nothing was removed. Try again.',
 
     // --- Branch groups and ownership (link, unlink, change owner) ---
     'ERR_SHOP_IS_BRANCH':

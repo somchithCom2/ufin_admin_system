@@ -158,6 +158,34 @@ class AdminRepository {
     }
   }
 
+  /// What a data reset would remove from the shop now. Changes nothing.
+  Future<ShopDataReset> previewShopDataReset(int shopId) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminShopDataResetPreview(shopId),
+      );
+      return _parseResponse<ShopDataReset>(response, ShopDataReset.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Empty the shop's catalog, sales, stock and customers
+  Future<ShopDataReset> resetShopData(
+    int shopId,
+    ResetShopDataRequest request,
+  ) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.adminShopDataReset(shopId),
+        data: request.toJson(),
+      );
+      return _parseResponse<ShopDataReset>(response, ShopDataReset.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Every owner change made from the admin console, newest first
   Future<List<OwnerChange>> getOwnerHistory(int shopId) async {
     try {

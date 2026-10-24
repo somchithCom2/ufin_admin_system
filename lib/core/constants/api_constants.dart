@@ -38,6 +38,9 @@ class ApiConstants {
   static String adminShopById(int id) => '/admin/shops/$id';
   static String adminShopStatus(int id) => '/admin/shops/$id/status';
   static String adminShopRestore(int id) => '/admin/shops/$id/restore';
+  static String adminShopDataReset(int id) => '/admin/shops/$id/data-reset';
+  static String adminShopDataResetPreview(int id) =>
+      '/admin/shops/$id/data-reset/preview';
 
   // Branch groups and ownership
   static String adminShopBranches(int id) => '/admin/shops/$id/branches';

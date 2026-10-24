@@ -218,6 +218,20 @@ class ShopsNotifier extends StateNotifier<ShopsState> {
     loadShops(search: _search, status: _status);
     return result;
   }
+
+  /// What a data reset of [shopId] would remove. Changes nothing.
+  Future<ShopDataReset> previewShopDataReset(int shopId) =>
+      _repository.previewShopDataReset(shopId);
+
+  /// Empties [shopId]'s catalog, sales, stock and customers.
+  Future<ShopDataReset> resetShopData(
+    int shopId,
+    ResetShopDataRequest request,
+  ) async {
+    final result = await _repository.resetShopData(shopId, request);
+    loadShops(search: _search, status: _status);
+    return result;
+  }
 }
 
 final shopsProvider = StateNotifierProvider<ShopsNotifier, ShopsState>((ref) {
