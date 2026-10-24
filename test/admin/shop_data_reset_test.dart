@@ -89,12 +89,19 @@ void main() {
       expect(result.done, isTrue);
     });
 
-    test('a conflict reads as a sentence that says nothing was removed', () {
-      final text = friendlyError(
-        ApiException(message: 'ERR_SHOP_DATA_RESET_CONFLICT'),
-      );
-      expect(text, isNot(contains('ERR_')));
-      expect(text, contains('Nothing was removed'));
+    test('each refusal reads as a sentence that says nothing was removed', () {
+      for (final code in const [
+        'ERR_SHOP_DATA_RESET_CONFLICT',
+        'ERR_SHOP_DATA_SHARED_WITH_ANOTHER_SHOP',
+      ]) {
+        final text = friendlyError(ApiException(message: code));
+        expect(text, isNot(contains('ERR_')), reason: code);
+        expect(
+          text.toLowerCase(),
+          contains('nothing was removed'),
+          reason: code,
+        );
+      }
     });
   });
 
@@ -170,6 +177,16 @@ void main() {
       expect(repo.resets, isEmpty);
     });
 
+    testWidgets('a shop tied to another shop warns before anything is sent', (
+      tester,
+    ) async {
+      final repo = _ResetRepo()..otherShopsRows = 3;
+      await _openReset(tester, repo);
+
+      expect(find.textContaining('3 records of another shop'), findsOneWidget);
+      expect(find.text('Products'), findsNothing);
+    });
+
     testWidgets('a mistyped shop name sends nothing', (tester) async {
       final repo = _ResetRepo();
       await _openReset(tester, repo);
@@ -231,6 +248,7 @@ class _ResetRepo extends AdminRepository {
   final previews = <int>[];
   final resets = <(int, ResetShopDataRequest)>[];
   String? refuseWith;
+  int otherShopsRows = 0;
 
   static final _shops = [
     const AdminShop(id: 7, name: 'Test Café', status: 'active'),
@@ -261,7 +279,10 @@ class _ResetRepo extends AdminRepository {
   @override
   Future<ShopDataReset> previewShopDataReset(int shopId) async {
     previews.add(shopId);
-    return ShopDataReset.fromJson(_reset(done: false));
+    return ShopDataReset.fromJson({
+      ..._reset(done: false),
+      'otherShopsRows': otherShopsRows,
+    });
   }
 
   @override

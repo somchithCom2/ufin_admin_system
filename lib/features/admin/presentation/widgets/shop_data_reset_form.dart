@@ -211,6 +211,15 @@ class _ResetShopDataFormState extends ConsumerState<_ResetShopDataForm> {
                   );
                 }
                 final preview = snapshot.data!;
+                if (preview.otherShopsRows > 0) {
+                  return FormNotice(
+                    '${_count.format(preview.otherShopsRows)} records of '
+                    "another shop are tied to this shop's data, so the reset "
+                    'is refused: it would delete them too. Ask a developer to '
+                    'look at the shop before resetting it.',
+                    warning: true,
+                  );
+                }
                 if (preview.isEmpty) {
                   return Text(
                     'Nothing to remove: the shop has no products, sales or '

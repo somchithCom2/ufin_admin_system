@@ -34,6 +34,10 @@ class ShopDataReset {
   /// Pictures a reset could not remove. Nothing shows them any more.
   final int filesFailed;
 
+  /// Preview only: rows of other shops tied to this shop's data. Above zero
+  /// the backend refuses the reset rather than touch another shop.
+  final int otherShopsRows;
+
   const ShopDataReset({
     required this.shopId,
     required this.shopName,
@@ -42,6 +46,7 @@ class ShopDataReset {
     required this.totalRows,
     this.files,
     this.filesFailed = 0,
+    this.otherShopsRows = 0,
   });
 
   /// Nothing in the database or in storage to remove.
@@ -57,6 +62,7 @@ class ShopDataReset {
     totalRows: (json['totalRows'] as num?)?.toInt() ?? 0,
     files: (json['files'] as num?)?.toInt(),
     filesFailed: (json['filesFailed'] as num?)?.toInt() ?? 0,
+    otherShopsRows: (json['otherShopsRows'] as num?)?.toInt() ?? 0,
   );
 
   /// The tables an operator recognises, by the name the shop app gives them.
