@@ -82,6 +82,8 @@ class ApiConstants {
       '/admin/subscriptions/shop/$shopId/extend';
   static String adminSubscriptionReduce(int shopId) =>
       '/admin/subscriptions/shop/$shopId/reduce';
+  static String adminSubscriptionReset(int shopId) =>
+      '/admin/subscriptions/shop/$shopId/reset';
   static String adminSubscriptionUpgrade(int shopId, String plan) =>
       '/admin/subscriptions/shop/$shopId/upgrade/$plan';
   static String adminSubscriptionDowngrade(int shopId, String newPlanCode) =>

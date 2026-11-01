@@ -20,6 +20,7 @@ abstract final class ErrorMessages {
     'ERR_SUBSCRIPTION_EXPIRED': 'This subscription has expired.',
     'ERR_CANNOT_REDUCE_BELOW_CURRENT_DATE':
         'That would move the expiry date into the past.',
+    'ERR_INVALID_DAYS': 'Days must be 0 or more.',
     'ERR_LIFETIME_SUBSCRIPTION':
         'A lifetime subscription is never renewed, so it cannot auto-renew.',
     'ERR_INVALID_BILLING_CYCLE':

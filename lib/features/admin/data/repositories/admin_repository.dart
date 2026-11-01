@@ -501,6 +501,25 @@ class AdminRepository {
     }
   }
 
+  /// Restart the shop's current plan from today, Free included
+  Future<AdminSubscription> resetSubscription(
+    int shopId,
+    ResetSubscriptionRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminSubscriptionReset(shopId),
+        data: request.toJson(),
+      );
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Upgrade subscription to new plan
   Future<AdminSubscription> upgradeSubscription(
     int shopId,

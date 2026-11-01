@@ -642,6 +642,18 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
     }
   }
 
+  Future<void> resetSubscription(
+    int shopId, {
+    int? days,
+    String? reason,
+  }) async {
+    await _repository.resetSubscription(
+      shopId,
+      ResetSubscriptionRequest(days: days, reason: reason),
+    );
+    await refresh();
+  }
+
   Future<void> upgradeSubscription(
     int shopId,
     String planCode, {
