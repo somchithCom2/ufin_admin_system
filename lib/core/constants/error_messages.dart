@@ -26,6 +26,8 @@ abstract final class ErrorMessages {
     'ERR_INVALID_BILLING_CYCLE':
         'Billing cycle must be monthly, yearly or lifetime.',
     'ERR_AUTO_RENEW_REQUIRED': 'Choose whether auto-renew should be on or off.',
+    'ERR_FREE_PLAN_NEEDS_TRIAL':
+        'Free cannot sell without a trial, so its trial must stay on.',
 
     // --- Approval flow (shop-side self-service is restricted) ---
     'ERR_UPGRADE_REQUIRES_APPROVAL':

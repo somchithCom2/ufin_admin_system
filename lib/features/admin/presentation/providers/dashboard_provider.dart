@@ -497,6 +497,7 @@ class SubscriptionsState {
   final List<AdminSubscription> subscriptions;
   final int currentPage;
   final int totalPages;
+  final int totalElements;
   final bool hasNext;
 
   const SubscriptionsState({
@@ -506,6 +507,7 @@ class SubscriptionsState {
     this.subscriptions = const [],
     this.currentPage = 0,
     this.totalPages = 0,
+    this.totalElements = 0,
     this.hasNext = false,
   });
 
@@ -516,6 +518,7 @@ class SubscriptionsState {
     List<AdminSubscription>? subscriptions,
     int? currentPage,
     int? totalPages,
+    int? totalElements,
     bool? hasNext,
     bool clearError = false,
   }) {
@@ -526,6 +529,7 @@ class SubscriptionsState {
       subscriptions: subscriptions ?? this.subscriptions,
       currentPage: currentPage ?? this.currentPage,
       totalPages: totalPages ?? this.totalPages,
+      totalElements: totalElements ?? this.totalElements,
       hasNext: hasNext ?? this.hasNext,
     );
   }
@@ -537,6 +541,9 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
   int _pageSize = 20;
 
   String? _status;
+  String? _planCode;
+  bool _paid = false;
+  String? _search;
 
   SubscriptionsNotifier(this._repository) : super(const SubscriptionsState());
 
@@ -544,10 +551,16 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
     int page = 0,
     int size = 20,
     String? status,
+    String? planCode,
+    bool paid = false,
+    String? search,
   }) async {
     final generation = ++_generation;
     _pageSize = size;
     _status = status;
+    _planCode = planCode;
+    _paid = paid;
+    _search = search;
     state = state.copyWith(
       isLoading: true,
       isLoadingMore: false,
@@ -558,6 +571,9 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         page: page,
         size: size,
         status: status,
+        planCode: planCode,
+        paid: paid,
+        search: search,
       );
       if (!mounted || generation != _generation) return;
       state = state.copyWith(
@@ -565,6 +581,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         subscriptions: result.content,
         currentPage: result.page,
         totalPages: result.totalPages,
+        totalElements: result.totalElements,
         hasNext: result.hasNext,
       );
     } catch (e) {
@@ -583,6 +600,9 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         page: nextPage,
         size: _pageSize,
         status: _status,
+        planCode: _planCode,
+        paid: _paid,
+        search: _search,
       );
 
       // Append new subscriptions to existing list
@@ -594,6 +614,7 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
         subscriptions: updatedSubscriptions,
         currentPage: result.page,
         totalPages: result.totalPages,
+        totalElements: result.totalElements,
         hasNext: result.hasNext,
       );
     } catch (e) {
@@ -602,7 +623,13 @@ class SubscriptionsNotifier extends StateNotifier<SubscriptionsState> {
     }
   }
 
-  Future<void> refresh() => loadSubscriptions(size: _pageSize, status: _status);
+  Future<void> refresh() => loadSubscriptions(
+    size: _pageSize,
+    status: _status,
+    planCode: _planCode,
+    paid: _paid,
+    search: _search,
+  );
 
   Future<void> extendSubscription(
     int shopId, {

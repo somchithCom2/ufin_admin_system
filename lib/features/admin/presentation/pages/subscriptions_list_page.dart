@@ -9,6 +9,18 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/subscription
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_history_page.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
+/// Which plans the list shows. Paid first: free trials outnumber paying shops,
+/// and paying shops are the ones to manage.
+enum _PlanFilter {
+  paid('Paid'),
+  free('Free'),
+  all('All plans');
+
+  const _PlanFilter(this.label);
+
+  final String label;
+}
+
 class SubscriptionsListPage extends ConsumerStatefulWidget {
   const SubscriptionsListPage({super.key});
 
@@ -19,6 +31,8 @@ class SubscriptionsListPage extends ConsumerStatefulWidget {
 
 class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
   String? _statusFilter;
+  _PlanFilter _planFilter = _PlanFilter.paid;
+  final _searchController = TextEditingController();
   late ScrollController _scrollController;
 
   @override
@@ -27,17 +41,30 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(subscriptionsProvider.notifier)
-          .loadSubscriptions(status: _statusFilter);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Loads the first page of what the filters and search box ask for.
+  Future<void> _reload() {
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+    final search = _searchController.text.trim();
+    return ref
+        .read(subscriptionsProvider.notifier)
+        .loadSubscriptions(
+          status: _statusFilter,
+          planCode: _planFilter == _PlanFilter.free ? 'free' : null,
+          paid: _planFilter == _PlanFilter.paid,
+          search: search.isEmpty ? null : search,
+        );
   }
 
   void _onScroll() {
@@ -67,9 +94,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref
-                .read(subscriptionsProvider.notifier)
-                .loadSubscriptions(status: _statusFilter),
+            onPressed: _reload,
           ),
         ],
       ),
@@ -86,10 +111,27 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
       body: ContentWidth(
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: AppSearchField(
+                controller: _searchController,
+                hintText: 'Shop, phone, email, owner or ID…',
+                onSubmitted: (_) => _reload(),
+              ),
+            ),
             // Filter Chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
+                children: [
+                  for (final plan in _PlanFilter.values) _buildPlanChip(plan),
+                ],
+              ),
+            ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
                   _buildFilterChip('All', null),
@@ -100,6 +142,23 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                 ],
               ),
             ),
+            if (!subscriptionsState.isLoading &&
+                subscriptionsState.subscriptions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    subscriptionsState.totalElements == 1
+                        ? '1 subscription'
+                        : '${subscriptionsState.totalElements} subscriptions',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: context.colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
             // Subscription List
             Expanded(
               child: subscriptionsState.isLoading
@@ -117,6 +176,20 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     );
   }
 
+  Widget _buildPlanChip(_PlanFilter plan) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(plan.label),
+        selected: _planFilter == plan,
+        onSelected: (_) {
+          setState(() => _planFilter = plan);
+          _reload();
+        },
+      ),
+    );
+  }
+
   Widget _buildFilterChip(String label, String? status) {
     final isSelected = _statusFilter == status;
     return Padding(
@@ -126,25 +199,14 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
         selected: isSelected,
         onSelected: (selected) {
           setState(() => _statusFilter = selected ? status : null);
-          // Reset scroll position and reload subscriptions
-          if (_scrollController.hasClients) {
-            _scrollController.jumpTo(0);
-          }
-          ref
-              .read(subscriptionsProvider.notifier)
-              .loadSubscriptions(status: _statusFilter);
+          _reload();
         },
       ),
     );
   }
 
   Widget _buildErrorView(String error) {
-    return AppErrorView(
-      error: error,
-      onRetry: () => ref
-          .read(subscriptionsProvider.notifier)
-          .loadSubscriptions(status: _statusFilter),
-    );
+    return AppErrorView(error: error, onRetry: _reload);
   }
 
   Widget _buildEmptyView() {
@@ -158,16 +220,17 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
             'No subscriptions found',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          if (_statusFilter != null) ...[
+          if (_statusFilter != null || _planFilter != _PlanFilter.all) ...[
             const SizedBox(height: 8),
             TextButton(
               onPressed: () {
-                setState(() => _statusFilter = null);
-                ref
-                    .read(subscriptionsProvider.notifier)
-                    .loadSubscriptions(status: _statusFilter);
+                setState(() {
+                  _statusFilter = null;
+                  _planFilter = _PlanFilter.all;
+                });
+                _reload();
               },
-              child: const Text('Clear filter'),
+              child: const Text('Search all plans'),
             ),
           ],
         ],
@@ -180,14 +243,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     final hasMore = subscriptionsState.hasNext;
 
     return RefreshIndicator(
-      onRefresh: () async {
-        if (_scrollController.hasClients) {
-          _scrollController.jumpTo(0);
-        }
-        await ref
-            .read(subscriptionsProvider.notifier)
-            .loadSubscriptions(status: _statusFilter);
-      },
+      onRefresh: _reload,
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -330,25 +386,26 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                           : context.colors.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      isExpired
-                          ? 'Expired ${-daysLeft} days ago'
-                          : isExpiringSoon
-                          ? 'Expires in $daysLeft days'
-                          : 'Expires: ${DateFormat('MMM d, yyyy').format(subscription.expiresAt ?? DateTime.now())}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isExpired
-                            ? context.colors.error
+                    Expanded(
+                      child: Text(
+                        isExpired
+                            ? 'Expired ${-daysLeft} days ago'
                             : isExpiringSoon
-                            ? context.status.warning
-                            : context.colors.onSurfaceVariant,
-                        fontWeight: isExpiringSoon || isExpired
-                            ? FontWeight.w500
-                            : FontWeight.normal,
+                            ? 'Expires in $daysLeft days'
+                            : 'Expires: ${DateFormat('MMM d, yyyy').format(subscription.expiresAt ?? DateTime.now())}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isExpired
+                              ? context.colors.error
+                              : isExpiringSoon
+                              ? context.status.warning
+                              : context.colors.onSurfaceVariant,
+                          fontWeight: isExpiringSoon || isExpired
+                              ? FontWeight.w500
+                              : FontWeight.normal,
+                        ),
                       ),
                     ),
-                    const Spacer(),
                     Icon(Icons.chevron_right, color: context.colors.outline),
                   ],
                 ),
@@ -372,11 +429,14 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
           children: [
             Icon(icon, size: 14, color: context.colors.onSurfaceVariant),
             const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: context.colors.onSurfaceVariant,
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.colors.onSurfaceVariant,
+                ),
               ),
             ),
           ],

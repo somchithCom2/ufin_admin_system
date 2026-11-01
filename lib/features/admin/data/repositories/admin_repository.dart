@@ -432,6 +432,9 @@ class AdminRepository {
     int page = 0,
     int size = 20,
     String? status,
+    String? planCode,
+    bool paid = false,
+    String? search,
   }) async {
     try {
       final response = await _dio.get(
@@ -440,6 +443,9 @@ class AdminRepository {
           'page': page,
           'size': size,
           if (status != null) 'status': status,
+          if (planCode != null) 'planCode': planCode,
+          if (paid) 'paid': true,
+          if (search != null && search.isNotEmpty) 'search': search,
         },
       );
       return _parsePaginatedResponse(response, AdminSubscription.fromJson);
