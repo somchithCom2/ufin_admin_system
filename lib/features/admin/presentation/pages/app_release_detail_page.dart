@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/app_release_actions.dart';
@@ -71,10 +72,11 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
         actions: [
           IconButton(
             tooltip: context.tr(ReleaseText.editNotes2),
-            icon: const Icon(Icons.edit_outlined),
+            icon: const AppIcon(AppIcons.edit),
             onPressed: _busy ? null : () => _apply(AppReleaseActions.edit),
           ),
           PopupMenuButton<VoidCallback>(
+            icon: const AppIcon(AppIcons.moreVertical),
             tooltip: context.tr(CommonText.more),
             enabled: !_busy,
             onSelected: (run) => run(),
@@ -82,14 +84,14 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
               PopupMenuItem(
                 value: () => _copy(ReleaseCopy.nextVersion),
                 child: ListTile(
-                  leading: Icon(Icons.content_copy_rounded),
+                  leading: AppIcon(AppIcons.copy),
                   title: Text(context.tr(ReleaseText.newVersionFromThis2)),
                 ),
               ),
               PopupMenuItem(
                 value: () => _copy(ReleaseCopy.otherPlatform),
                 child: ListTile(
-                  leading: Icon(Icons.devices_rounded),
+                  leading: AppIcon(AppIcons.devices),
                   title: Text(context.tr(ReleaseText.copyToAnotherPlatform2)),
                 ),
               ),
@@ -97,8 +99,8 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
               PopupMenuItem(
                 value: _delete,
                 child: ListTile(
-                  leading: Icon(
-                    Icons.delete_outline_rounded,
+                  leading: AppIcon(
+                    AppIcons.delete,
                     color: context.colors.error,
                   ),
                   title: Text(
@@ -126,7 +128,7 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                     Row(
                       children: [
                         IconBadge(
-                          icon: platform?.$2 ?? Icons.devices_rounded,
+                          icon: platform?.$2 ?? AppIcons.devices,
                           color: context.colors.primary,
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -179,7 +181,7 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                             onPressed: _busy
                                 ? null
                                 : () => _apply(AppReleaseActions.unpublish),
-                            icon: const Icon(Icons.unpublished_outlined),
+                            icon: const AppIcon(AppIcons.eyeOff),
                             label: Text(context.tr(ReleaseText.unpublish2)),
                           )
                         else
@@ -187,21 +189,21 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                             onPressed: _busy
                                 ? null
                                 : () => _apply(AppReleaseActions.publish),
-                            icon: const Icon(Icons.publish_rounded),
+                            icon: const AppIcon(AppIcons.upload),
                             label: Text(context.tr(ReleaseText.publish2)),
                           ),
                         OutlinedButton.icon(
                           onPressed: _busy
                               ? null
                               : () => _apply(AppReleaseActions.edit),
-                          icon: const Icon(Icons.edit_outlined),
+                          icon: const AppIcon(AppIcons.edit),
                           label: Text(context.tr(ReleaseText.editNotes2)),
                         ),
                         OutlinedButton.icon(
                           onPressed: _busy
                               ? null
                               : () => _copy(ReleaseCopy.nextVersion),
-                          icon: const Icon(Icons.content_copy_rounded),
+                          icon: const AppIcon(AppIcons.copy),
                           label: Text(
                             context.tr(ReleaseText.newVersionFromThis2),
                           ),
@@ -215,7 +217,7 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
 
               SectionCard(
                 title: context.tr(ReleaseText.whatSNew),
-                icon: Icons.notes_rounded,
+                icon: AppIcons.notes,
                 subtitle: context.tr(ReleaseText.shopsSeeThisExactlyAs),
                 trailing: TextButton.icon(
                   onPressed: () => AppReleaseActions.copy(
@@ -223,7 +225,7 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                     AppReleaseActions.notesText(r),
                     what: context.tr(ReleaseText.releaseNotes2),
                   ),
-                  icon: const Icon(Icons.copy_rounded, size: 18),
+                  icon: const AppIcon(AppIcons.copy, size: 18),
                   label: Text(context.tr(CommonText.copy)),
                 ),
                 child: Column(
@@ -245,7 +247,7 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
 
               SectionCard(
                 title: context.tr(CommonText.details),
-                icon: Icons.info_outline_rounded,
+                icon: AppIcons.info,
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Column(
                   children: [
@@ -317,7 +319,7 @@ class _CopyRow extends StatelessWidget {
           ? null
           : IconButton(
               tooltip: context.tr(ReleaseText.copy(what.toLowerCase())),
-              icon: const Icon(Icons.copy_rounded, size: 18),
+              icon: const AppIcon(AppIcons.copy, size: 18),
               onPressed: () =>
                   AppReleaseActions.copy(context, value, what: what),
             ),

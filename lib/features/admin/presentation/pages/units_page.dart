@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -48,14 +49,14 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => ref.read(unitsProvider.notifier).loadUnits(),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateDialog(),
-        icon: const Icon(Icons.add),
+        icon: const AppIcon(AppIcons.add),
         label: Text(context.tr(ShopTypeText.addUnit)),
       ),
       body: ContentWidth(
@@ -69,7 +70,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   ? _buildErrorView(unitsState.error!)
                   : unitsState.units.isEmpty
                   ? AppEmptyView(
-                      icon: Icons.straighten_outlined,
+                      icon: AppIcons.ruler,
                       title: context.tr(ShopTypeText.noUnitsFound),
                       message: context.tr(ShopTypeText.tryADifferentFilterOr),
                     )
@@ -201,7 +202,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
             backgroundColor: unit.isActive
                 ? context.status.success.withValues(alpha: 0.1)
                 : context.status.neutral.withValues(alpha: 0.1),
-            child: Icon(
+            child: AppIcon(
               _getCategoryIcon(unit.category),
               color: unit.isActive
                   ? context.status.success
@@ -269,13 +270,14 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
             ],
           ),
           trailing: PopupMenuButton<String>(
+            icon: const AppIcon(AppIcons.moreVertical),
             onSelected: (action) => _handleAction(unit, action),
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'view',
                 child: Row(
                   children: [
-                    Icon(Icons.visibility),
+                    AppIcon(AppIcons.eye),
                     SizedBox(width: 8),
                     Text(context.tr(ShopTypeText.viewDetails2)),
                   ],
@@ -285,7 +287,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit),
+                    AppIcon(AppIcons.edit),
                     SizedBox(width: 8),
                     Text(context.tr(CommonText.edit)),
                   ],
@@ -296,7 +298,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   value: 'deactivate',
                   child: Row(
                     children: [
-                      Icon(Icons.visibility_off, color: context.status.warning),
+                      AppIcon(AppIcons.eyeOff, color: context.status.warning),
                       SizedBox(width: 8),
                       Text(context.tr(ShopTypeText.deactivate)),
                     ],
@@ -307,7 +309,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   value: 'activate',
                   child: Row(
                     children: [
-                      Icon(Icons.visibility, color: context.status.success),
+                      AppIcon(AppIcons.eye, color: context.status.success),
                       SizedBox(width: 8),
                       Text(context.tr(ShopTypeText.activate)),
                     ],
@@ -317,7 +319,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 value: 'set-default',
                 child: Row(
                   children: [
-                    Icon(Icons.star_outline_rounded),
+                    AppIcon(AppIcons.star),
                     SizedBox(width: 8),
                     Text(context.tr(ShopTypeText.setAsDefault)),
                   ],
@@ -327,7 +329,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, color: context.colors.error),
+                    AppIcon(AppIcons.delete, color: context.colors.error),
                     SizedBox(width: 8),
                     Text(context.tr(CommonText.delete)),
                   ],
@@ -350,22 +352,22 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
     );
   }
 
-  IconData _getCategoryIcon(String category) {
+  AppIconData _getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
       case 'piece':
-        return Icons.looks_one;
+        return AppIcons.hash;
       case 'weight':
-        return Icons.balance;
+        return AppIcons.scale;
       case 'volume':
-        return Icons.water_drop;
+        return AppIcons.droplet;
       case 'length':
-        return Icons.straighten;
+        return AppIcons.ruler;
       case 'area':
-        return Icons.grid_3x3;
+        return AppIcons.grid;
       case 'custom':
-        return Icons.settings;
+        return AppIcons.settings;
       default:
-        return Icons.category;
+        return AppIcons.shapes;
     }
   }
 
@@ -417,7 +419,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                     backgroundColor: unit.isActive
                         ? context.status.success.withValues(alpha: 0.1)
                         : context.status.neutral.withValues(alpha: 0.1),
-                    child: Icon(
+                    child: AppIcon(
                       _getCategoryIcon(unit.category),
                       size: 30,
                       color: unit.isActive
@@ -577,7 +579,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
     required String title,
     required String message,
     required String confirmLabel,
-    required IconData icon,
+    required AppIconData icon,
     required String done,
     required String failed,
     required Future<bool> Function(UnitsNotifier notifier) action,
@@ -609,7 +611,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
     title: context.tr(ShopTypeText.activate2(unit.displayName())),
     message: context.tr(ShopTypeText.theUnitBecomesAvailableFor),
     confirmLabel: context.tr(ShopTypeText.activate),
-    icon: Icons.visibility_outlined,
+    icon: AppIcons.eye,
     done: context.tr(ShopTypeText.unitActivated),
     failed: context.tr(ShopTypeText.couldNotActivateUnit),
     action: (n) => n.activateUnit(unit.id),
@@ -620,7 +622,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
     title: context.tr(ShopTypeText.deactivate2(unit.displayName())),
     message: context.tr(ShopTypeText.theUnitCanNoLonger),
     confirmLabel: context.tr(ShopTypeText.deactivate),
-    icon: Icons.visibility_off_outlined,
+    icon: AppIcons.eyeOff,
     done: context.tr(ShopTypeText.unitDeactivated),
     failed: context.tr(ShopTypeText.couldNotDeactivateUnit),
     action: (n) => n.deactivateUnit(unit.id),
@@ -632,7 +634,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
     message: context.tr(ShopTypeText.theUnitIsRemovedFrom),
     confirmLabel: context.tr(CommonText.delete),
     destructive: true,
-    icon: Icons.delete_outline_rounded,
+    icon: AppIcons.delete,
     done: context.tr(ShopTypeText.unitDeleted),
     failed: context.tr(ShopTypeText.couldNotDeleteUnit),
     action: (n) => n.deleteUnit(unit.id),
@@ -649,7 +651,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
         ),
       ),
       confirmLabel: context.tr(ShopTypeText.setAsDefault3),
-      icon: Icons.star_outline_rounded,
+      icon: AppIcons.star,
     );
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);

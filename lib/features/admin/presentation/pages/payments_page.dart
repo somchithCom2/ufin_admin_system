@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/payments_provider.dart';
@@ -36,7 +37,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => ref.read(paymentsProvider.notifier).refresh(),
           ),
         ],
@@ -59,7 +60,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                     )
                   : state.payments.isEmpty
                   ? AppEmptyView(
-                      icon: Icons.receipt_long_outlined,
+                      icon: AppIcons.receipt,
                       title: context.tr(FinText.noPaymentsFound),
                       message: context.tr(FinText.tryChangingTheFilters),
                     )
@@ -73,29 +74,23 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showRecordPaymentDialog(),
-        child: const Icon(Icons.add),
+        child: const AppIcon(AppIcons.add),
       ),
     );
   }
 
   static const _statuses = {
-    'completed': (
-      Tr('Completed', 'ສຳເລັດ'),
-      Icons.check_circle_outline_rounded,
-    ),
-    'pending': (Tr('Pending', 'ລໍຖ້າ'), Icons.schedule_rounded),
-    'failed': (Tr('Failed', 'ລົ້ມເຫຼວ'), Icons.error_outline_rounded),
-    'refunded': (Tr('Refunded', 'ຄືນເງິນແລ້ວ'), Icons.undo_rounded),
+    'completed': (Tr('Completed', 'ສຳເລັດ'), AppIcons.checkCircle),
+    'pending': (Tr('Pending', 'ລໍຖ້າ'), AppIcons.clock),
+    'failed': (Tr('Failed', 'ລົ້ມເຫຼວ'), AppIcons.errorCircle),
+    'refunded': (Tr('Refunded', 'ຄືນເງິນແລ້ວ'), AppIcons.undo),
   };
 
   static const _methods = {
-    'cash': (Tr('Cash', 'ເງິນສົດ'), Icons.payments_outlined),
-    'bank_transfer': (
-      Tr('Bank transfer', 'ໂອນຜ່ານທະນາຄານ'),
-      Icons.account_balance_outlined,
-    ),
-    'qr_code': (Tr('QR code', 'ຄິວອາໂຄດ'), Icons.qr_code_2_rounded),
-    'card': (Tr('Card', 'ບັດ'), Icons.credit_card_rounded),
+    'cash': (Tr('Cash', 'ເງິນສົດ'), AppIcons.money),
+    'bank_transfer': (Tr('Bank transfer', 'ໂອນຜ່ານທະນາຄານ'), AppIcons.bank),
+    'qr_code': (Tr('QR code', 'ຄິວອາໂຄດ'), AppIcons.qrCode),
+    'card': (Tr('Card', 'ບັດ'), AppIcons.card),
   };
 
   /// Date presets, each resolving to an inclusive (start, end) day range.
@@ -219,7 +214,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         _FilterButton(
                           key: const ValueKey('shop'),
                           compact: compact,
-                          icon: Icons.storefront_outlined,
+                          icon: AppIcons.shop,
                           label: context.tr(CommonText.shop),
                           value: state.shopIdFilter == null
                               ? null
@@ -236,7 +231,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         _FilterMenu(
                           key: const ValueKey('status'),
                           compact: compact,
-                          icon: Icons.flag_outlined,
+                          icon: AppIcons.flag,
                           label: context.tr(CommonText.status),
                           value:
                               _trOrNull(_statuses[state.statusFilter]?.$1) ??
@@ -255,7 +250,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         _FilterMenu(
                           key: const ValueKey('method'),
                           compact: compact,
-                          icon: Icons.account_balance_wallet_outlined,
+                          icon: AppIcons.wallet,
                           label: context.tr(FinText.method),
                           value:
                               _trOrNull(
@@ -276,14 +271,14 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         _FilterMenu(
                           key: const ValueKey('date'),
                           compact: compact,
-                          icon: Icons.calendar_today_outlined,
+                          icon: AppIcons.calendar,
                           label: context.tr(CommonText.date),
                           value: dateLabel,
                           options: [
                             for (final (label, range) in _datePresets)
                               (
                                 context.tr(label),
-                                Icons.event_outlined,
+                                AppIcons.calendar,
                                 context.tr(label) == dateLabel,
                                 () {
                                   final r = range(today);
@@ -292,7 +287,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                               ),
                             (
                               context.tr(FinText.customRange),
-                              Icons.date_range_outlined,
+                              AppIcons.calendarRange,
                               false,
                               () => _pickCustomRange(state),
                             ),
@@ -309,7 +304,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
               if (activeCount >= 2)
                 IconButton(
                   tooltip: context.tr(CommonText.clearAllFilters),
-                  icon: const Icon(Icons.filter_alt_off_outlined, size: 20),
+                  icon: const AppIcon(AppIcons.filterX, size: 20),
                   onPressed: _clearAll,
                 ),
             ],
@@ -531,7 +526,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
         children: [
           IconButton(
             tooltip: context.tr(FinText.previousPage),
-            icon: const Icon(Icons.chevron_left_rounded),
+            icon: const AppIcon(AppIcons.chevronLeft),
             onPressed: state.currentPage > 0
                 ? () => ref.read(paymentsProvider.notifier).loadPreviousPage()
                 : null,
@@ -542,7 +537,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
           ),
           IconButton(
             tooltip: context.tr(FinText.nextPage),
-            icon: const Icon(Icons.chevron_right_rounded),
+            icon: const AppIcon(AppIcons.chevronRight),
             onPressed: state.currentPage < state.totalPages - 1
                 ? () => ref.read(paymentsProvider.notifier).loadNextPage()
                 : null,
@@ -578,7 +573,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                       ).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
+                    child: AppIcon(
                       _getPaymentMethodIcon(payment.paymentMethod),
                       color: _getStatusColor(payment.status),
                       size: 28,
@@ -783,19 +778,19 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
     return StatusTone.fromStatus(status).foreground(context);
   }
 
-  IconData _getPaymentMethodIcon(String method) {
+  AppIconData _getPaymentMethodIcon(String method) {
     switch (method.toLowerCase()) {
       case 'cash':
-        return Icons.money;
+        return AppIcons.money;
       case 'bank_transfer':
-        return Icons.account_balance;
+        return AppIcons.bank;
       case 'qr_code':
-        return Icons.qr_code;
+        return AppIcons.qrCode;
       case 'card':
       case 'credit_card':
-        return Icons.credit_card;
+        return AppIcons.card;
       default:
-        return Icons.payment;
+        return AppIcons.card;
     }
   }
 }
@@ -901,7 +896,7 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
     final backdated = !DateUtils.isSameDay(_paymentDate, DateTime.now());
     return AppFormModal(
       formKey: _formKey,
-      icon: Icons.payments_outlined,
+      icon: AppIcons.money,
       title: context.tr(FinText.recordPayment),
       subtitle: context.tr(FinText.logMoneyReceivedFromA),
       submitLabel: context.tr(FinText.savePayment),
@@ -940,6 +935,7 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
                   },
                 ),
                 DropdownButtonFormField<String>(
+                  icon: const AppIcon(AppIcons.chevronDown, size: 20),
                   initialValue: _paymentMethod,
                   isExpanded: true,
                   decoration: InputDecoration(
@@ -964,8 +960,8 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
               child: InputDecorator(
                 decoration: InputDecoration(
                   labelText: context.tr(FinText.paymentDate2),
-                  prefixIcon: const Icon(Icons.event_outlined, size: 20),
-                  suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
+                  prefixIcon: const AppIcon(AppIcons.calendar, size: 20),
+                  suffixIcon: const AppIcon(AppIcons.chevronDown),
                   helperText: backdated
                       ? context.tr(FinText.backDatedRecord)
                       : null,
@@ -1039,7 +1035,7 @@ class _Pill extends StatelessWidget {
 /// Filter chip: shows the label, or the active value with a clear button.
 class _FilterButton extends StatelessWidget {
   final bool compact;
-  final IconData icon;
+  final AppIconData icon;
   final String label;
   final String? value;
   final VoidCallback onTap;
@@ -1080,7 +1076,7 @@ class _FilterButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (!compact) ...[
-                  Icon(
+                  AppIcon(
                     icon,
                     size: 16,
                     color: active ? fg : scheme.onSurfaceVariant,
@@ -1102,7 +1098,7 @@ class _FilterButton extends StatelessWidget {
                 ),
                 if (active)
                   IconButton(
-                    tooltip: context.tr(FinText.clearFilter(label)),
+                    tooltip: context.tr(CommonText.clearFilter(label)),
                     visualDensity: VisualDensity.compact,
                     iconSize: 16,
                     constraints: const BoxConstraints.tightFor(
@@ -1110,13 +1106,13 @@ class _FilterButton extends StatelessWidget {
                       height: 28,
                     ),
                     padding: EdgeInsets.zero,
-                    icon: Icon(Icons.close_rounded, color: fg),
+                    icon: AppIcon(AppIcons.close, color: fg),
                     onPressed: onClear,
                   )
                 else ...[
                   const SizedBox(width: 2),
-                  Icon(
-                    Icons.expand_more_rounded,
+                  AppIcon(
+                    AppIcons.chevronDown,
                     size: 18,
                     color: scheme.onSurfaceVariant,
                   ),
@@ -1133,10 +1129,10 @@ class _FilterButton extends StatelessWidget {
 /// [_FilterButton] that opens a dropdown menu of options anchored to it.
 class _FilterMenu extends StatelessWidget {
   final bool compact;
-  final IconData icon;
+  final AppIconData icon;
   final String label;
   final String? value;
-  final List<(String, IconData, bool, VoidCallback)> options;
+  final List<(String, AppIconData, bool, VoidCallback)> options;
   final VoidCallback onClear;
 
   const _FilterMenu({
@@ -1156,10 +1152,10 @@ class _FilterMenu extends StatelessWidget {
       menuChildren: [
         for (final (text, optionIcon, selected, onSelect) in options)
           MenuItemButton(
-            leadingIcon: Icon(optionIcon, size: 18),
+            leadingIcon: AppIcon(optionIcon, size: 18),
             trailingIcon: selected
-                ? Icon(
-                    Icons.check_rounded,
+                ? AppIcon(
+                    AppIcons.check,
                     size: 18,
                     color: context.colors.primary,
                   )

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ufin_admin_system/config/theme/app_theme.dart';
 import 'package:ufin_admin_system/core/constants/error_messages.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/l10n/l10n.dart';
 
 export 'package:ufin_admin_system/config/theme/app_theme.dart'
@@ -94,11 +95,11 @@ abstract final class AppFeedback {
     final scheme = theme.colorScheme;
     final status = theme.extension<StatusColors>() ?? StatusColors.light;
 
-    final (IconData icon, Color accent) = switch (kind) {
-      FeedbackKind.success => (Icons.check_circle_rounded, status.success),
-      FeedbackKind.error => (Icons.error_rounded, scheme.error),
-      FeedbackKind.warning => (Icons.warning_amber_rounded, status.warning),
-      FeedbackKind.info => (Icons.info_rounded, status.info),
+    final (AppIconData icon, Color accent) = switch (kind) {
+      FeedbackKind.success => (AppIcons.checkCircle, status.success),
+      FeedbackKind.error => (AppIcons.errorCircle, scheme.error),
+      FeedbackKind.warning => (AppIcons.warning, status.warning),
+      FeedbackKind.info => (AppIcons.info, status.info),
     };
     // Inverted surface so the snackbar stands out in both themes.
     final bg = scheme.inverseSurface;
@@ -113,7 +114,7 @@ abstract final class AppFeedback {
           action: action,
           content: Row(
             children: [
-              Icon(icon, color: accent, size: 20),
+              AppIcon(icon, color: accent, size: 20),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(message, style: TextStyle(color: fg)),
@@ -148,7 +149,7 @@ abstract final class AppDialogs {
     String? confirmLabel,
     String? cancelLabel,
     bool destructive = false,
-    IconData? icon,
+    AppIconData? icon,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -174,7 +175,7 @@ abstract final class AppDialogs {
     String? reasonLabel,
     bool reasonRequired = false,
     bool destructive = false,
-    IconData? icon,
+    AppIconData? icon,
   }) {
     return showDialog<String>(
       context: context,
@@ -198,7 +199,7 @@ class _ConfirmDialog extends StatefulWidget {
   final String? confirmLabel;
   final String? cancelLabel;
   final bool destructive;
-  final IconData? icon;
+  final AppIconData? icon;
   final String? reasonLabel;
   final bool reasonRequired;
   final bool hasReason;
@@ -346,7 +347,7 @@ class AppLoadingView extends StatelessWidget {
 /// Centered icon + title + message + optional action. Used for empty and
 /// error states so every page looks and reads the same.
 class AppMessageView extends StatelessWidget {
-  final IconData icon;
+  final AppIconData icon;
   final String title;
   final String? message;
   final Color? color;
@@ -393,7 +394,7 @@ class AppMessageView extends StatelessWidget {
                             alpha: 0.08,
                           ),
                         ),
-                        child: Icon(
+                        child: AppIcon(
                           icon,
                           color: color ?? scheme.onSurfaceVariant,
                           size: 28,
@@ -447,7 +448,7 @@ class AppErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppMessageView(
-      icon: Icons.cloud_off_rounded,
+      icon: AppIcons.cloudOff,
       color: Theme.of(context).colorScheme.error,
       title: title ?? context.tr(CommonText.couldNotLoad),
       message: friendlyError(error),
@@ -455,7 +456,7 @@ class AppErrorView extends StatelessWidget {
           ? null
           : OutlinedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
+              icon: const AppIcon(AppIcons.refresh, size: 18),
               label: Text(context.tr(CommonText.retry)),
             ),
     );
@@ -463,14 +464,14 @@ class AppErrorView extends StatelessWidget {
 }
 
 class AppEmptyView extends StatelessWidget {
-  final IconData icon;
+  final AppIconData icon;
   final String title;
   final String? message;
   final Widget? action;
 
   const AppEmptyView({
     super.key,
-    this.icon = Icons.inbox_outlined,
+    this.icon = AppIcons.inbox,
     required this.title,
     this.message,
     this.action,
@@ -512,7 +513,7 @@ class LoadMoreIndicator extends StatelessWidget {
 
 /// Tinted rounded square holding an icon.
 class IconBadge extends StatelessWidget {
-  final IconData icon;
+  final AppIconData icon;
   final Color color;
   final double size;
 
@@ -532,7 +533,7 @@ class IconBadge extends StatelessWidget {
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(size * 0.3),
       ),
-      child: Icon(icon, color: color, size: size * 0.5),
+      child: AppIcon(icon, color: color, size: size * 0.5),
     );
   }
 }
@@ -616,7 +617,7 @@ enum StatusTone {
 class StatusBadge extends StatelessWidget {
   final String label;
   final StatusTone tone;
-  final IconData? icon;
+  final AppIconData? icon;
 
   /// Raw backend status; when set, the label is translated at build time.
   final String? rawStatus;
@@ -653,7 +654,7 @@ class StatusBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12, color: color),
+            AppIcon(icon, size: 12, color: color),
             const SizedBox(width: 4),
           ] else ...[
             Container(
@@ -694,7 +695,7 @@ String humanize(String raw) {
 class StatCard extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
+  final AppIconData icon;
   final Color? color;
   final String? caption;
   final VoidCallback? onTap;
@@ -738,7 +739,7 @@ class StatCard extends StatelessWidget {
                       color: accent.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(9),
                     ),
-                    child: Icon(icon, color: accent, size: 17),
+                    child: AppIcon(icon, color: accent, size: 17),
                   ),
                   const SizedBox(width: AppSpacing.sm + 2),
                   Expanded(
@@ -753,8 +754,8 @@ class StatCard extends StatelessWidget {
                     ),
                   ),
                   if (onTap != null)
-                    Icon(
-                      Icons.chevron_right_rounded,
+                    AppIcon(
+                      AppIcons.chevronRight,
                       size: 18,
                       color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
                     ),
@@ -835,7 +836,7 @@ class ResponsiveGrid extends StatelessWidget {
 class SectionCard extends StatelessWidget {
   final String? title;
   final String? subtitle;
-  final IconData? icon;
+  final AppIconData? icon;
   final Widget? trailing;
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -869,7 +870,7 @@ class SectionCard extends StatelessWidget {
               child: Row(
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 18, color: scheme.onSurfaceVariant),
+                    AppIcon(icon, size: 18, color: scheme.onSurfaceVariant),
                     const SizedBox(width: AppSpacing.sm + 2),
                   ],
                   Expanded(
@@ -905,7 +906,7 @@ class InfoRow extends StatelessWidget {
   final String value;
   final Color? valueColor;
   final Widget? valueWidget;
-  final IconData? icon;
+  final AppIconData? icon;
 
   const InfoRow({
     super.key,
@@ -926,7 +927,7 @@ class InfoRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 16, color: scheme.onSurfaceVariant),
+            AppIcon(icon, size: 16, color: scheme.onSurfaceVariant),
             const SizedBox(width: AppSpacing.sm),
           ],
           Expanded(
@@ -1039,12 +1040,12 @@ class _AppSearchFieldState extends State<AppSearchField> {
       onSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
         hintText: widget.hintText ?? context.tr(CommonText.searchHint),
-        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        prefixIcon: const AppIcon(AppIcons.search, size: 20),
         suffixIcon: widget.controller.text.isEmpty
             ? null
             : IconButton(
                 tooltip: context.tr(CommonText.clear),
-                icon: const Icon(Icons.close_rounded, size: 18),
+                icon: const AppIcon(AppIcons.close, size: 18),
                 onPressed: () {
                   widget.controller.clear();
                   widget.onSubmitted('');

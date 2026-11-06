@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -65,7 +66,7 @@ class _SubscriptionHistoryPageState
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: _loadHistory,
           ),
         ],
@@ -79,7 +80,7 @@ class _SubscriptionHistoryPageState
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: Row(
                 children: [
-                  const Icon(Icons.history, size: 20),
+                  const AppIcon(AppIcons.history, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     context.tr(SubsText.totalRecords(historyState.totalCount)),
@@ -124,7 +125,7 @@ class _SubscriptionHistoryPageState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history, size: 64, color: context.colors.outline),
+          AppIcon(AppIcons.history, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
             context.tr(SubsText.noHistoryFound),
@@ -193,7 +194,7 @@ class _SubscriptionHistoryPageState
                         Expanded(
                           child: Row(
                             children: [
-                              Icon(
+                              AppIcon(
                                 _getActionIcon(entry.actionType),
                                 size: 16,
                                 color: color,
@@ -215,8 +216,8 @@ class _SubscriptionHistoryPageState
                                     ),
                                     Row(
                                       children: [
-                                        Icon(
-                                          Icons.store_outlined,
+                                        AppIcon(
+                                          AppIcons.shop,
                                           size: 10,
                                           color: context.colors.outline,
                                         ),
@@ -264,8 +265,8 @@ class _SubscriptionHistoryPageState
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Icon(
-                              Icons.attach_money,
+                            AppIcon(
+                              AppIcons.dollar,
                               size: 14,
                               color: context.status.success,
                             ),
@@ -282,8 +283,8 @@ class _SubscriptionHistoryPageState
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Icon(
-                            Icons.access_time,
+                          AppIcon(
+                            AppIcons.clock,
                             size: 10,
                             color: context.colors.outline,
                           ),
@@ -319,8 +320,8 @@ class _SubscriptionHistoryPageState
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.person_outline,
+                    AppIcon(
+                      AppIcons.person,
                       size: 10,
                       color: context.colors.outline,
                     ),
@@ -340,8 +341,8 @@ class _SubscriptionHistoryPageState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.swap_horiz,
+                      AppIcon(
+                        AppIcons.swap,
                         size: 12,
                         color: context.colors.outline,
                       ),
@@ -352,7 +353,7 @@ class _SubscriptionHistoryPageState
                           color: context.colors.onSurfaceVariant,
                         ),
                       ),
-                      Icon(Icons.arrow_right_alt, size: 12, color: color),
+                      AppIcon(AppIcons.arrowRight, size: 12, color: color),
                       Text(
                         '${entry.toPlanName ?? entry.toPlanCode ?? '-'}',
                         style: TextStyle(
@@ -369,8 +370,8 @@ class _SubscriptionHistoryPageState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.sync_alt,
+                      AppIcon(
+                        AppIcons.swap,
                         size: 10,
                         color: context.colors.outline,
                       ),
@@ -381,8 +382,8 @@ class _SubscriptionHistoryPageState
                           color: context.colors.onSurfaceVariant,
                         ),
                       ),
-                      Icon(
-                        Icons.chevron_right,
+                      AppIcon(
+                        AppIcons.chevronRight,
                         size: 10,
                         color: context.colors.outline,
                       ),
@@ -402,8 +403,8 @@ class _SubscriptionHistoryPageState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.calendar_today,
+                      AppIcon(
+                        AppIcons.calendar,
                         size: 10,
                         color: entry.daysExtended! > 0
                             ? context.status.success
@@ -430,8 +431,8 @@ class _SubscriptionHistoryPageState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.info_outline,
+                      AppIcon(
+                        AppIcons.info,
                         size: 10,
                         color: context.status.info,
                       ),
@@ -453,8 +454,8 @@ class _SubscriptionHistoryPageState
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.notes,
+                      AppIcon(
+                        AppIcons.notes,
                         size: 10,
                         color: context.colors.outline,
                       ),
@@ -479,53 +480,53 @@ class _SubscriptionHistoryPageState
     );
   }
 
-  IconData _getActionIcon(String actionType) {
+  AppIconData _getActionIcon(String actionType) {
     switch (actionType.toLowerCase()) {
       case 'upgrade':
       case 'upgraded':
-        return Icons.arrow_upward;
+        return AppIcons.arrowUp;
       case 'downgrade':
       case 'downgraded':
-        return Icons.arrow_downward;
+        return AppIcons.arrowDown;
       case 'extend':
       case 'extended':
       case 'extension':
-        return Icons.add_circle_outline;
+        return AppIcons.addCircle;
       case 'reduce':
       case 'reduced':
-        return Icons.remove_circle_outline;
+        return AppIcons.minusCircle;
       case 'cancel':
       case 'cancelled':
       case 'cancellation':
-        return Icons.cancel_outlined;
+        return AppIcons.closeCircle;
       case 'reactivate':
       case 'reactivated':
       case 'reactivation':
-        return Icons.refresh;
+        return AppIcons.refresh;
       case 'create':
       case 'created':
       case 'creation':
-        return Icons.add_box_outlined;
+        return AppIcons.addSquare;
       case 'expire':
       case 'expired':
       case 'expiration':
-        return Icons.timer_off_outlined;
+        return AppIcons.timerOff;
       case 'renew':
       case 'renewed':
-        return Icons.autorenew;
+        return AppIcons.refresh;
       case 'auto_renew_enabled':
-        return Icons.autorenew;
+        return AppIcons.refresh;
       case 'auto_renew_disabled':
-        return Icons.sync_disabled;
+        return AppIcons.cloudOff;
       case 'trial_started':
       case 'trial_ended':
-        return Icons.hourglass_bottom;
+        return AppIcons.hourglass;
       case 'payment_received':
-        return Icons.payments_outlined;
+        return AppIcons.money;
       case 'payment_failed':
-        return Icons.money_off;
+        return AppIcons.moneyOff;
       default:
-        return Icons.edit_outlined;
+        return AppIcons.edit;
     }
   }
 

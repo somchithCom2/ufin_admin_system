@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
@@ -81,6 +82,10 @@ class _UnitFormState extends State<_UnitForm> {
   bool get _hasExtraNames =>
       _extraLanguages.any((l) => _names[l.$1]!.text.trim().isNotEmpty);
 
+  /// Drives the SVG chevron, which ExpansionTile only rotates for its own
+  /// default icon.
+  late bool _moreLanguagesOpen = _hasExtraNames;
+
   @override
   void dispose() {
     for (final c in [
@@ -154,7 +159,7 @@ class _UnitFormState extends State<_UnitForm> {
   Widget build(BuildContext context) {
     return AppFormModal(
       formKey: _formKey,
-      icon: _isEdit ? Icons.edit_outlined : Icons.straighten_rounded,
+      icon: _isEdit ? AppIcons.edit : AppIcons.ruler,
       title: _isEdit
           ? context.tr(ShopTypeText.editUnit)
           : context.tr(ShopTypeText.newUnit),
@@ -200,6 +205,7 @@ class _UnitFormState extends State<_UnitForm> {
               flex: const [3, 2],
               children: [
                 DropdownButtonFormField<String>(
+                  icon: const AppIcon(AppIcons.chevronDown, size: 20),
                   initialValue: _category,
                   isExpanded: true,
                   decoration: InputDecoration(
@@ -269,7 +275,14 @@ class _UnitFormState extends State<_UnitForm> {
                 context,
               ).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                initiallyExpanded: _hasExtraNames,
+                initiallyExpanded: _moreLanguagesOpen,
+                onExpansionChanged: (open) =>
+                    setState(() => _moreLanguagesOpen = open),
+                trailing: AnimatedRotation(
+                  turns: _moreLanguagesOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: const AppIcon(AppIcons.chevronDown, size: 20),
+                ),
                 tilePadding: EdgeInsets.zero,
                 childrenPadding: const EdgeInsets.only(top: 4),
                 title: Text(

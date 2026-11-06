@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -41,9 +42,7 @@ class _SystemConfigurationPageState
     final configAsync = ref.watch(systemConfigProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr(SysText.systemConfiguration)),
-      ),
+      appBar: AppBar(title: Text(context.tr(SysText.systemConfiguration))),
       body: ContentWidth(
         child: configAsync.when(
           loading: () => const AppLoadingView(),
@@ -69,8 +68,8 @@ class _SystemConfigurationPageState
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
+                        AppIcon(
+                          AppIcons.warning,
                           color: context.colors.error,
                           size: 32,
                         ),
@@ -172,10 +171,10 @@ class _SystemConfigurationPageState
                             ElevatedButton.icon(
                               onPressed: () =>
                                   _showMaintenanceModeDialog(context, config),
-                              icon: Icon(
+                              icon: AppIcon(
                                 config.isMaintenanceMode
-                                    ? Icons.stop
-                                    : Icons.play_arrow,
+                                    ? AppIcons.square
+                                    : AppIcons.play,
                               ),
                               label: Text(
                                 config.isMaintenanceMode
@@ -249,7 +248,7 @@ class _SystemConfigurationPageState
                           context,
                           'Android',
                           config.minSupportedAndroidVersion,
-                          Icons.android,
+                          AppIcons.android,
                           context.status.success,
                         ),
                         const SizedBox(height: 12),
@@ -257,7 +256,7 @@ class _SystemConfigurationPageState
                           context,
                           'iOS',
                           config.minSupportedIosVersion,
-                          Icons.apple,
+                          AppIcons.apple,
                           context.colors.onSurface,
                         ),
                         const SizedBox(height: 12),
@@ -265,7 +264,7 @@ class _SystemConfigurationPageState
                           context,
                           'Windows',
                           config.minSupportedWindowsVersion,
-                          Icons.desktop_mac,
+                          AppIcons.monitor,
                           context.status.info,
                         ),
                         const SizedBox(height: 12),
@@ -273,7 +272,7 @@ class _SystemConfigurationPageState
                           context,
                           'macOS',
                           config.minSupportedMacosVersion,
-                          Icons.laptop_mac,
+                          AppIcons.laptop,
                           context.status.neutral,
                         ),
                         const SizedBox(height: 12),
@@ -281,7 +280,7 @@ class _SystemConfigurationPageState
                           context,
                           'Web',
                           config.minSupportedWebVersion,
-                          Icons.language,
+                          AppIcons.globe,
                           context.status.info,
                         ),
                         const SizedBox(height: 16),
@@ -290,7 +289,7 @@ class _SystemConfigurationPageState
                           child: ElevatedButton.icon(
                             onPressed: () =>
                                 _showUpdateVersionDialog(context, config),
-                            icon: const Icon(Icons.edit),
+                            icon: const AppIcon(AppIcons.edit),
                             label: Text(context.tr(SysText.updateVersions)),
                           ),
                         ),
@@ -380,7 +379,7 @@ class _SystemConfigurationPageState
     BuildContext context,
     String platform,
     String version,
-    IconData icon,
+    AppIconData icon,
     Color color,
   ) {
     return Container(
@@ -391,7 +390,7 @@ class _SystemConfigurationPageState
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
+          AppIcon(icon, color: color, size: 24),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,7 +516,7 @@ class _SystemConfigurationPageState
                           ? completionTime.toString()
                           : context.tr(CommonText.notSet),
                     ),
-                    trailing: const Icon(Icons.access_time),
+                    trailing: const AppIcon(AppIcons.clock),
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,

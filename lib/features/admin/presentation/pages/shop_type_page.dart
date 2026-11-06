@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -31,7 +32,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () =>
                 ref.read(shopTypesProvider.notifier).loadShopTypes(),
           ),
@@ -39,7 +40,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateDialog(),
-        icon: const Icon(Icons.add),
+        icon: const AppIcon(AppIcons.add),
         label: Text(context.tr(ShopTypeText.addType)),
       ),
       body: ContentWidth(
@@ -49,7 +50,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
             ? _buildErrorView(shopTypesState.error!)
             : shopTypesState.shopTypes.isEmpty
             ? AppEmptyView(
-                icon: Icons.category_outlined,
+                icon: AppIcons.shapes,
                 title: context.tr(ShopTypeText.noShopTypesYet),
                 message: context.tr(ShopTypeText.addAShopTypeTo),
               )
@@ -92,7 +93,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
             backgroundColor: shopType.enabled
                 ? context.status.success.withValues(alpha: 0.1)
                 : context.status.neutral.withValues(alpha: 0.1),
-            child: Icon(
+            child: AppIcon(
               shopTypeIcon(shopType.code),
               color: shopType.enabled
                   ? context.status.success
@@ -136,13 +137,14 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
             ],
           ),
           trailing: PopupMenuButton<String>(
+            icon: const AppIcon(AppIcons.moreVertical),
             onSelected: (action) => _handleAction(shopType, action),
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'view',
                 child: Row(
                   children: [
-                    Icon(Icons.visibility),
+                    AppIcon(AppIcons.eye),
                     SizedBox(width: 8),
                     Text(context.tr(ShopTypeText.viewDetails)),
                   ],
@@ -152,7 +154,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit),
+                    AppIcon(AppIcons.edit),
                     SizedBox(width: 8),
                     Text(context.tr(CommonText.edit)),
                   ],
@@ -162,10 +164,8 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 value: 'toggle',
                 child: Row(
                   children: [
-                    Icon(
-                      shopType.enabled
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                    AppIcon(
+                      shopType.enabled ? AppIcons.eyeOff : AppIcons.eye,
                       color: shopType.enabled
                           ? context.status.warning
                           : context.status.success,
@@ -183,7 +183,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, color: context.colors.error),
+                    AppIcon(AppIcons.delete, color: context.colors.error),
                     SizedBox(width: 8),
                     Text(context.tr(CommonText.delete)),
                   ],
@@ -236,7 +236,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
         title: context.tr(ShopTypeText.disable(shopType.name)),
         message: context.tr(ShopTypeText.newShopsCanNoLonger),
         confirmLabel: context.tr(CommonText.disable),
-        icon: Icons.toggle_off_outlined,
+        icon: AppIcons.toggleOff,
       );
       if (!ok || !mounted) return;
     }
@@ -278,7 +278,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                     backgroundColor: shopType.enabled
                         ? context.status.success.withValues(alpha: 0.1)
                         : context.status.neutral.withValues(alpha: 0.1),
-                    child: Icon(
+                    child: AppIcon(
                       shopTypeIcon(shopType.code),
                       size: 30,
                       color: shopType.enabled
@@ -456,7 +456,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
       message: context.tr(ShopTypeText.thisCannotBeUndone),
       confirmLabel: context.tr(CommonText.delete),
       destructive: true,
-      icon: Icons.delete_outline_rounded,
+      icon: AppIcons.delete,
     );
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);

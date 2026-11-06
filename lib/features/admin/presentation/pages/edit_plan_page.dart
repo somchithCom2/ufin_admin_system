@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -234,7 +235,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.save),
+                  : const AppIcon(AppIcons.save),
               label: Text(context.tr(CommonText.save)),
             ),
           ],
@@ -356,6 +357,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                   if (widget.plan == null &&
                       ref.watch(plansProvider).plans.isNotEmpty)
                     DropdownButtonFormField<int>(
+                      icon: const AppIcon(AppIcons.chevronDown, size: 20),
                       decoration: InputDecoration(
                         labelText: context.tr(
                           PlanEditText.copyFeaturesFromAnExisting,

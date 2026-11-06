@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
 import 'package:ufin_admin_system/core/settings/app_settings.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -28,105 +29,55 @@ final adminScaffoldKey = GlobalKey<ScaffoldState>();
 
 /// Sections of the admin console. Order defines the sidebar order.
 enum AdminSection {
-  dashboard(
-    NavText.dashboard,
-    Icons.space_dashboard_outlined,
-    Icons.space_dashboard_rounded,
-    null,
-  ),
-  shops(
-    NavText.shops,
-    Icons.storefront_outlined,
-    Icons.storefront_rounded,
-    NavText.groupManagement,
-  ),
-  users(
-    NavText.users,
-    Icons.people_outline_rounded,
-    Icons.people_rounded,
-    null,
-  ),
-  shopTypes(
-    NavText.shopTypes,
-    Icons.category_outlined,
-    Icons.category_rounded,
-    null,
-  ),
-  units(
-    NavText.units,
-    Icons.straighten_outlined,
-    Icons.straighten_rounded,
-    null,
-  ),
-  deletedUsers(
-    NavText.deletedUsers,
-    Icons.person_remove_outlined,
-    Icons.person_remove_rounded,
-    null,
-  ),
+  dashboard(NavText.dashboard, AppIcons.dashboard, null),
+  shops(NavText.shops, AppIcons.shop, NavText.groupManagement),
+  users(NavText.users, AppIcons.users, null),
+  shopTypes(NavText.shopTypes, AppIcons.shapes, null),
+  units(NavText.units, AppIcons.ruler, null),
+  deletedUsers(NavText.deletedUsers, AppIcons.userX, null),
   subscriptions(
     NavText.subscriptions,
-    Icons.card_membership_outlined,
-    Icons.card_membership_rounded,
+    AppIcons.crown,
     NavText.groupSubscriptions,
   ),
-  plans(
-    NavText.plans,
-    Icons.inventory_2_outlined,
-    Icons.inventory_2_rounded,
-    null,
-  ),
-  upgradeRequests(
-    NavText.upgradeRequests,
-    Icons.upgrade_outlined,
-    Icons.upgrade_rounded,
-    null,
-  ),
-  statistics(
-    NavText.statistics,
-    Icons.analytics_outlined,
-    Icons.analytics_rounded,
-    null,
-  ),
-  payments(
-    NavText.payments,
-    Icons.payments_outlined,
-    Icons.payments_rounded,
-    NavText.groupFinance,
-  ),
-  revenue(
-    NavText.revenue,
-    Icons.bar_chart_outlined,
-    Icons.bar_chart_rounded,
-    null,
-  ),
-  dailySales(
-    NavText.dailySales,
-    Icons.trending_up_outlined,
-    Icons.trending_up_rounded,
-    null,
-  ),
-  appReleases(
-    NavText.appReleases,
-    Icons.system_update_outlined,
-    Icons.system_update_rounded,
-    NavText.groupSystem,
-  ),
-  systemConfig(
-    NavText.systemConfig,
-    Icons.settings_outlined,
-    Icons.settings_rounded,
-    null,
-  );
+  plans(NavText.plans, AppIcons.package, null),
+  upgradeRequests(NavText.upgradeRequests, AppIcons.upgrade, null),
+  statistics(NavText.statistics, AppIcons.lineChart, null),
+  payments(NavText.payments, AppIcons.money, NavText.groupFinance),
+  revenue(NavText.revenue, AppIcons.barChart, null),
+  dailySales(NavText.dailySales, AppIcons.trendingUp, null),
+  appReleases(NavText.appReleases, AppIcons.appUpdate, NavText.groupSystem),
+  systemConfig(NavText.systemConfig, AppIcons.settings, null);
 
   final Tr title;
-  final IconData icon;
-  final IconData selectedIcon;
+
+  /// Line icons have no filled variant: the nav indicator and colour mark
+  /// the selected section instead.
+  final AppIconData icon;
 
   /// Group header shown above this item; `null` continues the previous group.
   final Tr? group;
 
-  const AdminSection(this.title, this.icon, this.selectedIcon, this.group);
+  const AdminSection(this.title, this.icon, this.group);
+
+  /// Short label for the phone's bottom bar, where [title] would wrap.
+  Tr get tabTitle => switch (this) {
+    dashboard => NavText.tabDashboard,
+    shops => NavText.tabShops,
+    users => NavText.tabUsers,
+    shopTypes => NavText.tabShopTypes,
+    units => NavText.tabUnits,
+    deletedUsers => NavText.tabDeletedUsers,
+    subscriptions => NavText.tabSubscriptions,
+    plans => NavText.tabPlans,
+    upgradeRequests => NavText.tabUpgradeRequests,
+    statistics => NavText.tabStatistics,
+    payments => NavText.tabPayments,
+    revenue => NavText.tabRevenue,
+    dailySales => NavText.tabDailySales,
+    appReleases => NavText.tabAppReleases,
+    systemConfig => NavText.tabSystemConfig,
+  };
 
   /// Sections pinned to the phone's bottom bar; the rest live under "More".
   static const primary = [dashboard, shops, subscriptions, payments];
@@ -235,7 +186,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
       title: context.tr(NavText.signOutTitle),
       message: context.tr(NavText.signOutMessage),
       confirmLabel: context.tr(NavText.signOut),
-      icon: Icons.logout_rounded,
+      icon: AppIcons.logout,
       destructive: true,
     );
     if (ok && mounted) {
@@ -263,7 +214,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
             ),
           PaletteItem(
             title: SettingsText.toggleTheme,
-            icon: Icons.contrast_rounded,
+            icon: AppIcons.sunMoon,
             isAction: true,
             onSelect: () {
               if (mounted) toggleBrightness(context, ref);
@@ -271,13 +222,13 @@ class _AdminShellState extends ConsumerState<AdminShell> {
           ),
           PaletteItem(
             title: SettingsText.switchLanguage,
-            icon: Icons.translate_rounded,
+            icon: AppIcons.translate,
             isAction: true,
             onSelect: () => toggleLanguage(ref),
           ),
           PaletteItem(
             title: SettingsText.settings,
-            icon: Icons.tune_rounded,
+            icon: AppIcons.sliders,
             isAction: true,
             onSelect: () {
               if (mounted) showAppSettings(context);
@@ -285,7 +236,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
           ),
           PaletteItem(
             title: NavText.signOut,
-            icon: Icons.logout_rounded,
+            icon: AppIcons.logout,
             isAction: true,
             onSelect: _confirmLogout,
           ),
@@ -512,10 +463,7 @@ class _Sidebar extends ConsumerWidget {
                       if (canToggle)
                         IconButton(
                           tooltip: context.tr(NavText.collapseSidebar),
-                          icon: const Icon(
-                            Icons.keyboard_double_arrow_left_rounded,
-                            size: 20,
-                          ),
+                          icon: const AppIcon(AppIcons.chevronsLeft, size: 20),
                           onPressed: () => ref
                               .read(appSettingsProvider.notifier)
                               .toggleSidebar(),
@@ -560,7 +508,7 @@ class _SearchButton extends StatelessWidget {
       return Tooltip(
         message: '${context.tr(NavText.jumpTo)}  $shortcut',
         child: IconButton(
-          icon: const Icon(Icons.search_rounded, size: 21),
+          icon: const AppIcon(AppIcons.search, size: 21),
           onPressed: onTap,
         ),
       );
@@ -576,8 +524,8 @@ class _SearchButton extends StatelessWidget {
           child: Row(
             children: [
               const SizedBox(width: 10),
-              Icon(
-                Icons.search_rounded,
+              AppIcon(
+                AppIcons.search,
                 size: 18,
                 color: scheme.onSurfaceVariant,
               ),
@@ -667,12 +615,12 @@ class _SidebarFooter extends ConsumerWidget {
         const PopupMenuDivider(),
         PopupMenuItem(
           value: () => showAppSettings(context),
-          child: _MenuRow(Icons.tune_rounded, ctx.tr(SettingsText.settings)),
+          child: _MenuRow(AppIcons.sliders, ctx.tr(SettingsText.settings)),
         ),
         PopupMenuItem(
           value: onLogout,
           child: _MenuRow(
-            Icons.logout_rounded,
+            AppIcons.logout,
             ctx.tr(NavText.signOut),
             color: scheme.error,
           ),
@@ -714,8 +662,8 @@ class _SidebarFooter extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.unfold_more_rounded,
+                  AppIcon(
+                    AppIcons.chevronsUpDown,
                     size: 18,
                     color: scheme.onSurfaceVariant,
                   ),
@@ -732,10 +680,7 @@ class _SidebarFooter extends ConsumerWidget {
             if (canToggle)
               IconButton(
                 tooltip: context.tr(NavText.expandSidebar),
-                icon: const Icon(
-                  Icons.keyboard_double_arrow_right_rounded,
-                  size: 20,
-                ),
+                icon: const AppIcon(AppIcons.chevronsRight, size: 20),
                 onPressed: () =>
                     ref.read(appSettingsProvider.notifier).toggleSidebar(),
               ),
@@ -775,7 +720,7 @@ class _SidebarFooter extends ConsumerWidget {
 }
 
 class _MenuRow extends StatelessWidget {
-  final IconData icon;
+  final AppIconData icon;
   final String label;
   final Color? color;
   const _MenuRow(this.icon, this.label, {this.color});
@@ -784,7 +729,11 @@ class _MenuRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: color ?? context.colors.onSurfaceVariant),
+        AppIcon(
+          icon,
+          size: 18,
+          color: color ?? context.colors.onSurfaceVariant,
+        ),
         const SizedBox(width: 12),
         Text(label, style: TextStyle(color: color)),
       ],
@@ -816,8 +765,8 @@ class _NavTile extends StatelessWidget {
     final (Color badgeBg, Color badgeFg) = badge?.urgent ?? false
         ? (scheme.primary, scheme.onPrimary)
         : (status.warningContainer, status.onWarningContainer);
-    final icon = Icon(
-      selected ? section.selectedIcon : section.icon,
+    final icon = AppIcon(
+      section.icon,
       color: selected ? scheme.primary : scheme.onSurfaceVariant,
       size: 20,
     );
@@ -958,24 +907,19 @@ class _BottomNav extends ConsumerWidget {
         destinations: [
           for (final s in primary)
             NavigationDestination(
-              icon: withBadge(Icon(s.icon), _navBadge(s, queue)),
-              selectedIcon: withBadge(
-                Icon(s.selectedIcon),
-                _navBadge(s, queue),
-              ),
-              label: context.tr(s.title),
+              icon: withBadge(AppIcon(s.icon), _navBadge(s, queue)),
+              label: context.tr(s.tabTitle),
+              tooltip: context.tr(s.title),
             ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: hiddenWaiting > 0,
               label: Text(_badgeText(hiddenWaiting)),
-              child: Icon(
-                index < 0 ? current.selectedIcon : Icons.grid_view_outlined,
-              ),
+              child: AppIcon(index < 0 ? current.icon : AppIcons.menu),
             ),
             label: index < 0
-                ? context.tr(current.title)
-                : context.tr(NavText.more),
+                ? context.tr(current.tabTitle)
+                : context.tr(NavText.tabMore),
             tooltip: context.tr(NavText.allSections),
           ),
         ],
@@ -1045,7 +989,7 @@ class _MoreSheet extends ConsumerWidget {
               ),
               IconButton(
                 tooltip: context.tr(NavText.jumpTo),
-                icon: const Icon(Icons.search_rounded),
+                icon: const AppIcon(AppIcons.search),
                 onPressed: onSearch,
               ),
             ],
@@ -1082,7 +1026,7 @@ class _MoreSheet extends ConsumerWidget {
               side: BorderSide(color: scheme.error.withValues(alpha: 0.4)),
             ),
             onPressed: onLogout,
-            icon: const Icon(Icons.logout_rounded, size: 18),
+            icon: const AppIcon(AppIcons.logout, size: 18),
             label: Text(context.tr(NavText.signOut)),
           ),
         ],
@@ -1151,8 +1095,8 @@ class _SectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = Icon(
-      selected ? section.selectedIcon : section.icon,
+    final icon = AppIcon(
+      section.icon,
       size: 22,
       color: selected ? scheme.primary : scheme.onSurfaceVariant,
     );

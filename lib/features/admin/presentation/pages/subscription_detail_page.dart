@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'subscription_action_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -110,13 +111,13 @@ class _SubscriptionDetailPageState
         title: Text(_subscription.shopName),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history_rounded),
+            icon: const AppIcon(AppIcons.history),
             tooltip: context.tr(CommonText.history),
             onPressed: _navigateToHistory,
           ),
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: _refreshSubscription,
           ),
         ],
@@ -213,23 +214,23 @@ class _SubscriptionDetailPageState
               FilledButton.icon(
                 onPressed: () =>
                     _manageSubscription(SubscriptionAction.reactivate),
-                icon: const Icon(Icons.restore_rounded, size: 18),
+                icon: const AppIcon(AppIcons.undo, size: 18),
                 label: Text(context.tr(SubsText.reactivate)),
               ),
             FilledButton.tonalIcon(
               onPressed: _showExtendForm,
-              icon: const Icon(Icons.add_rounded, size: 18),
+              icon: const AppIcon(AppIcons.add, size: 18),
               label: Text(context.tr(SubsText.extend)),
             ),
             // Open in every state: a locked Free shop is what it is mostly for.
             OutlinedButton.icon(
               onPressed: _showResetForm,
-              icon: const Icon(Icons.restart_alt_rounded, size: 18),
+              icon: const AppIcon(AppIcons.reset, size: 18),
               label: Text(context.tr(CommonText.reset)),
             ),
             OutlinedButton.icon(
               onPressed: _navigateToChangePlan,
-              icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+              icon: const AppIcon(AppIcons.swap, size: 18),
               label: Text(context.tr(SubsText.changePlan)),
             ),
             // Shortening a period only applies to a running subscription; the
@@ -238,7 +239,7 @@ class _SubscriptionDetailPageState
             if (_isRunning)
               OutlinedButton.icon(
                 onPressed: _showReduceForm,
-                icon: const Icon(Icons.remove_rounded, size: 18),
+                icon: const AppIcon(AppIcons.minus, size: 18),
                 label: Text(context.tr(SubsText.reduce)),
               ),
             if (_isRunning)
@@ -247,7 +248,7 @@ class _SubscriptionDetailPageState
                 style: TextButton.styleFrom(
                   foregroundColor: context.colors.error,
                 ),
-                icon: const Icon(Icons.cancel_outlined, size: 18),
+                icon: const AppIcon(AppIcons.closeCircle, size: 18),
                 label: Text(context.tr(SubsText.cancelSubscription)),
               ),
           ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -89,8 +90,8 @@ class FormNotice extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            warning ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+          AppIcon(
+            warning ? AppIcons.warning : AppIcons.info,
             size: 18,
             color: color,
           ),
@@ -178,7 +179,7 @@ class _LinkBranchFormState extends ConsumerState<_LinkBranchForm> {
     final shop = widget.shop;
     return AppFormModal(
       formKey: _formKey,
-      icon: Icons.account_tree_outlined,
+      icon: AppIcons.network,
       title: context.tr(ShopText.linkAsBranch2),
       subtitle: '${shop.name} · #${shop.id}',
       submitLabel: context.tr(ShopText.linkAsBranch2),
@@ -314,7 +315,7 @@ class _UnlinkBranchFormState extends ConsumerState<_UnlinkBranchForm> {
     final shop = widget.shop;
     return AppFormModal(
       formKey: _formKey,
-      icon: Icons.call_split_rounded,
+      icon: AppIcons.split,
       title: context.tr(ShopText.unlinkFromBranchGroup),
       subtitle: context.tr(
         ShopText.branchOf3(
@@ -422,7 +423,7 @@ class _ChangeOwnerFormState extends ConsumerState<_ChangeOwnerForm> {
     final shop = widget.shop;
     return AppFormModal(
       formKey: _formKey,
-      icon: Icons.swap_horiz_rounded,
+      icon: AppIcons.swap,
       title: context.tr(ShopText.changeOwner2),
       subtitle: context.tr(
         ShopText.ownedBy(shop.name, shop.ownerUsername ?? '#${shop.ownerId}'),
@@ -478,7 +479,7 @@ Future<void> showOwnershipResultDialog(
   return showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      icon: Icon(Icons.check_circle_rounded, color: ctx.status.success),
+      icon: AppIcon(AppIcons.checkCircle, color: ctx.status.success),
       title: Text(title),
       content: SizedBox(
         width: 460,
@@ -524,10 +525,8 @@ Future<void> showOwnershipResultDialog(
                       ListTile(
                         dense: true,
                         contentPadding: EdgeInsets.zero,
-                        leading: Icon(
-                          person.previousOwner
-                              ? Icons.key_rounded
-                              : Icons.person_outline_rounded,
+                        leading: AppIcon(
+                          person.previousOwner ? AppIcons.key : AppIcons.person,
                         ),
                         title: Text(person.displayName),
                         subtitle: Text(
@@ -627,7 +626,7 @@ class _SheetScaffold extends StatelessWidget {
                 ),
                 IconButton(
                   tooltip: context.tr(CommonText.close),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const AppIcon(AppIcons.close),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -676,7 +675,7 @@ class _BranchesSheetState extends ConsumerState<_BranchesSheet> {
           final branches = snapshot.data!;
           if (branches.isEmpty) {
             return AppEmptyView(
-              icon: Icons.account_tree_outlined,
+              icon: AppIcons.network,
               title: context.tr(ShopText.noBranches),
               message: context.tr(ShopText.linkAnExistingShopWith),
             );
@@ -690,7 +689,7 @@ class _BranchesSheetState extends ConsumerState<_BranchesSheet> {
               final status = branch.isDeleted ? 'deleted' : branch.status;
               return ListTile(
                 leading: IconBadge(
-                  icon: Icons.storefront_rounded,
+                  icon: AppIcons.shop,
                   color: StatusTone.fromStatus(status).foreground(context),
                   size: 40,
                 ),
@@ -774,7 +773,7 @@ class _OwnerHistorySheetState extends ConsumerState<_OwnerHistorySheet> {
           String who(int? id) => id == null ? '—' : names[id] ?? '#$id';
           if (changes.isEmpty) {
             return AppEmptyView(
-              icon: Icons.history_rounded,
+              icon: AppIcons.history,
               title: context.tr(ShopText.noOwnerChanges),
               message: context.tr(ShopText.thisShopHasKeptThe),
             );

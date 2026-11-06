@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -65,7 +66,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: state.isLoading ? null : _refreshAll,
           ),
           const SizedBox(width: 8),
@@ -84,7 +85,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           onRetry: _refreshAll,
         ),
         (_, _, null) => AppEmptyView(
-          icon: Icons.space_dashboard_outlined,
+          icon: AppIcons.dashboard,
           title: context.tr(DashText.noData),
           message: context.tr(DashText.noDataHint),
         ),
@@ -142,7 +143,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     caption: context.tr(
                       DashText.nActive(_number.format(stats.activeShops)),
                     ),
-                    icon: Icons.storefront_rounded,
+                    icon: AppIcons.shop,
                     onTap: () => _goTo(AdminSection.shops),
                   ),
                   StatCard(
@@ -151,7 +152,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     caption: context.tr(
                       DashText.nActive(_number.format(stats.activeUsers)),
                     ),
-                    icon: Icons.people_rounded,
+                    icon: AppIcons.users,
                     onTap: () => _goTo(AdminSection.users),
                   ),
                   StatCard(
@@ -162,7 +163,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         _number.format(stats.activeSubscriptions),
                       ),
                     ),
-                    icon: Icons.card_membership_rounded,
+                    icon: AppIcons.crown,
                     onTap: () => _goTo(AdminSection.subscriptions),
                   ),
                   StatCard(
@@ -176,7 +177,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                               _number.format(stats.totalPaymentsThisMonth),
                             ),
                           ),
-                    icon: Icons.payments_rounded,
+                    icon: AppIcons.money,
                     onTap: () => _goTo(AdminSection.revenue),
                   ),
                 ],
@@ -226,7 +227,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               if (stats.recentActivities.isNotEmpty)
                 SectionCard(
                   title: context.tr(DashText.recentActivity),
-                  icon: Icons.history_rounded,
+                  icon: AppIcons.history,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   child: Column(
                     children: [
@@ -251,7 +252,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final scheme = Theme.of(context).colorScheme;
     return SectionCard(
       title: context.tr(NavText.shops),
-      icon: Icons.storefront_outlined,
+      icon: AppIcons.shop,
       trailing: TextButton(
         onPressed: () => _goTo(AdminSection.shops),
         child: Text(context.tr(CommonText.viewAll)),
@@ -306,7 +307,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final status = context.status;
     return SectionCard(
       title: context.tr(NavText.subscriptions),
-      icon: Icons.card_membership_outlined,
+      icon: AppIcons.crown,
       trailing: TextButton(
         onPressed: () => _goTo(AdminSection.subscriptions),
         child: Text(context.tr(CommonText.viewAll)),
@@ -325,7 +326,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget _revenuePanel(AdminDashboardStats s) {
     return SectionCard(
       title: context.tr(DashText.revenue),
-      icon: Icons.account_balance_wallet_outlined,
+      icon: AppIcons.wallet,
       trailing: TextButton(
         onPressed: () => _goTo(AdminSection.revenue),
         child: Text(context.tr(CommonText.report)),
@@ -383,7 +384,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final scheme = Theme.of(context).colorScheme;
     return SectionCard(
       title: context.tr(DashText.byPlan),
-      icon: Icons.inventory_2_outlined,
+      icon: AppIcons.package,
       child: Column(
         children: [
           for (final e in entries)
@@ -529,11 +530,12 @@ class _ActivityTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = context.status;
     final scheme = Theme.of(context).colorScheme;
-    final (IconData icon, Color color) = switch (activity.type.toUpperCase()) {
-      'SHOP_CREATED' => (Icons.add_business_rounded, status.success),
-      'SUBSCRIPTION_UPGRADED' => (Icons.upgrade_rounded, status.info),
-      'PAYMENT_RECEIVED' => (Icons.payments_rounded, status.warning),
-      _ => (Icons.info_outline_rounded, status.neutral),
+    final (AppIconData icon, Color color) = switch (activity.type
+        .toUpperCase()) {
+      'SHOP_CREATED' => (AppIcons.addBusiness, status.success),
+      'SUBSCRIPTION_UPGRADED' => (AppIcons.upgrade, status.info),
+      'PAYMENT_RECEIVED' => (AppIcons.money, status.warning),
+      _ => (AppIcons.info, status.neutral),
     };
 
     return ListTile(

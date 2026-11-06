@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ufin_admin_system/config/routes/app_routes.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
@@ -120,10 +121,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 autocorrect: false,
                 decoration: InputDecoration(
                   hintText: context.tr(AuthText.usernameHint),
-                  prefixIcon: const Icon(
-                    Icons.person_outline_rounded,
-                    size: 20,
-                  ),
+                  prefixIcon: const AppIcon(AppIcons.person, size: 20),
                 ),
                 onChanged: (_) => _clearErrorOnEdit(),
                 onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
@@ -142,15 +140,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   hintText: context.tr(AuthText.passwordHint),
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                  prefixIcon: const AppIcon(AppIcons.lock, size: 20),
                   suffixIcon: IconButton(
                     tooltip: context.tr(
                       _obscure ? AuthText.showPassword : AuthText.hidePassword,
                     ),
-                    icon: Icon(
-                      _obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
+                    icon: AppIcon(
+                      _obscure ? AppIcons.eye : AppIcons.eyeOff,
                       size: 20,
                     ),
                     onPressed: () => setState(() => _obscure = !_obscure),
@@ -189,8 +185,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               const SizedBox(height: AppSpacing.xl),
               Row(
                 children: [
-                  Icon(
-                    Icons.shield_outlined,
+                  AppIcon(
+                    AppIcons.shieldLock,
                     size: 14,
                     color: scheme.onSurfaceVariant,
                   ),
@@ -263,9 +259,9 @@ class _BrandPanel extends StatelessWidget {
     final scheme = context.colors;
     final text = context.text;
     final points = [
-      (Icons.verified_outlined, AuthText.heroPoint1),
-      (Icons.account_balance_wallet_outlined, AuthText.heroPoint2),
-      (Icons.rocket_launch_outlined, AuthText.heroPoint3),
+      (AppIcons.badgeCheck, AuthText.heroPoint1),
+      (AppIcons.wallet, AuthText.heroPoint2),
+      (AppIcons.rocket, AuthText.heroPoint3),
     ];
     return Container(
       color: scheme.surfaceContainerLowest,
@@ -307,7 +303,7 @@ class _BrandPanel extends StatelessWidget {
                             color: scheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(9),
                           ),
-                          child: Icon(icon, size: 17, color: scheme.primary),
+                          child: AppIcon(icon, size: 17, color: scheme.primary),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
@@ -371,7 +367,7 @@ class _ErrorBanner extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.error_outline_rounded, size: 18, color: scheme.error),
+            AppIcon(AppIcons.errorCircle, size: 18, color: scheme.error),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

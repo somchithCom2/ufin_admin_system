@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -28,7 +29,7 @@ Future<void> showShopDataResetResultDialog(
 ) => showDialog<void>(
   context: context,
   builder: (ctx) => AlertDialog(
-    icon: Icon(Icons.check_circle_rounded, color: ctx.status.success),
+    icon: AppIcon(AppIcons.checkCircle, color: ctx.status.success),
     title: Text(context.tr(ShopText.shopDataReset)),
     content: SizedBox(
       width: 420,
@@ -169,7 +170,7 @@ class _ResetShopDataFormState extends ConsumerState<_ResetShopDataForm> {
     final shop = widget.shop;
     return AppFormModal(
       formKey: _formKey,
-      icon: Icons.restart_alt_rounded,
+      icon: AppIcons.reset,
       title: context.tr(ShopText.resetShopData),
       subtitle: '${shop.name} · #${shop.id}',
       submitLabel: context.tr(ShopText.resetData2),

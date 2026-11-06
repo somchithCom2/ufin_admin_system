@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -63,7 +64,7 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => _load(page: _currentPage),
           ),
         ],
@@ -181,7 +182,7 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
 
   Widget _buildEmpty() {
     return AppEmptyView(
-      icon: Icons.upgrade_rounded,
+      icon: AppIcons.upgrade,
       title: context.tr(FinText.noUpgradeRequests),
       message: context.tr(FinText.requestsFromShopsWantingTo),
     );
@@ -195,7 +196,7 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
         children: [
           IconButton(
             tooltip: context.tr(FinText.previousPage2),
-            icon: const Icon(Icons.chevron_left_rounded),
+            icon: const AppIcon(AppIcons.chevronLeft),
             onPressed: _currentPage > 0
                 ? () => _load(page: _currentPage - 1)
                 : null,
@@ -203,7 +204,7 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
           Text(context.tr(FinText.pageOf2(_currentPage + 1, state.totalPages))),
           IconButton(
             tooltip: context.tr(FinText.nextPage2),
-            icon: const Icon(Icons.chevron_right_rounded),
+            icon: const AppIcon(AppIcons.chevronRight),
             onPressed: _currentPage < state.totalPages - 1
                 ? () => _load(page: _currentPage + 1)
                 : null,
@@ -249,7 +250,7 @@ Future<String?> _showReviewDialog(
         : context.tr(CommonText.reject),
     reasonLabel: context.tr(FinText.reviewNote),
     destructive: !approve,
-    icon: approve ? Icons.check_rounded : Icons.close_rounded,
+    icon: approve ? AppIcons.check : AppIcons.close,
   );
 }
 
@@ -305,7 +306,7 @@ class _RequestCard extends StatelessWidget {
                       request.fromPlanCode,
                   color: context.status.neutral,
                 ),
-                const Icon(Icons.arrow_forward_rounded, size: 16),
+                const AppIcon(AppIcons.arrowRight, size: 16),
                 _PlanBadge(
                   label:
                       request.toPlanName[context.language.name] ??
@@ -333,21 +334,21 @@ class _RequestCard extends StatelessWidget {
 
             // Meta
             _MetaRow(
-              icon: Icons.person_outline,
+              icon: AppIcons.person,
               text: context.tr(
                 FinText.requestedBy(request.requestedByUsername),
               ),
             ),
             _MetaRow(
-              icon: Icons.access_time,
+              icon: AppIcons.clock,
               text: dateFormat.format(request.createdAt.toLocal()),
             ),
             if (request.notes != null && request.notes!.isNotEmpty)
-              _MetaRow(icon: Icons.notes, text: request.notes!),
+              _MetaRow(icon: AppIcons.notes, text: request.notes!),
             if (request.reviewedByUsername != null) ...[
               const Divider(height: 16),
               _MetaRow(
-                icon: Icons.rate_review_outlined,
+                icon: AppIcons.message,
                 text: request.reviewedAt == null
                     ? context.tr(FinText.reviewedBy(request.reviewedByUsername))
                     : context.tr(
@@ -358,10 +359,7 @@ class _RequestCard extends StatelessWidget {
                       ),
               ),
               if (request.reviewNote != null && request.reviewNote!.isNotEmpty)
-                _MetaRow(
-                  icon: Icons.comment_outlined,
-                  text: request.reviewNote!,
-                ),
+                _MetaRow(icon: AppIcons.message, text: request.reviewNote!),
             ],
 
             // Actions (only for PENDING)
@@ -372,7 +370,7 @@ class _RequestCard extends StatelessWidget {
                 children: [
                   OutlinedButton.icon(
                     onPressed: () => onReject(null),
-                    icon: const Icon(Icons.close, size: 16),
+                    icon: const AppIcon(AppIcons.close, size: 16),
                     label: Text(context.tr(CommonText.reject)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.colors.error,
@@ -381,7 +379,7 @@ class _RequestCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   FilledButton.icon(
                     onPressed: () => onApprove(null),
-                    icon: const Icon(Icons.check_rounded, size: 16),
+                    icon: const AppIcon(AppIcons.check, size: 16),
                     label: Text(context.tr(CommonText.approve)),
                   ),
                 ],
@@ -421,7 +419,7 @@ class _PlanBadge extends StatelessWidget {
 }
 
 class _MetaRow extends StatelessWidget {
-  final IconData icon;
+  final AppIconData icon;
   final String text;
 
   const _MetaRow({required this.icon, required this.text});
@@ -433,7 +431,7 @@ class _MetaRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: context.colors.onSurfaceVariant),
+          AppIcon(icon, size: 14, color: context.colors.onSurfaceVariant),
           const SizedBox(width: 6),
           Expanded(
             child: Text(

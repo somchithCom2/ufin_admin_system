@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -54,7 +55,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => ref.read(plansProvider.notifier).loadPlans(),
           ),
         ],
@@ -74,7 +75,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                     )
                   : plansState.plans.isEmpty
                   ? AppEmptyView(
-                      icon: Icons.inventory_2_outlined,
+                      icon: AppIcons.package,
                       title: context.tr(SubsText.noPlansAvailable),
                     )
                   : _buildPlansList(plansState.plans),
@@ -187,12 +188,12 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Icon(
+                child: AppIcon(
                   isCurrentPlan
-                      ? Icons.check_circle_rounded
+                      ? AppIcons.checkCircle
                       : isSelected
-                      ? Icons.radio_button_checked_rounded
-                      : Icons.radio_button_unchecked_rounded,
+                      ? AppIcons.radioOn
+                      : AppIcons.radioOff,
                   size: 20,
                   color: isSelected || isCurrentPlan ? scheme.primary : muted,
                 ),
@@ -364,10 +365,10 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
     _ => context.tr(CommonText.change),
   };
 
-  IconData _actionIcon(String? changeType) => switch (changeType) {
-    'upgrade' => Icons.arrow_upward_rounded,
-    'downgrade' => Icons.arrow_downward_rounded,
-    _ => Icons.swap_horiz_rounded,
+  AppIconData _actionIcon(String? changeType) => switch (changeType) {
+    'upgrade' => AppIcons.arrowUp,
+    'downgrade' => AppIcons.arrowDown,
+    _ => AppIcons.swap,
   };
 
   Future<void> _confirmChange() async {

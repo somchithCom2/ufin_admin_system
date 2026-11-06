@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -118,14 +119,14 @@ class _UserPickerTile extends StatelessWidget {
           helperText: helperText,
           helperMaxLines: 3,
           errorText: field.errorText,
-          prefixIcon: const Icon(Icons.person_outline_rounded, size: 20),
+          prefixIcon: const AppIcon(AppIcons.person, size: 20),
           suffixIcon: clearable && value != null
               ? IconButton(
                   tooltip: context.tr(CommonText.clear),
-                  icon: const Icon(Icons.close_rounded, size: 18),
+                  icon: const AppIcon(AppIcons.close, size: 18),
                   onPressed: _clear,
                 )
-              : const Icon(Icons.unfold_more_rounded),
+              : const AppIcon(AppIcons.chevronsUpDown),
         ),
         child: value == null
             ? null
@@ -301,7 +302,7 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
                 ),
                 IconButton(
                   tooltip: context.tr(CommonText.close),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const AppIcon(AppIcons.close),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -320,7 +321,7 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
               },
               decoration: InputDecoration(
                 hintText: context.tr(UserText.searchByUsernameNamePhone),
-                prefixIcon: Icon(Icons.search_rounded, size: 20),
+                prefixIcon: AppIcon(AppIcons.search, size: 20),
               ),
             ),
           ),
@@ -342,7 +343,7 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
         );
       }
       return AppEmptyView(
-        icon: Icons.person_search_outlined,
+        icon: AppIcons.userSearch,
         title: context.tr(UserText.noAccountsFound),
         message: _search.text.trim().isEmpty
             ? null
@@ -363,7 +364,7 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
                   setState(() => _error = null);
                   _load();
                 },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
+                icon: const AppIcon(AppIcons.refresh, size: 18),
                 label: Text(context.tr(UserText.loadMoreFailedRetry)),
               ),
             ),
@@ -383,7 +384,7 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
         return ListTile(
           selected: isSelected,
           leading: IconBadge(
-            icon: Icons.person_rounded,
+            icon: AppIcons.person,
             color: context.colors.primary,
             size: 40,
           ),
@@ -407,7 +408,7 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
             overflow: TextOverflow.ellipsis,
           ),
           trailing: isSelected
-              ? Icon(Icons.check_circle_rounded, color: context.colors.primary)
+              ? AppIcon(AppIcons.checkCircle, color: context.colors.primary)
               : null,
           onTap: () => Navigator.of(context).pop(selection),
         );

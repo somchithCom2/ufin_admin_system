@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 /// Opens the extend or reduce form. [save] performs the change; the form stays
@@ -86,9 +87,7 @@ class _SubscriptionDaysFormState extends State<_SubscriptionDaysForm> {
     final reduce = widget.reduce;
     return AppFormModal(
       formKey: _formKey,
-      icon: reduce
-          ? Icons.remove_circle_outline_rounded
-          : Icons.add_circle_outline_rounded,
+      icon: reduce ? AppIcons.minusCircle : AppIcons.addCircle,
       title: reduce
           ? context.tr(SubsText.reduceSubscription)
           : context.tr(SubsText.extendSubscription),

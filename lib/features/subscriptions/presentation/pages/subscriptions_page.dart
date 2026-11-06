@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ufin_admin_system/config/routes/app_routes.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
 
 class SubscriptionsPage extends ConsumerWidget {
@@ -17,7 +18,7 @@ class SubscriptionsPage extends ConsumerWidget {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const AppIcon(AppIcons.logout),
             onPressed: () {
               ref.read(authStateProvider.notifier).logout();
               context.go(AppRoutes.login);
@@ -132,8 +133,8 @@ class SubscriptionsPage extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.check_circle,
+                    AppIcon(
+                      AppIcons.checkCircle,
                       size: 16,
                       color: Theme.of(context).primaryColor,
                     ),

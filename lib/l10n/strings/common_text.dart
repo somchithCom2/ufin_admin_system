@@ -24,6 +24,9 @@ abstract final class CommonText {
     'Clear all filters',
     'ລ້າງຕົວກັ່ນຕອງທັງໝົດ',
   );
+  static Tr clearFilter(Object? a0) =>
+      Tr('Clear $a0 filter', 'ລ້າງຕົວກັ່ນຕອງ $a0');
+  static const stock = Tr('Stock', 'ສະຕັອກ');
   static const search = Tr('Search', 'ຄົ້ນຫາ');
   static const searchHint = Tr('Search…', 'ຄົ້ນຫາ…');
   static const filter = Tr('Filter', 'ກັ່ນຕອງ');

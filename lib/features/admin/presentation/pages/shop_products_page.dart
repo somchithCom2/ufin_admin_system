@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -77,7 +78,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: _applyFilters,
           ),
         ],
@@ -100,7 +101,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                 PopupMenuButton<String?>(
                   icon: Badge(
                     isLabelVisible: _inStockFilter != null,
-                    child: const Icon(Icons.filter_list),
+                    child: const AppIcon(AppIcons.filter),
                   ),
                   onSelected: (value) {
                     setState(() {
@@ -161,7 +162,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                 ? _buildError(state.error!)
                 : state.products.isEmpty
                 ? AppEmptyView(
-                    icon: Icons.inventory_outlined,
+                    icon: AppIcons.packages,
                     title: context.tr(ShopText.noProductsFound),
                     message: context.tr(ShopText.thisShopHasNoProducts),
                   )
@@ -276,7 +277,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
   Widget _productIcon(AdminProduct product) {
     return CircleAvatar(
       backgroundColor: context.status.info.withValues(alpha: 0.1),
-      child: Icon(Icons.inventory_2, color: context.status.info),
+      child: AppIcon(AppIcons.package, color: context.status.info),
     );
   }
 

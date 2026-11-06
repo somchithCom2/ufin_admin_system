@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
@@ -23,7 +24,7 @@ class WorkQueueCard extends ConsumerWidget {
 
     return SectionCard(
       title: context.tr(DashText.needsAttention),
-      icon: Icons.inbox_outlined,
+      icon: AppIcons.inbox,
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       trailing: state.isLoading
           ? const Padding(
@@ -35,7 +36,7 @@ class WorkQueueCard extends ConsumerWidget {
             )
           : IconButton(
               tooltip: context.tr(CommonText.refresh),
-              icon: const Icon(Icons.refresh_rounded, size: 20),
+              icon: const AppIcon(AppIcons.refresh, size: 20),
               onPressed: () => notifier.refresh(force: true),
             ),
       child: switch (queue) {
@@ -57,7 +58,7 @@ class _AllClear extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: IconBadge(
-        icon: Icons.task_alt_rounded,
+        icon: AppIcons.checkCircle,
         color: context.status.success,
         size: 36,
       ),
@@ -84,7 +85,7 @@ class _QueueList extends ConsumerWidget {
     final groups = <Widget>[
       if (pending > 0)
         _GroupHeader(
-          icon: Icons.upgrade_rounded,
+          icon: AppIcons.upgrade,
           color: scheme.primary,
           title: context.tr(DashText.requestsWaiting(pending)),
           subtitle: _requestsSummary(context, queue.pendingPreview, pending),
@@ -93,7 +94,7 @@ class _QueueList extends ConsumerWidget {
         ),
       if (trials.isNotEmpty)
         _ExpiringGroup(
-          icon: Icons.hourglass_bottom_rounded,
+          icon: AppIcons.hourglass,
           color: status.info,
           title: context.tr(DashText.trialsEnding(trials.length)),
           subtitle: context.tr(
@@ -104,7 +105,7 @@ class _QueueList extends ConsumerWidget {
         ),
       if (paid.isNotEmpty)
         _ExpiringGroup(
-          icon: Icons.event_busy_rounded,
+          icon: AppIcons.calendarX,
           color: status.warning,
           title: context.tr(DashText.plansEnding(paid.length)),
           subtitle: context.tr(DashText.paidRenewal),
@@ -117,7 +118,7 @@ class _QueueList extends ConsumerWidget {
         ),
       if (lapsed > 0)
         _GroupHeader(
-          icon: Icons.lock_clock_outlined,
+          icon: AppIcons.timer,
           color: status.neutral,
           title: context.tr(DashText.shopsLapsed(lapsed)),
           subtitle: context.tr(locks ? DashText.lapsedLocks : DashText.lapsed),
@@ -126,7 +127,7 @@ class _QueueList extends ConsumerWidget {
         ),
       if (queue.isPartial)
         ListTile(
-          leading: Icon(Icons.error_outline_rounded, color: scheme.error),
+          leading: AppIcon(AppIcons.errorCircle, color: scheme.error),
           title: Text(
             context.tr(DashText.couldNotLoad(_failedParts(context, queue))),
             style: TextStyle(color: scheme.error),
@@ -172,7 +173,7 @@ class _QueueList extends ConsumerWidget {
 }
 
 class _GroupHeader extends StatelessWidget {
-  final IconData icon;
+  final AppIconData icon;
   final Color color;
   final String title;
   final String? subtitle;
@@ -205,7 +206,7 @@ class _GroupHeader extends StatelessWidget {
 /// A group header followed by the soonest shops in it, each opening its
 /// subscription.
 class _ExpiringGroup extends ConsumerWidget {
-  final IconData icon;
+  final AppIconData icon;
   final Color color;
   final String title;
   final String subtitle;

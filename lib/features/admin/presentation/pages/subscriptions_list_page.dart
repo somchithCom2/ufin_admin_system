@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'subscription_action_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_detail_page.dart';
@@ -117,13 +118,13 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
         title: Text(context.tr(NavText.subscriptions)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history),
+            icon: const AppIcon(AppIcons.history),
             tooltip: context.tr(SubsText.allHistory),
             onPressed: () => _navigateToAllHistory(),
           ),
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: _reload,
           ),
         ],
@@ -135,7 +136,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                 const SubscriptionActionPage(action: SubscriptionAction.create),
           ),
         ),
-        icon: const Icon(Icons.add),
+        icon: const AppIcon(AppIcons.add),
         label: Text(context.tr(SubsText.createSubscription)),
       ),
       body: ContentWidth(
@@ -249,7 +250,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_outlined, size: 64, color: context.colors.outline),
+          AppIcon(AppIcons.inbox, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
             context.tr(SubsText.noSubscriptionsFound),
@@ -368,21 +369,21 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                 children: [
                   Expanded(
                     child: _buildInfoItem(
-                      Icons.attach_money,
+                      AppIcons.dollar,
                       context.tr(SubsText.price),
                       currencyFormat.format(subscription.pricePaid),
                     ),
                   ),
                   Expanded(
                     child: _buildInfoItem(
-                      Icons.people,
+                      AppIcons.users,
                       context.tr(SubsText.employees),
                       '${subscription.currentEmployees}/${subscription.maxEmployees == 0 ? '∞' : subscription.maxEmployees}',
                     ),
                   ),
                   Expanded(
                     child: _buildInfoItem(
-                      Icons.inventory_2,
+                      AppIcons.package,
                       context.tr(SubsText.products),
                       '${subscription.currentProducts}/${subscription.maxProducts == 0 ? '∞' : subscription.maxProducts}',
                     ),
@@ -408,12 +409,12 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    AppIcon(
                       isExpired
-                          ? Icons.error
+                          ? AppIcons.errorCircle
                           : isExpiringSoon
-                          ? Icons.warning_amber
-                          : Icons.calendar_today,
+                          ? AppIcons.warning
+                          : AppIcons.calendar,
                       size: 16,
                       color: isExpired
                           ? context.colors.error
@@ -448,7 +449,10 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                         ),
                       ),
                     ),
-                    Icon(Icons.chevron_right, color: context.colors.outline),
+                    AppIcon(
+                      AppIcons.chevronRight,
+                      color: context.colors.outline,
+                    ),
                   ],
                 ),
               ),
@@ -463,13 +467,13 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     return StatusBadge.fromStatus(status);
   }
 
-  Widget _buildInfoItem(IconData icon, String label, String value) {
+  Widget _buildInfoItem(AppIconData icon, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, size: 14, color: context.colors.onSurfaceVariant),
+            AppIcon(icon, size: 14, color: context.colors.onSurfaceVariant),
             const SizedBox(width: 4),
             Flexible(
               child: Text(

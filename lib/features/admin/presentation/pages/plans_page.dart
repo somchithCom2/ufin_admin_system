@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'edit_plan_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/plan_detail_page.dart';
@@ -23,7 +24,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
         message: context.tr(PlansText.willNoLongerBeOffered(plan.name)),
         confirmLabel: context.tr(PlansText.deactivate),
         destructive: true,
-        icon: Icons.pause_circle_outline_rounded,
+        icon: AppIcons.pauseCircle,
       );
       if (!ok || !mounted) return;
     }
@@ -67,14 +68,14 @@ class _PlansPageState extends ConsumerState<PlansPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => ref.read(plansProvider.notifier).loadPlans(),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreatePlanDialog(),
-        icon: const Icon(Icons.add),
+        icon: const AppIcon(AppIcons.add),
         label: Text(context.tr(PlansText.addPlan)),
       ),
       body: ContentWidth(
@@ -84,7 +85,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
             ? _buildErrorView(plansState.error!)
             : plansState.plans.isEmpty
             ? AppEmptyView(
-                icon: Icons.inventory_2_outlined,
+                icon: AppIcons.package,
                 title: context.tr(PlansText.noPlansYet),
                 message: context.tr(PlansText.createAPlanToStart),
               )
@@ -206,17 +207,17 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildLimitItem(
-                        Icons.people,
+                        AppIcons.users,
                         plan.maxEmployees?.toString() ?? '∞',
                         context.tr(PlansText.employees),
                       ),
                       _buildLimitItem(
-                        Icons.inventory,
+                        AppIcons.package,
                         plan.maxProducts?.toString() ?? '∞',
                         context.tr(PlansText.products),
                       ),
                       _buildLimitItem(
-                        Icons.receipt_long,
+                        AppIcons.receipt,
                         plan.maxOrdersPerMonth?.toString() ?? '∞',
                         context.tr(PlansText.ordersMo),
                       ),
@@ -274,7 +275,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.edit, size: 16),
+                    icon: const AppIcon(AppIcons.edit, size: 16),
                     label: Text(context.tr(CommonText.edit)),
                   ),
                 ],
@@ -305,10 +306,10 @@ class _PlansPageState extends ConsumerState<PlansPage> {
     );
   }
 
-  Widget _buildLimitItem(IconData icon, String value, String label) {
+  Widget _buildLimitItem(AppIconData icon, String value, String label) {
     return Column(
       children: [
-        Icon(icon, color: context.colors.onSurfaceVariant, size: 20),
+        AppIcon(icon, color: context.colors.onSurfaceVariant, size: 20),
         const SizedBox(height: 2),
         Text(
           value,

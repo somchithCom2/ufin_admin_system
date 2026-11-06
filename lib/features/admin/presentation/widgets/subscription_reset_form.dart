@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
@@ -100,7 +101,7 @@ class _SubscriptionResetFormState extends State<_SubscriptionResetForm> {
   Widget build(BuildContext context) {
     return AppFormModal(
       formKey: _formKey,
-      icon: Icons.restart_alt_rounded,
+      icon: AppIcons.reset,
       title: context.tr(SubsText.resetSubscription),
       subtitle: widget.subscription.shopName,
       submitLabel: _endsNow

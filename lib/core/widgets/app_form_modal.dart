@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/app_ui.dart';
 
 /// Opens a create/edit form: a centered dialog on wide screens, a tall
@@ -43,7 +44,7 @@ Future<T?> showAppFormModal<T>(
 class AppFormModal extends StatelessWidget {
   final String title;
   final String? subtitle;
-  final IconData icon;
+  final AppIconData icon;
   final GlobalKey<FormState> formKey;
   final List<Widget> children;
   final String submitLabel;
@@ -103,7 +104,7 @@ class AppFormModal extends StatelessWidget {
                   ),
                   IconButton(
                     tooltip: context.tr(CommonText.close),
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const AppIcon(AppIcons.close),
                     onPressed: saving ? null : () => Navigator.pop(context),
                   ),
                 ],
@@ -361,7 +362,7 @@ class _ErrorBanner extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.error_outline_rounded, size: 18, color: scheme.error),
+            AppIcon(AppIcons.errorCircle, size: 18, color: scheme.error),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

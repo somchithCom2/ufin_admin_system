@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,10 +10,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ufin_admin_system/config/routes/app_routes.dart';
 import 'package:ufin_admin_system/config/theme/app_theme.dart';
 import 'package:ufin_admin_system/core/core.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/settings/app_settings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Decode the SVG icons while the startup reads below run, so the first
+  // screen paints them without an empty-slot flash. Never blocks startup.
+  unawaited(precacheAppIcons());
 
   // Independent startup reads run together.
   final results = await Future.wait<Object?>([

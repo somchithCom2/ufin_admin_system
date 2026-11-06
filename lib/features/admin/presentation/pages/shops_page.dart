@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_products_page.dart';
@@ -55,7 +56,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => ref.read(shopsProvider.notifier).loadShops(),
           ),
         ],
@@ -86,7 +87,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   PopupMenuButton<String?>(
                     icon: Badge(
                       isLabelVisible: _statusFilter != null,
-                      child: const Icon(Icons.filter_list),
+                      child: const AppIcon(AppIcons.filter),
                     ),
                     onSelected: (status) {
                       setState(() => _statusFilter = status);
@@ -134,7 +135,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   ? _buildErrorView(shopsState.error!)
                   : shopsState.shops.isEmpty
                   ? AppEmptyView(
-                      icon: Icons.storefront_outlined,
+                      icon: AppIcons.shop,
                       title: context.tr(ShopText.noShopsFound),
                       message: context.tr(ShopText.tryADifferentSearchOr),
                     )
@@ -196,8 +197,8 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
           backgroundColor: _getStatusColor(
             _displayStatus(shop),
           ).withValues(alpha: 0.1),
-          child: Icon(
-            Icons.storefront,
+          child: AppIcon(
+            AppIcons.shop,
             color: _getStatusColor(_displayStatus(shop)),
           ),
         ),
@@ -254,13 +255,14 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
           ],
         ),
         trailing: PopupMenuButton<String>(
+          icon: const AppIcon(AppIcons.moreVertical),
           onSelected: (action) => _handleShopAction(shop, action),
           itemBuilder: (context) => [
             PopupMenuItem(
               value: 'view',
               child: Row(
                 children: [
-                  Icon(Icons.visibility),
+                  AppIcon(AppIcons.eye),
                   SizedBox(width: 8),
                   Text(context.tr(ShopText.viewDetails)),
                 ],
@@ -271,7 +273,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'restore',
                 child: Row(
                   children: [
-                    Icon(Icons.restore, color: context.status.success),
+                    AppIcon(AppIcons.undo, color: context.status.success),
                     SizedBox(width: 8),
                     Text(context.tr(ShopText.restore)),
                   ],
@@ -281,7 +283,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               value: 'products',
               child: Row(
                 children: [
-                  Icon(Icons.inventory_2_outlined, color: context.status.info),
+                  AppIcon(AppIcons.package, color: context.status.info),
                   SizedBox(width: 8),
                   Text(context.tr(ShopText.viewProducts)),
                 ],
@@ -292,7 +294,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'suspend',
                 child: Row(
                   children: [
-                    Icon(Icons.block, color: context.status.warning),
+                    AppIcon(AppIcons.ban, color: context.status.warning),
                     SizedBox(width: 8),
                     Text(context.tr(ShopText.suspend)),
                   ],
@@ -303,7 +305,10 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'activate',
                 child: Row(
                   children: [
-                    Icon(Icons.check_circle, color: context.status.success),
+                    AppIcon(
+                      AppIcons.checkCircle,
+                      color: context.status.success,
+                    ),
                     SizedBox(width: 8),
                     Text(context.tr(ShopText.activate)),
                   ],
@@ -315,7 +320,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'branches',
                 child: Row(
                   children: [
-                    Icon(Icons.account_tree_outlined),
+                    AppIcon(AppIcons.network),
                     SizedBox(width: 8),
                     Text(context.tr(ShopText.branches)),
                   ],
@@ -326,7 +331,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'link',
                 child: Row(
                   children: [
-                    Icon(Icons.link_rounded),
+                    AppIcon(AppIcons.link),
                     SizedBox(width: 8),
                     Text(context.tr(ShopText.linkAsBranch)),
                   ],
@@ -337,10 +342,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'unlink',
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.call_split_rounded,
-                      color: context.status.warning,
-                    ),
+                    AppIcon(AppIcons.split, color: context.status.warning),
                     SizedBox(width: 8),
                     Text(context.tr(ShopText.unlinkBranch)),
                   ],
@@ -351,10 +353,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'owner',
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.swap_horiz_rounded,
-                      color: context.status.warning,
-                    ),
+                    AppIcon(AppIcons.swap, color: context.status.warning),
                     SizedBox(width: 8),
                     Text(context.tr(ShopText.changeOwner)),
                   ],
@@ -364,7 +363,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               value: 'owner_history',
               child: Row(
                 children: [
-                  Icon(Icons.history_rounded),
+                  AppIcon(AppIcons.history),
                   SizedBox(width: 8),
                   Text(context.tr(ShopText.ownerHistory)),
                 ],
@@ -376,10 +375,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'reset_data',
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.restart_alt_rounded,
-                      color: context.colors.error,
-                    ),
+                    AppIcon(AppIcons.reset, color: context.colors.error),
                     const SizedBox(width: 8),
                     Text(
                       context.tr(ShopText.resetData),
@@ -392,7 +388,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_outline, color: context.colors.error),
+                    AppIcon(AppIcons.delete, color: context.colors.error),
                     const SizedBox(width: 8),
                     Text(
                       context.tr(ShopText.deleteShop),
@@ -517,8 +513,8 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                     backgroundColor: _getStatusColor(
                       _displayStatus(shop),
                     ).withValues(alpha: 0.1),
-                    child: Icon(
-                      Icons.storefront,
+                    child: AppIcon(
+                      AppIcons.shop,
                       size: 30,
                       color: _getStatusColor(_displayStatus(shop)),
                     ),
@@ -622,7 +618,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    icon: const Icon(Icons.restore),
+                    icon: const AppIcon(AppIcons.undo),
                     label: Text(context.tr(ShopText.restoreShop)),
                     onPressed: () {
                       Navigator.pop(context);
@@ -635,7 +631,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  icon: const Icon(Icons.inventory_2_outlined),
+                  icon: const AppIcon(AppIcons.package),
                   label: Text(
                     context.tr(ShopText.viewProducts2(shop.productCount)),
                   ),
@@ -697,7 +693,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       title: context.tr(ShopText.restoreShop2),
       message: context.tr(ShopText.willBeActiveAgainWith(shop.name)),
       confirmLabel: context.tr(ShopText.restore),
-      icon: Icons.restore_rounded,
+      icon: AppIcons.undo,
     );
     if (!confirmed || !mounted) return;
 
@@ -722,7 +718,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       message: context.tr(ShopText.willBeClosedItsOwner(shop.name)),
       confirmLabel: context.tr(CommonText.delete),
       destructive: true,
-      icon: Icons.delete_outline_rounded,
+      icon: AppIcons.delete,
     );
     if (!confirmed || !mounted) return;
 
@@ -751,7 +747,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
           ? context.tr(ShopText.suspend)
           : context.tr(ShopText.activate),
       destructive: suspend,
-      icon: suspend ? Icons.block_rounded : Icons.check_circle_outline_rounded,
+      icon: suspend ? AppIcons.ban : AppIcons.checkCircle,
     );
     if (reason == null || !mounted) return;
 

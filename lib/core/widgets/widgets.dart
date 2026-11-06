@@ -3,3 +3,4 @@ export 'session_wrapper.dart';
 export 'app_ui.dart';
 export 'app_form_modal.dart';
 export 'settings_controls.dart';
+export 'filter_bar.dart';

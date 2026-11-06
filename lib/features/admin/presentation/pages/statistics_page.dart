@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_detail_page.dart';
@@ -49,7 +50,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () {
               ref.read(subscriptionStatsProvider.notifier).refresh();
               ref.read(expiringSubscriptionsProvider.notifier).refresh();
@@ -88,7 +89,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
     final stats = state.stats;
     if (stats == null) {
       return AppEmptyView(
-        icon: Icons.insights_outlined,
+        icon: AppIcons.lineChart,
         title: context.tr(FinText.noDataAvailable3),
         message: context.tr(FinText.thereIsNothingToShow3),
       );
@@ -108,37 +109,37 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
               StatCard(
                 label: context.tr(CommonText.total),
                 value: stats.totalSubscriptions.toString(),
-                icon: Icons.card_membership_rounded,
+                icon: AppIcons.crown,
               ),
               StatCard(
                 label: context.tr(FinText.active),
                 value: stats.activeSubscriptions.toString(),
-                icon: Icons.check_circle_outline_rounded,
+                icon: AppIcons.checkCircle,
                 color: status.success,
               ),
               StatCard(
                 label: context.tr(FinText.trial),
                 value: stats.trialSubscriptions.toString(),
-                icon: Icons.hourglass_top_rounded,
+                icon: AppIcons.hourglass,
                 color: status.info,
               ),
               StatCard(
                 label: context.tr(FinText.expiringSoon),
                 value: stats.expiringSoon.toString(),
                 caption: context.tr(FinText.within30Days),
-                icon: Icons.schedule_rounded,
+                icon: AppIcons.clock,
                 color: stats.expiringSoon > 0 ? status.warning : null,
                 onTap: () => _tabController.animateTo(1),
               ),
               StatCard(
                 label: context.tr(FinText.expired),
                 value: stats.expiredSubscriptions.toString(),
-                icon: Icons.timer_off_outlined,
+                icon: AppIcons.timerOff,
               ),
               StatCard(
                 label: context.tr(FinText.cancelled),
                 value: stats.cancelledSubscriptions.toString(),
-                icon: Icons.cancel_outlined,
+                icon: AppIcons.closeCircle,
               ),
             ],
           ),
@@ -279,7 +280,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
               ? AppErrorView(error: state.error, onRetry: notifier.refresh)
               : state.subscriptions.isEmpty
               ? AppEmptyView(
-                  icon: Icons.event_available_outlined,
+                  icon: AppIcons.calendarCheck,
                   title: context.tr(FinText.nothingExpiring),
                   message: context.tr(
                     FinText.noSubscriptionExpiresInThe(_expiringDaysFilter),
@@ -399,7 +400,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Icon(Icons.chevron_right_rounded),
+          : const AppIcon(AppIcons.chevronRight),
       onTap: _openingShopId == null ? () => _openSubscription(sub) : null,
     );
   }

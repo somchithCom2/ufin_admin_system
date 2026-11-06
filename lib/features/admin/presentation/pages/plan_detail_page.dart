@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/edit_plan_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -24,7 +25,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         message: context.tr(PlanEditText.willNoLongerBeOffered(plan.name)),
         confirmLabel: context.tr(PlanEditText.deactivate),
         destructive: true,
-        icon: Icons.pause_circle_outline_rounded,
+        icon: AppIcons.pauseCircle,
       );
       if (!ok || !mounted) return;
     }
@@ -92,7 +93,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       return Scaffold(
         appBar: AppBar(title: Text(context.tr(PlanEditText.planDetails))),
         body: AppEmptyView(
-          icon: Icons.inventory_2_outlined,
+          icon: AppIcons.package,
           title: context.tr(PlanEditText.planNotFound),
           message: context.tr(PlanEditText.itMayHaveBeenDeleted),
         ),
@@ -105,7 +106,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () {
               ref.read(planDetailProvider.notifier).loadPlan(plan.id);
             },
@@ -118,7 +119,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showEditPlanDialog(context, plan),
-        icon: const Icon(Icons.edit),
+        icon: const AppIcon(AppIcons.edit),
         label: Text(context.tr(CommonText.edit)),
       ),
       body: RefreshIndicator(

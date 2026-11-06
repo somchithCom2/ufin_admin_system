@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
 /// The backend stores no icon for a shop type, so it follows from the code.
-const _shopTypeIcons = <String, IconData>{
-  'retail': Icons.store_rounded,
-  'restaurant': Icons.restaurant_rounded,
-  'cafe': Icons.local_cafe_rounded,
-  'bar': Icons.local_bar_rounded,
-  'service': Icons.room_service_rounded,
-  'wholesale': Icons.warehouse_rounded,
-  'online': Icons.shopping_cart_rounded,
-  'grocery': Icons.local_grocery_store_rounded,
-  'pharmacy': Icons.local_pharmacy_rounded,
-  'salon': Icons.spa_rounded,
-  'spa': Icons.spa_rounded,
-  'hotel': Icons.hotel_rounded,
+const _shopTypeIcons = <String, AppIconData>{
+  'retail': AppIcons.shop,
+  'restaurant': AppIcons.utensils,
+  'cafe': AppIcons.coffee,
+  'bar': AppIcons.wine,
+  'service': AppIcons.concierge,
+  'wholesale': AppIcons.warehouse,
+  'online': AppIcons.cart,
+  'grocery': AppIcons.shoppingBag,
+  'pharmacy': AppIcons.pill,
+  'salon': AppIcons.leaf,
+  'spa': AppIcons.leaf,
+  'hotel': AppIcons.bed,
 };
 
-IconData shopTypeIcon(String code) {
+AppIconData shopTypeIcon(String code) {
   final key = code.toLowerCase();
   for (final MapEntry(key: word, value: icon) in _shopTypeIcons.entries) {
     if (key.contains(word)) return icon;
   }
-  return Icons.storefront_rounded;
+  return AppIcons.shop;
 }
 
 /// Opens the create (when [existing] is null) or edit form. [save] receives
@@ -157,7 +158,7 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
   Widget build(BuildContext context) {
     return AppFormModal(
       formKey: _formKey,
-      icon: _isEdit ? Icons.edit_outlined : Icons.category_outlined,
+      icon: _isEdit ? AppIcons.edit : AppIcons.shapes,
       title: _isEdit
           ? context.tr(ShopTypeText.editShopType)
           : context.tr(ShopTypeText.newShopType),

@@ -259,7 +259,13 @@ void main() {
       await pumpShell(tester, width: 390);
       expect(find.byType(NavigationBar), findsOneWidget);
 
-      await tester.tap(find.text('ເພີ່ມເຕີມ'));
+      // Short tab label; the word also appears elsewhere on the dashboard.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.text('ອື່ນໆ'),
+        ),
+      );
       await tester.pumpAndSettle();
       // Every section is reachable from the sheet, grouped as in the sidebar.
       expect(find.text('ສະຖິຕິ'), findsOneWidget);

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
-const releasePlatforms = <String, (String, IconData)>{
-  'android': ('Android', Icons.android_rounded),
-  'ios': ('iOS', Icons.phone_iphone_rounded),
-  'macos': ('macOS', Icons.laptop_mac_rounded),
-  'windows': ('Windows', Icons.desktop_windows_rounded),
+const releasePlatforms = <String, (String, AppIconData)>{
+  'android': ('Android', AppIcons.android),
+  'ios': ('iOS', AppIcons.smartphone),
+  'macos': ('macOS', AppIcons.laptop),
+  'windows': ('Windows', AppIcons.monitor),
 };
 
 String platformLabel(String platform) =>
@@ -323,13 +324,13 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
     }
   }
 
-  (String, String, IconData) _header() {
+  (String, String, AppIconData) _header() {
     final t = widget.template;
     if (widget.existing case final e?) {
       return (
         context.tr(ReleaseText.editRelease),
         '${platformLabel(e.platform)} · v${e.versionName} (${e.versionCode})',
-        Icons.edit_outlined,
+        AppIcons.edit,
       );
     }
     if (t != null && widget.copy == ReleaseCopy.otherPlatform) {
@@ -338,7 +339,7 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
         context.tr(
           ReleaseText.notesAndSettingsCopiedFrom(platformLabel(t.platform)),
         ),
-        Icons.devices_rounded,
+        AppIcons.devices,
       );
     }
     if (t != null) {
@@ -350,13 +351,13 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
             t.versionName,
           ),
         ),
-        Icons.content_copy_rounded,
+        AppIcons.copy,
       );
     }
     return (
       context.tr(ReleaseText.newRelease2),
       context.tr(ReleaseText.savedAsADraftPublish),
-      Icons.system_update_rounded,
+      AppIcons.appUpdate,
     );
   }
 
@@ -410,7 +411,7 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
                 children: [
                   for (final e in releasePlatforms.entries)
                     ChoiceChip(
-                      avatar: Icon(e.value.$2, size: 18),
+                      avatar: AppIcon(e.value.$2, size: 18),
                       label: Text(e.value.$1),
                       selected: _platform == e.key,
                       showCheckmark: false,
@@ -493,7 +494,7 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
               decoration: InputDecoration(
                 labelText: context.tr(ReleaseText.downloadUrl),
                 hintText: 'https://…',
-                prefixIcon: const Icon(Icons.link_rounded, size: 20),
+                prefixIcon: const AppIcon(AppIcons.link, size: 20),
                 helperText: _urlFromOtherPlatform
                     ? context.tr(
                         ReleaseText.copiedFromCheckItPoints(

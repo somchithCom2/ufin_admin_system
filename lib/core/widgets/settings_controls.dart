@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/settings/app_settings.dart';
 import 'package:ufin_admin_system/core/widgets/app_ui.dart';
 
 extension ThemeModeX on ThemeMode {
-  IconData get icon => switch (this) {
-    ThemeMode.system => Icons.brightness_auto_outlined,
-    ThemeMode.light => Icons.light_mode_outlined,
-    ThemeMode.dark => Icons.dark_mode_outlined,
+  AppIconData get icon => switch (this) {
+    ThemeMode.system => AppIcons.sunMoon,
+    ThemeMode.light => AppIcons.sun,
+    ThemeMode.dark => AppIcons.moon,
   };
 
   Tr get title => switch (this) {
@@ -53,7 +54,7 @@ class ThemeModeButton extends ConsumerWidget {
           '${context.tr(SettingsText.appearance)}: ${context.tr(mode.title)}',
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 180),
-        child: Icon(mode.icon, key: ValueKey(mode), size: 20),
+        child: AppIcon(mode.icon, key: ValueKey(mode), size: 20),
       ),
       onPressed: () =>
           ref.read(appSettingsProvider.notifier).setThemeMode(mode.next),
@@ -166,7 +167,7 @@ class AppSettingsPanel extends ConsumerWidget {
             for (final m in ThemeMode.values)
               ButtonSegment(
                 value: m,
-                icon: Icon(m.icon, size: 18),
+                icon: AppIcon(m.icon, size: 18),
                 label: Text(context.tr(m.title)),
               ),
           ],
@@ -250,8 +251,8 @@ class _LanguageOption extends StatelessWidget {
               AnimatedOpacity(
                 opacity: selected ? 1 : 0,
                 duration: const Duration(milliseconds: 150),
-                child: Icon(
-                  Icons.check_circle_rounded,
+                child: AppIcon(
+                  AppIcons.checkCircle,
                   size: 20,
                   color: scheme.primary,
                 ),
@@ -295,7 +296,7 @@ Future<void> showAppSettings(BuildContext context) {
           Expanded(child: Text(ctx.tr(SettingsText.settings))),
           IconButton(
             tooltip: ctx.tr(CommonText.close),
-            icon: const Icon(Icons.close_rounded, size: 20),
+            icon: const AppIcon(AppIcons.close, size: 20),
             onPressed: () => Navigator.of(ctx).pop(),
           ),
         ],

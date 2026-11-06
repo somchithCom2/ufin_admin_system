@@ -14,6 +14,12 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
+
+  # Line icons shared in style with the shop app (assets/icons/). Pinned to
+  # the versions the shop app ships so both render SVGs identically.
+  flutter_svg: 2.3.0
+  # RenderingStrategy (raster SVGs); already pulled in by flutter_svg.
+  vector_graphics: 1.2.3
   
   # State Management
   riverpod: ^2.5.1
@@ -55,6 +61,7 @@ flutter:
 
   assets:
     - .env
+    - assets/icons/
 
   # Bundled so Lao renders identically on every platform (system Lao fonts
   # differ per OS and are missing on some Windows/Linux installs).

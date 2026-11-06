@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -181,6 +182,7 @@ class _SubscriptionActionPageState
                         const SizedBox(height: 16),
                         if (widget.action != SubscriptionAction.cancel) ...[
                           DropdownButtonFormField<String>(
+                            icon: const AppIcon(AppIcons.chevronDown, size: 20),
                             initialValue: _planCode,
                             decoration: InputDecoration(
                               labelText: context.tr(CommonText.plan),
@@ -203,6 +205,7 @@ class _SubscriptionActionPageState
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
+                            icon: const AppIcon(AppIcons.chevronDown, size: 20),
                             initialValue: _cycle,
                             decoration: InputDecoration(
                               labelText: context.tr(SubsText.billingCycle2),

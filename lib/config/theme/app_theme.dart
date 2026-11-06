@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/l10n/tr.dart';
 
 /// Semantic status colors that adapt to light/dark mode.
@@ -304,6 +305,14 @@ class AppTheme {
           size: 22,
         ),
         titleTextStyle: textTheme.titleLarge,
+      ),
+      // Back, close and drawer buttons Flutter builds itself (AppBar leading,
+      // dialogs, sheets) use the same line icons as the rest of the console.
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (_) => const AppIcon(AppIcons.chevronLeft),
+        closeButtonIconBuilder: (_) => const AppIcon(AppIcons.close),
+        drawerButtonIconBuilder: (_) => const AppIcon(AppIcons.menu),
+        endDrawerButtonIconBuilder: (_) => const AppIcon(AppIcons.menu),
       ),
       cardTheme: CardThemeData(
         elevation: 0,

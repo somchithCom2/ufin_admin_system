@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -96,13 +97,13 @@ class _ShopPickerTile extends StatelessWidget {
           hintText: context.tr(ShopText.searchAndSelectAShop),
           errorText: field.errorText,
           enabled: enabled || locked,
-          prefixIcon: const Icon(Icons.storefront_outlined, size: 20),
+          prefixIcon: const AppIcon(AppIcons.shop, size: 20),
           suffixIcon: locked
               ? Tooltip(
                   message: context.tr(ShopText.shopCannotBeChangedHere),
-                  child: Icon(Icons.lock_outline_rounded, size: 18),
+                  child: AppIcon(AppIcons.lock, size: 18),
                 )
-              : const Icon(Icons.unfold_more_rounded),
+              : const AppIcon(AppIcons.chevronsUpDown),
         ),
         child: value == null
             ? null
@@ -271,7 +272,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
                 ),
                 IconButton(
                   tooltip: context.tr(CommonText.close),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: const AppIcon(AppIcons.close),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -290,7 +291,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
               },
               decoration: InputDecoration(
                 hintText: context.tr(ShopText.searchByShopNameOwner),
-                prefixIcon: Icon(Icons.search_rounded, size: 20),
+                prefixIcon: AppIcon(AppIcons.search, size: 20),
               ),
             ),
           ),
@@ -312,7 +313,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
         );
       }
       return AppEmptyView(
-        icon: Icons.storefront_outlined,
+        icon: AppIcons.shop,
         title: context.tr(ShopText.noShopsFound2),
         message: _search.text.trim().isEmpty
             ? null
@@ -331,7 +332,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
                   setState(() => _error = null);
                   _load();
                 },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
+                icon: const AppIcon(AppIcons.refresh, size: 18),
                 label: Text(context.tr(ShopText.loadMoreFailedRetry)),
               ),
             ),
@@ -351,7 +352,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
         return ListTile(
           selected: isSelected,
           leading: IconBadge(
-            icon: Icons.storefront_rounded,
+            icon: AppIcons.shop,
             color: tone.foreground(context),
             size: 40,
           ),
@@ -371,7 +372,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
             overflow: TextOverflow.ellipsis,
           ),
           trailing: isSelected
-              ? Icon(Icons.check_circle_rounded, color: context.colors.primary)
+              ? AppIcon(AppIcons.checkCircle, color: context.colors.primary)
               : StatusBadge.fromStatus(shop.status),
           onTap: () => Navigator.of(context).pop(ShopSelection.fromShop(shop)),
         );

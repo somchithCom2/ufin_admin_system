@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -60,7 +61,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => ref
                 .read(usersProvider.notifier)
                 .loadUsers(
@@ -102,7 +103,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     icon: Badge(
                       isLabelVisible:
                           _statusFilter != null || _typeFilter != null,
-                      child: const Icon(Icons.filter_list),
+                      child: const AppIcon(AppIcons.filter),
                     ),
                     onSelected: (value) {
                       if (value?.startsWith('status:') == true) {
@@ -180,7 +181,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   ? _buildErrorView(usersState.error!)
                   : usersState.users.isEmpty
                   ? AppEmptyView(
-                      icon: Icons.people_outline_rounded,
+                      icon: AppIcons.users,
                       title: context.tr(UserText.noUsersFound),
                       message: context.tr(UserText.tryADifferentSearchOr),
                     )
@@ -282,13 +283,14 @@ class _UsersPageState extends ConsumerState<UsersPage> {
             ],
           ),
           trailing: PopupMenuButton<String>(
+            icon: const AppIcon(AppIcons.moreVertical),
             onSelected: (action) => _handleUserAction(user, action),
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'view',
                 child: Row(
                   children: [
-                    Icon(Icons.visibility),
+                    AppIcon(AppIcons.eye),
                     SizedBox(width: 8),
                     Text(context.tr(UserText.viewDetails)),
                   ],
@@ -301,7 +303,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   value: 'suspend',
                   child: Row(
                     children: [
-                      Icon(Icons.block, color: context.status.warning),
+                      AppIcon(AppIcons.ban, color: context.status.warning),
                       SizedBox(width: 8),
                       Text(context.tr(UserText.suspend)),
                     ],
@@ -312,7 +314,10 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   value: 'activate',
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, color: context.status.success),
+                      AppIcon(
+                        AppIcons.checkCircle,
+                        color: context.status.success,
+                      ),
                       SizedBox(width: 8),
                       Text(context.tr(UserText.activate)),
                     ],
@@ -323,7 +328,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete, color: context.colors.error),
+                      AppIcon(AppIcons.delete, color: context.colors.error),
                       SizedBox(width: 8),
                       Text(context.tr(CommonText.delete)),
                     ],
@@ -334,7 +339,10 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   value: 'verify',
                   child: Row(
                     children: [
-                      Icon(Icons.verified_user, color: context.status.success),
+                      AppIcon(
+                        AppIcons.userShield,
+                        color: context.status.success,
+                      ),
                       SizedBox(width: 8),
                       Text(context.tr(UserText.markVerified)),
                     ],
@@ -345,7 +353,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   value: 'username',
                   child: Row(
                     children: [
-                      Icon(Icons.badge_outlined, color: context.status.info),
+                      AppIcon(AppIcons.idCard, color: context.status.info),
                       const SizedBox(width: 8),
                       Text(context.tr(UserText.changeUsername)),
                     ],
@@ -356,7 +364,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   value: 'reset_password',
                   child: Row(
                     children: [
-                      Icon(Icons.lock_reset_rounded),
+                      AppIcon(AppIcons.key),
                       SizedBox(width: 8),
                       Text(context.tr(UserText.resetPassword)),
                     ],
@@ -792,9 +800,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       tooltip: obscure
                           ? context.tr(AuthText.showPassword)
                           : context.tr(AuthText.hidePassword),
-                      icon: Icon(
-                        obscure ? Icons.visibility : Icons.visibility_off,
-                      ),
+                      icon: AppIcon(obscure ? AppIcons.eye : AppIcons.eyeOff),
                       onPressed: () => setDialogState(() => obscure = !obscure),
                     ),
                   ),
@@ -848,17 +854,17 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       'suspended' => (
         context.tr(UserText.suspendUser),
         context.tr(UserText.suspend),
-        Icons.block_rounded,
+        AppIcons.ban,
       ),
       'deleted' => (
         context.tr(UserText.deleteUser),
         context.tr(CommonText.delete),
-        Icons.delete_outline_rounded,
+        AppIcons.delete,
       ),
       _ => (
         context.tr(UserText.activateUser),
         context.tr(UserText.activate),
-        Icons.check_circle_outline_rounded,
+        AppIcons.checkCircle,
       ),
     };
     final destructive = newStatus != 'active';

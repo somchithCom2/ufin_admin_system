@@ -75,8 +75,6 @@ abstract final class FinText {
     'ເລກອ້າງອີງທຸລະກຳ',
   );
   static Tr today(Object? a0) => Tr('Today, $a0', 'ມື້ນີ້, $a0');
-  static Tr clearFilter(Object? a0) =>
-      Tr('Clear $a0 filter', 'ລ້າງຕົວກັ່ນຕອງ $a0');
   static const noDataAvailable = Tr('No data available', 'ບໍ່ມີຂໍ້ມູນ');
   static const thereIsNothingToShow = Tr(
     'There is nothing to show for this period.',

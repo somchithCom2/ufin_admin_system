@@ -22,6 +22,25 @@ abstract final class NavText {
   static const appReleases = Tr('App Releases', 'ເວີຊັນແອັບ');
   static const systemConfig = Tr('System Config', 'ຕັ້ງຄ່າລະບົບ');
 
+  // Phone bottom-bar labels: one short word so five tabs never wrap or clip.
+  // The full section name stays in the tab's tooltip.
+  static const tabDashboard = Tr('Home', 'ພາບລວມ');
+  static const tabShops = Tr('Shops', 'ຮ້ານຄ້າ');
+  static const tabUsers = Tr('Users', 'ຜູ້ໃຊ້');
+  static const tabShopTypes = Tr('Types', 'ປະເພດ');
+  static const tabUnits = Tr('Units', 'ຫົວໜ່ວຍ');
+  static const tabDeletedUsers = Tr('Deleted', 'ຖືກລຶບ');
+  static const tabSubscriptions = Tr('Subs', 'ສະໝັກໃຊ້');
+  static const tabPlans = Tr('Plans', 'ແພັກເກດ');
+  static const tabUpgradeRequests = Tr('Upgrades', 'ອັບເກຣດ');
+  static const tabStatistics = Tr('Stats', 'ສະຖິຕິ');
+  static const tabPayments = Tr('Payments', 'ຊຳລະເງິນ');
+  static const tabRevenue = Tr('Revenue', 'ລາຍຮັບ');
+  static const tabDailySales = Tr('Sales', 'ຍອດຂາຍ');
+  static const tabAppReleases = Tr('Releases', 'ເວີຊັນ');
+  static const tabSystemConfig = Tr('System', 'ລະບົບ');
+  static const tabMore = Tr('More', 'ອື່ນໆ');
+
   // Groups
   static const groupManagement = Tr('Management', 'ການຈັດການ');
   static const groupSubscriptions = Tr('Subscriptions', 'ການສະໝັກໃຊ້');

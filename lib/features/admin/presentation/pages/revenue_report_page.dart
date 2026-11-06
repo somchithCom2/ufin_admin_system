@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/admin_revenue_report.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
@@ -48,7 +49,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: state.isLoading ? null : notifier.refresh,
           ),
         ],
@@ -65,7 +66,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   ? AppErrorView(error: state.error, onRetry: notifier.refresh)
                   : state.report == null
                   ? AppEmptyView(
-                      icon: Icons.insights_outlined,
+                      icon: AppIcons.lineChart,
                       title: context.tr(FinText.noDataAvailable),
                       message: context.tr(FinText.thereIsNothingToShow),
                     )
@@ -98,7 +99,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
         children: [
           OutlinedButton.icon(
             onPressed: _selectDateRange,
-            icon: const Icon(Icons.date_range_rounded, size: 18),
+            icon: const AppIcon(AppIcons.calendarRange, size: 18),
             label: Text(
               range == null
                   ? context.tr(FinText.selectDates)
@@ -194,7 +195,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
             StatCard(
               label: context.tr(FinText.transactions),
               value: report.totalTransactions.toString(),
-              icon: Icons.receipt_long_rounded,
+              icon: AppIcons.receipt,
             ),
             StatCard(
               label: context.tr(FinText.successRate),
@@ -202,13 +203,13 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
               caption: context.tr(
                 FinText.successful(report.successfulTransactions),
               ),
-              icon: Icons.check_circle_outline_rounded,
+              icon: AppIcons.checkCircle,
               color: context.status.success,
             ),
             StatCard(
               label: context.tr(FinText.failed2),
               value: report.failedTransactions.toString(),
-              icon: Icons.error_outline_rounded,
+              icon: AppIcons.errorCircle,
               color: report.failedTransactions > 0
                   ? context.colors.error
                   : null,
@@ -216,7 +217,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
             StatCard(
               label: context.tr(FinText.averageTransaction),
               value: _money(report.averageTransactionValue),
-              icon: Icons.functions_rounded,
+              icon: AppIcons.sigma,
             ),
           ],
         ),
@@ -304,7 +305,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
   /// One line of a breakdown: name and count on the left, amount and share
   /// on the right, with a thin bar showing the share.
   Widget _breakdownRow({
-    IconData? icon,
+    AppIconData? icon,
     required String title,
     required String subtitle,
     required double amount,
@@ -322,7 +323,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 20, color: muted),
+                AppIcon(icon, size: 20, color: muted),
                 const SizedBox(width: AppSpacing.md),
               ],
               Expanded(
@@ -440,19 +441,19 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
     }
   }
 
-  IconData _getPaymentMethodIcon(String method) {
+  AppIconData _getPaymentMethodIcon(String method) {
     switch (method.toLowerCase()) {
       case 'cash':
-        return Icons.payments_outlined;
+        return AppIcons.money;
       case 'bank_transfer':
-        return Icons.account_balance_outlined;
+        return AppIcons.bank;
       case 'qr_code':
-        return Icons.qr_code_rounded;
+        return AppIcons.qrCode;
       case 'card':
       case 'credit_card':
-        return Icons.credit_card_rounded;
+        return AppIcons.card;
       default:
-        return Icons.payment_rounded;
+        return AppIcons.card;
     }
   }
 

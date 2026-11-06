@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -30,7 +31,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
         actions: [
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () =>
                 ref.read(deletedUsersProvider.notifier).loadDeletedUsers(),
           ),
@@ -46,8 +47,8 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
               color: context.colors.error.withValues(alpha: 0.08),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.delete_sweep_outlined,
+                  AppIcon(
+                    AppIcons.delete,
                     size: 18,
                     color: context.colors.error,
                   ),
@@ -118,7 +119,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: context.colors.outline),
+          AppIcon(AppIcons.users, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
             context.tr(UserText.noDeletedUsers),
@@ -215,8 +216,8 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                       children: [
                         _buildTypeChip(user.userType),
                         const SizedBox(width: 6),
-                        Icon(
-                          Icons.schedule,
+                        AppIcon(
+                          AppIcons.clock,
                           size: 12,
                           color: context.colors.onSurfaceVariant,
                         ),
@@ -235,6 +236,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
               ),
               // Actions
               PopupMenuButton<String>(
+                icon: const AppIcon(AppIcons.moreVertical),
                 onSelected: (action) {
                   if (action == 'restore') _confirmRestore(user);
                   if (action == 'details') _showUserDetails(user);
@@ -244,7 +246,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                     value: 'details',
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline),
+                        AppIcon(AppIcons.info),
                         SizedBox(width: 8),
                         Text(context.tr(UserText.viewDetails2)),
                       ],
@@ -254,7 +256,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                     value: 'restore',
                     child: Row(
                       children: [
-                        Icon(Icons.restore, color: context.status.success),
+                        AppIcon(AppIcons.undo, color: context.status.success),
                         SizedBox(width: 8),
                         Text(context.tr(UserText.restore)),
                       ],
@@ -441,7 +443,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor: context.status.success,
                   ),
-                  icon: const Icon(Icons.restore),
+                  icon: const AppIcon(AppIcons.undo),
                   label: Text(context.tr(UserText.restoreUser)),
                   onPressed: () {
                     Navigator.pop(context);
@@ -502,7 +504,7 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
       title: context.tr(UserText.restore2(user.username)),
       message: context.tr(UserText.theAccountBecomesActiveAgain),
       confirmLabel: context.tr(UserText.restore),
-      icon: Icons.restore_rounded,
+      icon: AppIcons.undo,
     );
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);

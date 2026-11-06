@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -47,7 +48,7 @@ abstract final class AppReleaseActions {
           ? context.tr(ReleaseText.everyShopOnAnOlder(platform))
           : context.tr(ReleaseText.everyShopOnAnOlder2(platform)),
       confirmLabel: context.tr(ReleaseText.publish3),
-      icon: Icons.publish_rounded,
+      icon: AppIcons.upload,
     );
     if (!ok || !context.mounted) return null;
     return _run(
@@ -68,7 +69,7 @@ abstract final class AppReleaseActions {
       title: context.tr(ReleaseText.unpublishV(release.versionName)),
       message: context.tr(ReleaseText.shopsWillStopBeingOffered),
       confirmLabel: context.tr(ReleaseText.unpublish3),
-      icon: Icons.unpublished_outlined,
+      icon: AppIcons.eyeOff,
     );
     if (!ok || !context.mounted) return null;
     return _run(
@@ -93,7 +94,7 @@ abstract final class AppReleaseActions {
           : context.tr(ReleaseText.thisDraftIsRemovedPermanently),
       confirmLabel: context.tr(CommonText.delete),
       destructive: true,
-      icon: Icons.delete_outline_rounded,
+      icon: AppIcons.delete,
     );
     if (!ok || !context.mounted) return false;
     final messenger = ScaffoldMessenger.of(context);

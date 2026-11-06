@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 /// One row in the command palette.
@@ -7,7 +8,7 @@ import 'package:ufin_admin_system/core/widgets/widgets.dart';
 class PaletteItem {
   final Tr title;
   final Tr? subtitle;
-  final IconData icon;
+  final AppIconData icon;
   final VoidCallback onSelect;
 
   /// Actions are listed after pages when the query is empty.
@@ -153,7 +154,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
                 style: text.bodyLarge,
                 decoration: InputDecoration(
                   hintText: context.tr(NavText.jumpHint),
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  prefixIcon: const AppIcon(AppIcons.search, size: 20),
                   filled: false,
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -236,7 +237,7 @@ class _PaletteRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
-                Icon(
+                AppIcon(
                   item.icon,
                   size: 19,
                   color: highlighted ? scheme.primary : scheme.onSurfaceVariant,
@@ -260,8 +261,8 @@ class _PaletteRow extends StatelessWidget {
                   ),
                 if (highlighted) ...[
                   const SizedBox(width: AppSpacing.sm),
-                  Icon(
-                    Icons.keyboard_return_rounded,
+                  AppIcon(
+                    AppIcons.cornerDownLeft,
                     size: 16,
                     color: scheme.onSurfaceVariant,
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/daily_sales_provider.dart';
@@ -63,7 +64,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
     return ListTile(
       title: Text(title),
       subtitle: Text(AppDateFormat.of('HH:mm').format(value)),
-      trailing: const Icon(Icons.access_time),
+      trailing: const AppIcon(AppIcons.clock),
       onTap: () async {
         final picked = await showTimePicker(
           context: context,
@@ -117,7 +118,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                             ListTile(
                               title: Text(context.tr(FinText.startDate)),
                               subtitle: Text(formatter.format(startDate)),
-                              trailing: const Icon(Icons.calendar_today),
+                              trailing: const AppIcon(AppIcons.calendar),
                               onTap: () async {
                                 final picked = await showDatePicker(
                                   context: context,
@@ -158,7 +159,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                             ListTile(
                               title: Text(context.tr(FinText.endDate)),
                               subtitle: Text(formatter.format(endDate)),
-                              trailing: const Icon(Icons.calendar_today),
+                              trailing: const AppIcon(AppIcons.calendar),
                               onTap: () async {
                                 final picked = await showDatePicker(
                                   context: context,
@@ -218,7 +219,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                           );
                                       Navigator.pop(context);
                                     },
-                              icon: const Icon(Icons.search),
+                              icon: const AppIcon(AppIcons.search),
                               label: Text(context.tr(CommonText.search)),
                             ),
                           ),
@@ -246,13 +247,13 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
         title: Text(context.tr(FinText.dailySalesSummary)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.tune),
+            icon: const AppIcon(AppIcons.sliders),
             tooltip: context.tr(CommonText.filter),
             onPressed: _showFilterModal,
           ),
           IconButton(
             tooltip: context.tr(CommonText.refresh),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => ref
                 .read(dailySalesProvider.notifier)
                 .loadDailySales(startDate: startDate, endDate: endDate),
@@ -271,8 +272,8 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
+                    AppIcon(
+                      AppIcons.info,
                       size: 18,
                       color: context.status.info,
                     ),
@@ -302,7 +303,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                     )
                   : state.data == null
                   ? AppEmptyView(
-                      icon: Icons.insights_outlined,
+                      icon: AppIcons.lineChart,
                       title: context.tr(FinText.noDataAvailable2),
                       message: context.tr(FinText.thereIsNothingToShow2),
                     )
@@ -323,7 +324,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                         value: _formatNumber(
                                           state.data!.totalShopsWithSales,
                                         ),
-                                        icon: Icons.store,
+                                        icon: AppIcons.shop,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -333,7 +334,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                         value: _formatNumber(
                                           state.data!.totalOrders,
                                         ),
-                                        icon: Icons.receipt,
+                                        icon: AppIcons.receipt,
                                       ),
                                     ),
                                   ],
@@ -352,7 +353,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                       entry.value,
                                       entry.key,
                                     ),
-                                    icon: Icons.attach_money,
+                                    icon: AppIcons.dollar,
                                   ),
                                 ],
                               ],
@@ -382,7 +383,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
 class _SummaryStatItem extends StatelessWidget {
   final String title;
   final String value;
-  final IconData icon;
+  final AppIconData icon;
 
   const _SummaryStatItem({
     required this.title,
@@ -400,7 +401,7 @@ class _SummaryStatItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 28, color: context.status.info),
+          AppIcon(icon, size: 28, color: context.status.info),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
