@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/payments_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_picker.dart';
 
@@ -33,11 +32,10 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Payments'),
+        title: Text(context.tr(NavText.payments)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(paymentsProvider.notifier).refresh(),
           ),
@@ -60,10 +58,10 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                           ref.read(paymentsProvider.notifier).refresh(),
                     )
                   : state.payments.isEmpty
-                  ? const AppEmptyView(
+                  ? AppEmptyView(
                       icon: Icons.receipt_long_outlined,
-                      title: 'No payments found',
-                      message: 'Try changing the filters.',
+                      title: context.tr(FinText.noPaymentsFound),
+                      message: context.tr(FinText.tryChangingTheFilters),
                     )
                   : _buildPaymentsList(state),
             ),
@@ -81,39 +79,48 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
   }
 
   static const _statuses = {
-    'completed': ('Completed', Icons.check_circle_outline_rounded),
-    'pending': ('Pending', Icons.schedule_rounded),
-    'failed': ('Failed', Icons.error_outline_rounded),
-    'refunded': ('Refunded', Icons.undo_rounded),
+    'completed': (
+      Tr('Completed', 'ສຳເລັດ'),
+      Icons.check_circle_outline_rounded,
+    ),
+    'pending': (Tr('Pending', 'ລໍຖ້າ'), Icons.schedule_rounded),
+    'failed': (Tr('Failed', 'ລົ້ມເຫຼວ'), Icons.error_outline_rounded),
+    'refunded': (Tr('Refunded', 'ຄືນເງິນແລ້ວ'), Icons.undo_rounded),
   };
 
   static const _methods = {
-    'cash': ('Cash', Icons.payments_outlined),
-    'bank_transfer': ('Bank transfer', Icons.account_balance_outlined),
-    'qr_code': ('QR code', Icons.qr_code_2_rounded),
-    'card': ('Card', Icons.credit_card_rounded),
+    'cash': (Tr('Cash', 'ເງິນສົດ'), Icons.payments_outlined),
+    'bank_transfer': (
+      Tr('Bank transfer', 'ໂອນຜ່ານທະນາຄານ'),
+      Icons.account_balance_outlined,
+    ),
+    'qr_code': (Tr('QR code', 'ຄິວອາໂຄດ'), Icons.qr_code_2_rounded),
+    'card': (Tr('Card', 'ບັດ'), Icons.credit_card_rounded),
   };
 
   /// Date presets, each resolving to an inclusive (start, end) day range.
-  static List<(String, DateTimeRange Function(DateTime today))>
-  get _datePresets => [
-    ('Today', (t) => DateTimeRange(start: t, end: t)),
-    (
-      'Last 7 days',
-      (t) => DateTimeRange(start: t.subtract(const Duration(days: 6)), end: t),
-    ),
-    (
-      'This month',
-      (t) => DateTimeRange(start: DateTime(t.year, t.month), end: t),
-    ),
-    (
-      'Last month',
-      (t) => DateTimeRange(
-        start: DateTime(t.year, t.month - 1),
-        end: DateTime(t.year, t.month, 0),
-      ),
-    ),
-  ];
+  static List<(Tr, DateTimeRange Function(DateTime today))> get _datePresets =>
+      [
+        (CommonText.today, (t) => DateTimeRange(start: t, end: t)),
+        (
+          const Tr('Last 7 days', '7 ມື້ຜ່ານມາ'),
+          (t) =>
+              DateTimeRange(start: t.subtract(const Duration(days: 6)), end: t),
+        ),
+        (
+          CommonText.thisMonth,
+          (t) => DateTimeRange(start: DateTime(t.year, t.month), end: t),
+        ),
+        (
+          const Tr('Last month', 'ເດືອນແລ້ວ'),
+          (t) => DateTimeRange(
+            start: DateTime(t.year, t.month - 1),
+            end: DateTime(t.year, t.month, 0),
+          ),
+        ),
+      ];
+
+  String? _trOrNull(Tr? t) => t == null ? null : context.tr(t);
 
   String? _dateLabelFor(DateTime? start, DateTime? end) {
     if (start == null || end == null) return null;
@@ -122,11 +129,11 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
       final r = range(today);
       if (DateUtils.isSameDay(r.start, start) &&
           DateUtils.isSameDay(r.end, end)) {
-        return label;
+        return context.tr(label);
       }
     }
     final sameYear = start.year == end.year && start.year == today.year;
-    final f = DateFormat(sameYear ? 'd MMM' : 'd MMM y');
+    final f = DateFormat(sameYear ? 'd MMM' : 'd MMM y', context.localeName);
     return DateUtils.isSameDay(start, end)
         ? f.format(start)
         : '${f.format(start)} – ${f.format(end)}';
@@ -213,11 +220,13 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                           key: const ValueKey('shop'),
                           compact: compact,
                           icon: Icons.storefront_outlined,
-                          label: 'Shop',
+                          label: context.tr(CommonText.shop),
                           value: state.shopIdFilter == null
                               ? null
                               : (_shopFilter?.name ??
-                                    'Shop #${state.shopIdFilter}'),
+                                    context.tr(
+                                      FinText.shop(state.shopIdFilter),
+                                    )),
                           onTap: _pickShop,
                           onClear: () {
                             setState(() => _shopFilter = null);
@@ -228,14 +237,14 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                           key: const ValueKey('status'),
                           compact: compact,
                           icon: Icons.flag_outlined,
-                          label: 'Status',
+                          label: context.tr(CommonText.status),
                           value:
-                              _statuses[state.statusFilter]?.$1 ??
+                              _trOrNull(_statuses[state.statusFilter]?.$1) ??
                               state.statusFilter,
                           options: [
                             for (final e in _statuses.entries)
                               (
-                                e.value.$1,
+                                context.tr(e.value.$1),
                                 e.value.$2,
                                 e.key == state.statusFilter,
                                 () => notifier.setStatusFilter(e.key),
@@ -247,14 +256,16 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                           key: const ValueKey('method'),
                           compact: compact,
                           icon: Icons.account_balance_wallet_outlined,
-                          label: 'Method',
+                          label: context.tr(FinText.method),
                           value:
-                              _methods[state.paymentMethodFilter]?.$1 ??
+                              _trOrNull(
+                                _methods[state.paymentMethodFilter]?.$1,
+                              ) ??
                               state.paymentMethodFilter,
                           options: [
                             for (final e in _methods.entries)
                               (
-                                e.value.$1,
+                                context.tr(e.value.$1),
                                 e.value.$2,
                                 e.key == state.paymentMethodFilter,
                                 () => notifier.setPaymentMethodFilter(e.key),
@@ -266,21 +277,21 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                           key: const ValueKey('date'),
                           compact: compact,
                           icon: Icons.calendar_today_outlined,
-                          label: 'Date',
+                          label: context.tr(CommonText.date),
                           value: dateLabel,
                           options: [
                             for (final (label, range) in _datePresets)
                               (
-                                label,
+                                context.tr(label),
                                 Icons.event_outlined,
-                                label == dateLabel,
+                                context.tr(label) == dateLabel,
                                 () {
                                   final r = range(today);
                                   notifier.setDateRangeFilter(r.start, r.end);
                                 },
                               ),
                             (
-                              'Custom range…',
+                              context.tr(FinText.customRange),
                               Icons.date_range_outlined,
                               false,
                               () => _pickCustomRange(state),
@@ -297,7 +308,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
               // Pinned so it stays reachable however far the chips scroll.
               if (activeCount >= 2)
                 IconButton(
-                  tooltip: 'Clear all filters',
+                  tooltip: context.tr(CommonText.clearAllFilters),
                   icon: const Icon(Icons.filter_alt_off_outlined, size: 20),
                   onPressed: _clearAll,
                 ),
@@ -337,12 +348,15 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   TextSpan(
-                    text: state.totalElements == 1 ? ' payment' : ' payments',
+                    text: state.totalElements == 1
+                        ? context.tr(FinText.payment)
+                        : context.tr(FinText.payments),
                   ),
                   if (state.totalPages > 1)
                     TextSpan(
-                      text:
-                          ' · page ${state.currentPage + 1}/${state.totalPages}',
+                      text: context.tr(
+                        FinText.page(state.currentPage + 1, state.totalPages),
+                      ),
                     ),
                 ],
               ),
@@ -354,7 +368,9 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
           const SizedBox(width: 8),
           Flexible(
             child: Tooltip(
-              message: 'Completed on this page (${completed.length})',
+              message: context.tr(
+                FinText.completedOnThisPage(completed.length),
+              ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerRight,
@@ -449,7 +465,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                     const SizedBox(height: 2),
                     Text(
                       [
-                        DateFormat(
+                        AppDateFormat.of(
                           'd MMM y, HH:mm',
                         ).format(payment.paymentDate),
                         if (payment.referenceNumber != null)
@@ -475,14 +491,20 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         // "unapplied" is what will carry the shop forward next.
                         if (payment.isAvailableForRenewal)
                           _Pill(
-                            label: 'Funds next renewal',
+                            label: context.tr(FinText.fundsNextRenewal),
                             color: context.status.info,
                           )
                         else if (payment.appliedAt != null)
                           _Pill(
                             label: payment.billingPeriodEnd != null
-                                ? 'Applied → ${DateFormat('d MMM y').format(payment.billingPeriodEnd!)}'
-                                : 'Applied',
+                                ? context.tr(
+                                    FinText.applied(
+                                      AppDateFormat.of(
+                                        'd MMM y',
+                                      ).format(payment.billingPeriodEnd!),
+                                    ),
+                                  )
+                                : context.tr(FinText.applied2),
                             color: muted,
                           ),
                       ],
@@ -508,18 +530,18 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
-            tooltip: 'Previous page',
+            tooltip: context.tr(FinText.previousPage),
             icon: const Icon(Icons.chevron_left_rounded),
             onPressed: state.currentPage > 0
                 ? () => ref.read(paymentsProvider.notifier).loadPreviousPage()
                 : null,
           ),
           Text(
-            'Page ${state.currentPage + 1} of ${state.totalPages}',
+            context.tr(FinText.pageOf(state.currentPage + 1, state.totalPages)),
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           IconButton(
-            tooltip: 'Next page',
+            tooltip: context.tr(FinText.nextPage),
             icon: const Icon(Icons.chevron_right_rounded),
             onPressed: state.currentPage < state.totalPages - 1
                 ? () => ref.read(paymentsProvider.notifier).loadNextPage()
@@ -575,7 +597,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                           ),
                         ),
                         Text(
-                          'Payment #${payment.id}',
+                          context.tr(FinText.payment2(payment.id)),
                           style: TextStyle(
                             color: context.colors.onSurfaceVariant,
                           ),
@@ -633,22 +655,36 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
 
               // Details
               _buildDetailRow(
-                'Payment Date',
-                DateFormat('MMM d, yyyy HH:mm').format(payment.paymentDate),
+                context.tr(FinText.paymentDate),
+                AppDateFormat.of(
+                  'MMM d, yyyy HH:mm',
+                ).format(payment.paymentDate),
               ),
               if (payment.transactionId != null)
-                _buildDetailRow('Transaction ID', payment.transactionId!),
+                _buildDetailRow(
+                  context.tr(FinText.transactionId),
+                  payment.transactionId!,
+                ),
               if (payment.referenceNumber != null)
-                _buildDetailRow('Reference', payment.referenceNumber!),
+                _buildDetailRow(
+                  context.tr(FinText.reference),
+                  payment.referenceNumber!,
+                ),
               if (payment.description != null)
-                _buildDetailRow('Description', payment.description!),
+                _buildDetailRow(
+                  context.tr(CommonText.description),
+                  payment.description!,
+                ),
               if (payment.notes != null)
-                _buildDetailRow('Notes', payment.notes!),
+                _buildDetailRow(context.tr(CommonText.notes), payment.notes!),
               if (payment.processedBy != null)
-                _buildDetailRow('Processed By', payment.processedBy!),
+                _buildDetailRow(
+                  context.tr(FinText.processedBy),
+                  payment.processedBy!,
+                ),
               _buildDetailRow(
-                'Created',
-                DateFormat('MMM d, yyyy HH:mm').format(payment.createdAt),
+                context.tr(CommonText.created),
+                AppDateFormat.of('MMM d, yyyy HH:mm').format(payment.createdAt),
               ),
 
               const SizedBox(height: 24),
@@ -664,7 +700,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: context.colors.error,
                         ),
-                        child: const Text('Mark Failed'),
+                        child: Text(context.tr(FinText.markFailed)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -675,7 +711,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: context.status.success,
                         ),
-                        child: const Text('Mark Completed'),
+                        child: Text(context.tr(FinText.markCompleted)),
                       ),
                     ),
                   ],
@@ -731,11 +767,14 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
             UpdatePaymentStatusRequest(status: status),
           );
       messenger.showSuccess(
-        'Payment #${payment.id} marked as ${humanize(status).toLowerCase()}',
+        FinText.paymentMarkedAs(
+          payment.id,
+          humanize(status).toLowerCase(),
+        ).current,
       );
     } catch (e) {
       messenger.showError(
-        'Could not update payment #${payment.id}: ${friendlyError(e)}',
+        FinText.couldNotUpdatePayment(payment.id, friendlyError(e)).current,
       );
     }
   }
@@ -796,7 +835,7 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
       firstDate: DateTime(2020),
       // Payments can't be received in the future.
       lastDate: today,
-      helpText: 'Date payment was received',
+      helpText: context.tr(FinText.datePaymentWasReceived),
     );
     if (picked != null && mounted) setState(() => _paymentDate = picked);
   }
@@ -833,13 +872,18 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
         // The server ignored the requested date (an older backend without
         // back-dating support). Say so instead of silently storing it wrong.
         messenger.showWarning(
-          'Payment recorded for "${_shop!.name}", but the server dated it '
-          '${_dateLabel(savedDay)} instead of ${_dateLabel(_paymentDate)}. '
-          'The backend needs updating to accept past dates.',
+          FinText.paymentRecordedForButThe(
+            _shop!.name,
+            _dateLabel(savedDay),
+            _dateLabel(_paymentDate),
+          ).current,
         );
       } else {
         messenger.showSuccess(
-          'Payment recorded for "${_shop!.name}" on ${_dateLabel(_paymentDate)}',
+          FinText.paymentRecordedForOn(
+            _shop!.name,
+            _dateLabel(_paymentDate),
+          ).current,
         );
       }
     } catch (e) {
@@ -858,15 +902,15 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
     return AppFormModal(
       formKey: _formKey,
       icon: Icons.payments_outlined,
-      title: 'Record payment',
-      subtitle: 'Log money received from a shop',
-      submitLabel: 'Save payment',
+      title: context.tr(FinText.recordPayment),
+      subtitle: context.tr(FinText.logMoneyReceivedFromA),
+      submitLabel: context.tr(FinText.savePayment),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
         FormSection(
-          title: 'Payment',
+          title: context.tr(FinText.payment3),
           children: [
             ShopPickerField(
               enabled: !_saving,
@@ -876,8 +920,8 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
               children: [
                 TextFormField(
                   controller: _amount,
-                  decoration: const InputDecoration(
-                    labelText: 'Amount',
+                  decoration: InputDecoration(
+                    labelText: context.tr(CommonText.amount),
                     prefixText: '₭ ',
                   ),
                   keyboardType: const TextInputType.numberWithOptions(
@@ -891,14 +935,16 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
                             amount <= 0 ||
                             amount >= 10000000000000 ||
                             !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)
-                        ? 'Enter a positive amount with at most 2 decimals'
+                        ? context.tr(FinText.enterAPositiveAmountWith)
                         : null;
                   },
                 ),
                 DropdownButtonFormField<String>(
                   initialValue: _paymentMethod,
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Method'),
+                  decoration: InputDecoration(
+                    labelText: context.tr(FinText.method),
+                  ),
                   items: const [
                     DropdownMenuItem(value: 'cash', child: Text('Cash')),
                     DropdownMenuItem(
@@ -917,10 +963,12 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
               onTap: _saving ? null : _pickDate,
               child: InputDecorator(
                 decoration: InputDecoration(
-                  labelText: 'Payment date',
+                  labelText: context.tr(FinText.paymentDate2),
                   prefixIcon: const Icon(Icons.event_outlined, size: 20),
                   suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
-                  helperText: backdated ? 'Back-dated record' : null,
+                  helperText: backdated
+                      ? context.tr(FinText.backDatedRecord)
+                      : null,
                 ),
                 child: Text(_dateLabel(_paymentDate)),
               ),
@@ -928,14 +976,14 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
           ],
         ),
         FormSection(
-          title: 'Reference',
-          hint: 'Optional. Helps match this payment to a bank statement.',
+          title: context.tr(FinText.reference),
+          hint: context.tr(FinText.optionalHelpsMatchThisPayment),
           children: [
             TextFormField(
               controller: _reference,
               maxLength: 255,
-              decoration: const InputDecoration(
-                labelText: 'Transaction reference',
+              decoration: InputDecoration(
+                labelText: context.tr(FinText.transactionReference),
               ),
             ),
             TextFormField(
@@ -943,8 +991,8 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
               maxLength: 4000,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
+              decoration: InputDecoration(
+                labelText: context.tr(CommonText.notes),
                 alignLabelWithHint: true,
               ),
             ),
@@ -956,8 +1004,8 @@ class _RecordPaymentDialogState extends ConsumerState<_RecordPaymentDialog> {
 }
 
 String _dateLabel(DateTime d) => DateUtils.isSameDay(d, DateTime.now())
-    ? 'Today, ${DateFormat('d MMM y').format(d)}'
-    : DateFormat('EEE, d MMM y').format(d);
+    ? FinText.today(AppDateFormat.of('d MMM y').format(d)).current
+    : AppDateFormat.of('EEE, d MMM y').format(d);
 
 /// Small neutral label used for secondary payment facts.
 class _Pill extends StatelessWidget {
@@ -1054,7 +1102,7 @@ class _FilterButton extends StatelessWidget {
                 ),
                 if (active)
                   IconButton(
-                    tooltip: 'Clear $label filter',
+                    tooltip: context.tr(FinText.clearFilter(label)),
                     visualDensity: VisualDensity.compact,
                     iconSize: 16,
                     constraints: const BoxConstraints.tightFor(

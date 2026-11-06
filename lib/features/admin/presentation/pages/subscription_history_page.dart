@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -62,10 +61,10 @@ class _SubscriptionHistoryPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Subscription History'),
+        title: Text(context.tr(SubsText.subscriptionHistory)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _loadHistory,
           ),
@@ -83,13 +82,18 @@ class _SubscriptionHistoryPageState
                   const Icon(Icons.history, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    '${historyState.totalCount} total records',
+                    context.tr(SubsText.totalRecords(historyState.totalCount)),
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const Spacer(),
                   if (historyState.totalPages > 1)
                     Text(
-                      'Page ${historyState.currentPage + 1} of ${historyState.totalPages}',
+                      context.tr(
+                        SubsText.pageOf(
+                          historyState.currentPage + 1,
+                          historyState.totalPages,
+                        ),
+                      ),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                 ],
@@ -123,14 +127,14 @@ class _SubscriptionHistoryPageState
           Icon(Icons.history, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
-            'No history found',
+            context.tr(SubsText.noHistoryFound),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           Text(
             widget.shopId != null
-                ? 'No changes have been made to this subscription yet'
-                : 'No subscription changes recorded',
+                ? context.tr(SubsText.noChangesHaveBeenMade)
+                : context.tr(SubsText.noSubscriptionChangesRecorded),
             style: TextStyle(color: context.colors.onSurfaceVariant),
           ),
         ],
@@ -285,7 +289,9 @@ class _SubscriptionHistoryPageState
                           ),
                           const SizedBox(width: 2),
                           Text(
-                            DateFormat('MMM d, HH:mm').format(entry.createdAt),
+                            AppDateFormat.of(
+                              'MMM d, HH:mm',
+                            ).format(entry.createdAt),
                             style: TextStyle(
                               color: context.colors.onSurfaceVariant,
                               fontSize: 10,
@@ -320,7 +326,7 @@ class _SubscriptionHistoryPageState
                     ),
                     const SizedBox(width: 2),
                     Text(
-                      entry.performedBy ?? 'System',
+                      entry.performedBy ?? context.tr(NavText.groupSystem),
                       style: TextStyle(
                         color: context.colors.onSurfaceVariant,
                         fontSize: 10,

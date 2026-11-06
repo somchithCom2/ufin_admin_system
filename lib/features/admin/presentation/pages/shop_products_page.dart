@@ -73,10 +73,10 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.shop.name} — Products'),
+        title: Text(context.tr(ShopText.products3(widget.shop.name))),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _applyFilters,
           ),
@@ -92,7 +92,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                 Expanded(
                   child: AppSearchField(
                     controller: _searchController,
-                    hintText: 'Search products…',
+                    hintText: context.tr(ShopText.searchProducts),
                     onSubmitted: (_) => _applyFilters(),
                   ),
                 ),
@@ -109,13 +109,13 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                     _applyFilters();
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: null,
-                      child: Text('All Products'),
+                      child: Text(context.tr(ShopText.allProducts)),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'inStock',
-                      child: Text('In Stock Only'),
+                      child: Text(context.tr(ShopText.inStockOnly)),
                     ),
                   ],
                 ),
@@ -129,7 +129,11 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
               child: Row(
                 children: [
                   Text(
-                    '${state.products.length} product${state.products.length == 1 ? '' : 's'} loaded',
+                    state.products.length == 1
+                        ? context.tr(ShopText.n1ProductLoaded)
+                        : context.tr(
+                            ShopText.productsLoaded(state.products.length),
+                          ),
                     style: TextStyle(
                       color: context.colors.onSurfaceVariant,
                       fontSize: 12,
@@ -138,7 +142,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                   if (state.hasNext) ...[
                     const SizedBox(width: 4),
                     Text(
-                      '• more available',
+                      context.tr(ShopText.moreAvailable),
                       style: TextStyle(
                         color: context.status.info,
                         fontSize: 12,
@@ -156,10 +160,10 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                 : state.error != null && state.products.isEmpty
                 ? _buildError(state.error!)
                 : state.products.isEmpty
-                ? const AppEmptyView(
+                ? AppEmptyView(
                     icon: Icons.inventory_outlined,
-                    title: 'No products found',
-                    message: 'This shop has no products matching the filters.',
+                    title: context.tr(ShopText.noProductsFound),
+                    message: context.tr(ShopText.thisShopHasNoProducts),
                   )
                 : _buildList(state.products, state.isLoadingMore),
           ),
@@ -233,7 +237,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
           children: [
             if (product.sku != null)
               Text(
-                'SKU: ${product.sku}',
+                context.tr(ShopText.sku(product.sku)),
                 style: TextStyle(
                   fontSize: 12,
                   color: context.colors.onSurfaceVariant,
@@ -254,8 +258,8 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                 const SizedBox(width: 4),
                 _chip(
                   isOutOfStock
-                      ? 'Out of Stock'
-                      : 'Qty: ${product.stockQuantity}',
+                      ? context.tr(ShopText.outOfStock)
+                      : context.tr(ShopText.qty(product.stockQuantity)),
                   isOutOfStock ? context.colors.error : context.status.success,
                 ),
               ],
@@ -263,7 +267,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
           ],
         ),
         trailing: !product.isActive
-            ? _chip('Inactive', context.status.neutral)
+            ? _chip(context.tr(ShopText.inactive2), context.status.neutral)
             : null,
       ),
     );

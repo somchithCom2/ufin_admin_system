@@ -53,8 +53,10 @@ class _SubscriptionDaysFormState extends State<_SubscriptionDaysForm> {
 
   String? _validateDays(String? value) {
     final days = int.tryParse(value?.trim() ?? '');
-    if (days == null) return 'Enter a whole number of days';
-    if (days < 1 || days > _maxDays) return 'Enter 1 to $_maxDays days';
+    if (days == null) return context.tr(SubsText.enterAWholeNumberOf);
+    if (days < 1 || days > _maxDays) {
+      return context.tr(SubsText.enter1ToDays(_maxDays));
+    }
     return null;
   }
 
@@ -87,18 +89,22 @@ class _SubscriptionDaysFormState extends State<_SubscriptionDaysForm> {
       icon: reduce
           ? Icons.remove_circle_outline_rounded
           : Icons.add_circle_outline_rounded,
-      title: reduce ? 'Reduce subscription' : 'Extend subscription',
+      title: reduce
+          ? context.tr(SubsText.reduceSubscription)
+          : context.tr(SubsText.extendSubscription),
       subtitle: widget.shopName,
-      submitLabel: reduce ? 'Reduce' : 'Extend',
+      submitLabel: reduce
+          ? context.tr(SubsText.reduce2)
+          : context.tr(SubsText.extend2),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
         FormSection(
-          title: 'Period',
+          title: context.tr(SubsText.period),
           hint: reduce
-              ? 'Moves the expiry date earlier. It cannot move before today.'
-              : 'Moves the expiry date later. No payment is recorded.',
+              ? context.tr(SubsText.movesTheExpiryDateEarlier)
+              : context.tr(SubsText.movesTheExpiryDateLater),
           children: [
             TextFormField(
               controller: _days,
@@ -106,25 +112,31 @@ class _SubscriptionDaysFormState extends State<_SubscriptionDaysForm> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
-                labelText: reduce ? 'Days to remove' : 'Days to add',
-                suffixText: 'days',
+                labelText: reduce
+                    ? context.tr(SubsText.daysToRemove)
+                    : context.tr(SubsText.daysToAdd),
+                suffixText: context.tr(SubsText.days),
               ),
               validator: _validateDays,
             ),
           ],
         ),
         FormSection(
-          title: 'Reason',
+          title: context.tr(CommonText.reason),
           children: [
             TextFormField(
               controller: _reason,
               minLines: 2,
               maxLines: 3,
               decoration: InputDecoration(
-                labelText: reduce ? 'Reason' : 'Reason (optional)',
+                labelText: reduce
+                    ? context.tr(CommonText.reason)
+                    : context.tr(SubsText.reasonOptional),
                 alignLabelWithHint: true,
               ),
-              validator: reduce ? FormValidators.required('Reason') : null,
+              validator: reduce
+                  ? FormValidators.required(context.tr(CommonText.reason))
+                  : null,
               onFieldSubmitted: (_) => _submit(),
             ),
           ],

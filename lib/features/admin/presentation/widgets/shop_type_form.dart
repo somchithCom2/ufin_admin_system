@@ -158,17 +158,21 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
     return AppFormModal(
       formKey: _formKey,
       icon: _isEdit ? Icons.edit_outlined : Icons.category_outlined,
-      title: _isEdit ? 'Edit shop type' : 'New shop type',
+      title: _isEdit
+          ? context.tr(ShopTypeText.editShopType)
+          : context.tr(ShopTypeText.newShopType),
       subtitle: _isEdit
           ? widget.existing!.name
-          : 'Group shops by the kind of business they run',
-      submitLabel: _isEdit ? 'Save changes' : 'Create shop type',
+          : context.tr(ShopTypeText.groupShopsByTheKind),
+      submitLabel: _isEdit
+          ? context.tr(CommonText.saveChanges)
+          : context.tr(ShopTypeText.createShopType),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
         FormSection(
-          title: 'Basics',
+          title: context.tr(ShopTypeText.basics),
           children: [
             TextFormField(
               controller: _code,
@@ -177,32 +181,34 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9_]')),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Code',
+              decoration: InputDecoration(
+                labelText: context.tr(CommonText.code),
                 hintText: 'RESTAURANT',
-                helperText: 'Letters, numbers and _',
+                helperText: context.tr(ShopTypeText.lettersNumbersAnd),
               ),
-              validator: FormValidators.required('Code'),
+              validator: FormValidators.required(context.tr(CommonText.code)),
             ),
           ],
         ),
         FormSection(
-          title: 'Name',
+          title: context.tr(CommonText.name),
           children: [
             FormRow(
               children: [
                 TextFormField(
                   controller: _nameEn,
-                  decoration: const InputDecoration(
-                    labelText: 'English',
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.english),
                     hintText: 'Restaurant',
                   ),
-                  validator: FormValidators.required('English name'),
+                  validator: FormValidators.required(
+                    context.tr(ShopTypeText.englishName),
+                  ),
                 ),
                 TextFormField(
                   controller: _nameLo,
-                  decoration: const InputDecoration(
-                    labelText: 'Lao (optional)',
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.laoOptional),
                     hintText: 'ຮ້ານອາຫານ',
                   ),
                 ),
@@ -211,15 +217,15 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
           ],
         ),
         FormSection(
-          title: 'Description',
-          hint: 'Optional. Shown to owners when they pick a shop type.',
+          title: context.tr(CommonText.description),
+          hint: context.tr(ShopTypeText.optionalShownToOwnersWhen),
           children: [
             TextFormField(
               controller: _descEn,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'English',
+              decoration: InputDecoration(
+                labelText: context.tr(ShopTypeText.english),
                 alignLabelWithHint: true,
               ),
             ),
@@ -227,8 +233,8 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
               controller: _descLo,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Lao',
+              decoration: InputDecoration(
+                labelText: context.tr(ShopTypeText.lao),
                 alignLabelWithHint: true,
               ),
             ),

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/daily_sales_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
@@ -45,7 +44,9 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
         startDate.minute == 0 &&
         endDate.hour == 23 &&
         endDate.minute == 59;
-    final format = DateFormat(wholeDays ? 'dd/MM/yyyy' : 'dd/MM/yyyy HH:mm');
+    final format = AppDateFormat.of(
+      wholeDays ? 'dd/MM/yyyy' : 'dd/MM/yyyy HH:mm',
+    );
     return '${format.format(startDate)} - ${format.format(endDate)}';
   }
 
@@ -61,7 +62,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
   ) {
     return ListTile(
       title: Text(title),
-      subtitle: Text(DateFormat('HH:mm').format(value)),
+      subtitle: Text(AppDateFormat.of('HH:mm').format(value)),
       trailing: const Icon(Icons.access_time),
       onTap: () async {
         final picked = await showTimePicker(
@@ -80,7 +81,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
   }
 
   void _showFilterModal() {
-    final formatter = DateFormat('dd/MM/yyyy');
+    final formatter = AppDateFormat.of('dd/MM/yyyy');
 
     showModalBottomSheet(
       context: context,
@@ -100,7 +101,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                     children: [
                       // Title
                       Text(
-                        'Filter Daily Sales',
+                        context.tr(FinText.filterDailySales),
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 20),
@@ -114,7 +115,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                         child: Column(
                           children: [
                             ListTile(
-                              title: const Text('Start Date'),
+                              title: Text(context.tr(FinText.startDate)),
                               subtitle: Text(formatter.format(startDate)),
                               trailing: const Icon(Icons.calendar_today),
                               onTap: () async {
@@ -136,7 +137,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                             ),
                             _timeTile(
                               context,
-                              'Start Time',
+                              context.tr(FinText.startTime),
                               startDate,
                               (time) => setModalState(
                                 () => startDate = _at(startDate, time),
@@ -155,7 +156,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                         child: Column(
                           children: [
                             ListTile(
-                              title: const Text('End Date'),
+                              title: Text(context.tr(FinText.endDate)),
                               subtitle: Text(formatter.format(endDate)),
                               trailing: const Icon(Icons.calendar_today),
                               onTap: () async {
@@ -177,7 +178,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                             ),
                             _timeTile(
                               context,
-                              'End Time',
+                              context.tr(FinText.endTime),
                               endDate,
                               (time) => setModalState(
                                 () => endDate = _at(endDate, time),
@@ -189,7 +190,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                       if (endDate.isBefore(startDate)) ...[
                         const SizedBox(height: 12),
                         Text(
-                          'End must not be before start.',
+                          context.tr(FinText.endMustNotBeBefore),
                           style: TextStyle(color: context.colors.error),
                         ),
                       ],
@@ -200,7 +201,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           Expanded(
                             child: TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancel'),
+                              child: Text(context.tr(CommonText.cancel)),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -218,7 +219,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                       Navigator.pop(context);
                                     },
                               icon: const Icon(Icons.search),
-                              label: const Text('Search'),
+                              label: Text(context.tr(CommonText.search)),
                             ),
                           ),
                         ],
@@ -242,16 +243,15 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Daily Sales Summary'),
+        title: Text(context.tr(FinText.dailySalesSummary)),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),
-            tooltip: 'Filter',
+            tooltip: context.tr(CommonText.filter),
             onPressed: _showFilterModal,
           ),
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref
                 .read(dailySalesProvider.notifier)
@@ -301,10 +301,10 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           ),
                     )
                   : state.data == null
-                  ? const AppEmptyView(
+                  ? AppEmptyView(
                       icon: Icons.insights_outlined,
-                      title: 'No data available',
-                      message: 'There is nothing to show for this period.',
+                      title: context.tr(FinText.noDataAvailable2),
+                      message: context.tr(FinText.thereIsNothingToShow2),
                     )
                   : SingleChildScrollView(
                       child: Column(
@@ -319,7 +319,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                   children: [
                                     Expanded(
                                       child: _SummaryStatItem(
-                                        title: 'Total Shops',
+                                        title: context.tr(FinText.totalShops),
                                         value: _formatNumber(
                                           state.data!.totalShopsWithSales,
                                         ),
@@ -329,7 +329,7 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: _SummaryStatItem(
-                                        title: 'Total Orders',
+                                        title: context.tr(FinText.totalOrders),
                                         value: _formatNumber(
                                           state.data!.totalOrders,
                                         ),
@@ -345,7 +345,9 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                                 ).entries) ...[
                                   const SizedBox(height: 12),
                                   _SummaryStatItem(
-                                    title: 'Net Income (${entry.key})',
+                                    title: context.tr(
+                                      FinText.netIncome(entry.key),
+                                    ),
                                     value: MoneyFormat.format(
                                       entry.value,
                                       entry.key,
@@ -467,7 +469,7 @@ class _ShopSalesCard extends StatelessWidget {
                   ),
                   Text(
                     // A shop that sold in two currencies has a card for each.
-                    'ID: ${shop.shopId} · ${shop.currency}',
+                    context.tr(FinText.id(shop.shopId, shop.currency)),
                     style: TextStyle(
                       fontSize: 11,
                       color: context.status.neutral,
@@ -490,15 +492,15 @@ class _ShopSalesCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _MetricItem(
-                label: 'Orders',
+                label: context.tr(FinText.orders),
                 value: _formatNumber(shop.totalOrders),
               ),
               _MetricItem(
-                label: 'Items Sold',
+                label: context.tr(FinText.itemsSold),
                 value: _formatNumber(shop.itemsSold),
               ),
               _MetricItem(
-                label: 'Avg Order',
+                label: context.tr(FinText.avgOrder),
                 value: _formatCurrency(shop.averageOrderValue),
               ),
             ],

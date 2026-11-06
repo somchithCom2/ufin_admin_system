@@ -38,22 +38,24 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const AppLogo(size: 64),
+            const AppLogo(size: 56),
             const SizedBox(height: 20),
             Text(
-              'UFin Admin',
-              style: Theme.of(context).textTheme.headlineSmall,
+              context.tr(NavText.appName),
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
-              'Restoring your session…',
+              context.tr(AuthText.restoring),
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 28),
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2.4),
+            SizedBox(
+              width: 120,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: const LinearProgressIndicator(minHeight: 3),
+              ),
             ),
           ],
         ),
@@ -62,7 +64,8 @@ class SplashScreen extends StatelessWidget {
   }
 }
 
-/// Brand mark used on splash, login and the sidebar.
+/// Brand mark used on splash, login and the sidebar: a "U" monogram on the
+/// brand color. Drawn with text so it stays crisp at any size.
 class AppLogo extends StatelessWidget {
   final double size;
   const AppLogo({super.key, this.size = 40});
@@ -73,14 +76,21 @@ class AppLogo extends StatelessWidget {
     return Container(
       width: size,
       height: size,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.28),
+        borderRadius: BorderRadius.circular(size * 0.3),
         color: scheme.primary,
       ),
-      child: Icon(
-        Icons.admin_panel_settings_rounded,
-        color: scheme.onPrimary,
-        size: size * 0.56,
+      child: Text(
+        'U',
+        textScaler: TextScaler.noScaling,
+        style: TextStyle(
+          color: scheme.onPrimary,
+          fontSize: size * 0.52,
+          fontWeight: FontWeight.w800,
+          height: 1,
+          letterSpacing: -0.5,
+        ),
       ),
     );
   }
@@ -99,9 +109,7 @@ class AuthGuard extends ConsumerWidget {
 
     if (!authState.isAuthenticated) {
       return unauthorizedWidget ??
-          const Scaffold(
-            body: Center(child: Text('Unauthorized. Please login.')),
-          );
+          const Scaffold(body: Center(child: _UnauthorizedText()));
     }
 
     return child;
@@ -132,11 +140,11 @@ class SessionInfo extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  authState.username ?? 'Admin',
+                  authState.username ?? context.tr(NavText.admin),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  'Administrator',
+                  context.tr(NavText.administrator),
                   style: TextStyle(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -149,4 +157,11 @@ class SessionInfo extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _UnauthorizedText extends StatelessWidget {
+  const _UnauthorizedText();
+
+  @override
+  Widget build(BuildContext context) => Text(context.tr(AuthText.unauthorized));
 }

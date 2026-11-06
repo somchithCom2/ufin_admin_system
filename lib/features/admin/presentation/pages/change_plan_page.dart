@@ -40,7 +40,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
 
   String _priceLabel(AdminPlan plan) {
     final price = _priceOf(plan);
-    if (price == 0) return 'Free';
+    if (price == 0) return context.tr(SubsText.free2);
     return '${MoneyFormat.format(price, plan.currency)} / ${_annual ? 'year' : 'month'}';
   }
 
@@ -50,10 +50,10 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Change Plan'),
+        title: Text(context.tr(SubsText.changePlan2)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(plansProvider.notifier).loadPlans(),
           ),
@@ -73,9 +73,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                           ref.read(plansProvider.notifier).loadPlans(),
                     )
                   : plansState.plans.isEmpty
-                  ? const AppEmptyView(
+                  ? AppEmptyView(
                       icon: Icons.inventory_2_outlined,
-                      title: 'No plans available',
+                      title: context.tr(SubsText.noPlansAvailable),
                     )
                   : _buildPlansList(plansState.plans),
             ),
@@ -93,14 +93,23 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
         ? ''
         : ' · ${humanize(sub.billingCycle!)}';
     return SectionCard(
-      title: 'Current plan',
+      title: context.tr(SubsText.currentPlan),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(sub.planName ?? 'No plan', style: context.text.titleLarge),
+          Text(
+            sub.planName ?? context.tr(SubsText.noPlan3),
+            style: context.text.titleLarge,
+          ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            '${sub.shopName} · ${MoneyFormat.format(sub.pricePaid, sub.currency)} paid$cycle',
+            context.tr(
+              SubsText.paid(
+                sub.shopName,
+                MoneyFormat.format(sub.pricePaid, sub.currency),
+                cycle,
+              ),
+            ),
             style: context.text.bodyMedium?.copyWith(color: muted),
           ),
         ],
@@ -120,13 +129,22 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
         Row(
           children: [
             Expanded(
-              child: Text('Choose a new plan', style: context.text.titleMedium),
+              child: Text(
+                context.tr(SubsText.chooseANewPlan),
+                style: context.text.titleMedium,
+              ),
             ),
             SegmentedButton<String>(
               showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: 'monthly', label: Text('Monthly')),
-                ButtonSegment(value: 'annual', label: Text('Yearly')),
+              segments: [
+                ButtonSegment(
+                  value: 'monthly',
+                  label: Text(context.tr(SubsText.monthly2)),
+                ),
+                ButtonSegment(
+                  value: 'annual',
+                  label: Text(context.tr(SubsText.yearly2)),
+                ),
               ],
               selected: {_selectedBillingCycle},
               onSelectionChanged: (s) =>
@@ -191,8 +209,8 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                       children: [
                         Text(plan.name, style: context.text.titleMedium),
                         if (isCurrentPlan)
-                          const StatusBadge(
-                            label: 'Current',
+                          StatusBadge(
+                            label: context.tr(SubsText.current),
                             tone: StatusTone.primary,
                           )
                         else if (changeType != null)
@@ -229,10 +247,19 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       [
-                        _limit(plan.maxEmployees, 'employees'),
-                        _limit(plan.maxProducts, 'products'),
+                        _limit(
+                          plan.maxEmployees,
+                          context.tr(SubsText.employees3),
+                        ),
+                        _limit(
+                          plan.maxProducts,
+                          context.tr(SubsText.products3),
+                        ),
                         if (plan.maxOrdersPerMonth != null)
-                          _limit(plan.maxOrdersPerMonth, 'orders / month'),
+                          _limit(
+                            plan.maxOrdersPerMonth,
+                            context.tr(SubsText.ordersMonth),
+                          ),
                       ].join(' · '),
                       style: context.text.bodySmall?.copyWith(color: muted),
                     ),
@@ -248,7 +275,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
 
   /// Null means no limit; 0 is a real limit of zero.
   String _limit(int? value, String unit) =>
-      value == null ? 'Unlimited $unit' : '$value $unit';
+      value == null ? context.tr(SubsText.unlimited2(unit)) : '$value $unit';
 
   /// The saving against twelve monthly payments, when there is one.
   Widget? _yearlySaving(AdminPlan plan) {
@@ -256,7 +283,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
     final saving = twelveMonths - plan.priceYearly;
     if (plan.priceYearly <= 0 || saving <= 0) return null;
     return Text(
-      'Saves ${(saving / twelveMonths * 100).round()}%',
+      context.tr(SubsText.saves((saving / twelveMonths * 100).round())),
       style: context.text.bodySmall?.copyWith(color: context.status.success),
     );
   }
@@ -276,7 +303,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              '$action to ${plan.name} · ${_priceLabel(plan)}',
+              context.tr(SubsText.to(action, plan.name, _priceLabel(plan))),
               style: context.text.titleSmall,
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -295,7 +322,7 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text('$action plan'),
+                  : Text(context.tr(SubsText.plan(action))),
             ),
           ],
         ),
@@ -305,9 +332,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
 
   /// What the server does on a plan change with a billing cycle: the new plan
   /// applies at once and a fresh period starts today.
-  String _effectNote() =>
-      'Applies immediately. A new ${_annual ? 'one-year' : 'one-month'} '
-      'period starts today and the subscription becomes active.';
+  String _effectNote() => context.tr(
+    SubsText.appliesImmediatelyANewPeriod(_annual ? 'one-year' : 'one-month'),
+  );
 
   /// Upgrade or downgrade, decided the way the server records it: by
   /// comparing monthly prices with the shop's current plan. Plan codes are
@@ -332,9 +359,9 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
   }
 
   String _actionLabel(String? changeType) => switch (changeType) {
-    'upgrade' => 'Upgrade',
-    'downgrade' => 'Downgrade',
-    _ => 'Change',
+    'upgrade' => context.tr(SubsText.upgrade),
+    'downgrade' => context.tr(SubsText.downgrade),
+    _ => context.tr(CommonText.change),
   };
 
   IconData _actionIcon(String? changeType) => switch (changeType) {
@@ -350,11 +377,17 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
 
     final reason = await AppDialogs.confirmWithReason(
       context,
-      title: '$action plan?',
-      message:
-          '${widget.subscription.shopName} moves from '
-          '${widget.subscription.planName ?? 'no plan'} to ${plan.name} '
-          'at ${_priceLabel(plan)}. ${_effectNote()}',
+      title: context.tr(SubsText.plan2(action)),
+      message: context.tr(
+        SubsText.movesFromToAt(
+          widget.subscription.shopName,
+          widget.subscription.planName ??
+              context.tr(SubsText.noPlan2).toLowerCase(),
+          plan.name,
+          _priceLabel(plan),
+          _effectNote(),
+        ),
+      ),
       confirmLabel: action,
       icon: _actionIcon(changeType),
       destructive: changeType == 'downgrade',
@@ -375,15 +408,17 @@ class _ChangePlanPageState extends ConsumerState<ChangePlanPage> {
           );
       if (!mounted) return;
       messenger.showSuccess(switch (changeType) {
-        'upgrade' => 'Upgraded to ${plan.name}',
-        'downgrade' => 'Downgraded to ${plan.name}',
-        _ => 'Plan changed to ${plan.name}',
+        'upgrade' => context.tr(SubsText.upgradedTo(plan.name)),
+        'downgrade' => context.tr(SubsText.downgradedTo(plan.name)),
+        _ => context.tr(SubsText.planChangedTo(plan.name)),
       });
       navigator.pop(true);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isProcessing = false);
-      messenger.showError('Failed to change plan: ${friendlyError(e)}');
+      messenger.showError(
+        context.tr(SubsText.failedToChangePlan(friendlyError(e))),
+      );
     }
   }
 }

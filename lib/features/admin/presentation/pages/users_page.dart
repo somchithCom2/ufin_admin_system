@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class UsersPage extends ConsumerStatefulWidget {
@@ -57,11 +56,10 @@ class _UsersPageState extends ConsumerState<UsersPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Users'),
+        title: Text(context.tr(NavText.users)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref
                 .read(usersProvider.notifier)
@@ -84,7 +82,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   Expanded(
                     child: AppSearchField(
                       controller: _searchController,
-                      hintText: 'Search users…',
+                      hintText: context.tr(UserText.searchUsers),
                       onSubmitted: (value) {
                         if (_scrollController.hasClients) {
                           _scrollController.jumpTo(0);
@@ -129,45 +127,45 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                           );
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'clear',
-                        child: Text('Clear Filters'),
+                        child: Text(context.tr(UserText.clearFilters)),
                       ),
                       const PopupMenuDivider(),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         enabled: false,
                         child: Text(
-                          'Status',
+                          context.tr(CommonText.status),
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'status:active',
-                        child: Text('  Active'),
+                        child: Text(context.tr(UserText.active)),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'status:suspended',
-                        child: Text('  Suspended'),
+                        child: Text(context.tr(UserText.suspended)),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'status:deleted',
-                        child: Text('  Deleted'),
+                        child: Text(context.tr(UserText.deleted)),
                       ),
                       const PopupMenuDivider(),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         enabled: false,
                         child: Text(
-                          'Type',
+                          context.tr(CommonText.type),
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'type:CLIENT',
-                        child: Text('  Shop Owner'),
+                        child: Text(context.tr(UserText.shopOwner)),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'type:STAFF',
-                        child: Text('  Employee'),
+                        child: Text(context.tr(UserText.employee)),
                       ),
                     ],
                   ),
@@ -181,10 +179,10 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   : usersState.error != null && usersState.users.isEmpty
                   ? _buildErrorView(usersState.error!)
                   : usersState.users.isEmpty
-                  ? const AppEmptyView(
+                  ? AppEmptyView(
                       icon: Icons.people_outline_rounded,
-                      title: 'No users found',
-                      message: 'Try a different search or filter.',
+                      title: context.tr(UserText.noUsersFound),
+                      message: context.tr(UserText.tryADifferentSearchOr),
                     )
                   : _buildUserList(usersState.users),
             ),
@@ -286,13 +284,13 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           trailing: PopupMenuButton<String>(
             onSelected: (action) => _handleUserAction(user, action),
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'view',
                 child: Row(
                   children: [
                     Icon(Icons.visibility),
                     SizedBox(width: 8),
-                    Text('View Details'),
+                    Text(context.tr(UserText.viewDetails)),
                   ],
                 ),
               ),
@@ -305,7 +303,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     children: [
                       Icon(Icons.block, color: context.status.warning),
                       SizedBox(width: 8),
-                      Text('Suspend'),
+                      Text(context.tr(UserText.suspend)),
                     ],
                   ),
                 ),
@@ -316,7 +314,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     children: [
                       Icon(Icons.check_circle, color: context.status.success),
                       SizedBox(width: 8),
-                      Text('Activate'),
+                      Text(context.tr(UserText.activate)),
                     ],
                   ),
                 ),
@@ -327,7 +325,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     children: [
                       Icon(Icons.delete, color: context.colors.error),
                       SizedBox(width: 8),
-                      Text('Delete'),
+                      Text(context.tr(CommonText.delete)),
                     ],
                   ),
                 ),
@@ -338,7 +336,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     children: [
                       Icon(Icons.verified_user, color: context.status.success),
                       SizedBox(width: 8),
-                      Text('Mark Verified'),
+                      Text(context.tr(UserText.markVerified)),
                     ],
                   ),
                 ),
@@ -349,18 +347,18 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     children: [
                       Icon(Icons.badge_outlined, color: context.status.info),
                       const SizedBox(width: 8),
-                      const Text('Change Username'),
+                      Text(context.tr(UserText.changeUsername)),
                     ],
                   ),
                 ),
               if (!isDeleted)
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'reset_password',
                   child: Row(
                     children: [
                       Icon(Icons.lock_reset_rounded),
                       SizedBox(width: 8),
-                      Text('Reset Password'),
+                      Text(context.tr(UserText.resetPassword)),
                     ],
                   ),
                 ),
@@ -435,41 +433,39 @@ class _UsersPageState extends ConsumerState<UsersPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change Username'),
+        title: Text(context.tr(UserText.changeUsername)),
         content: Form(
           key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Current: "${user.username}". The user is signed out on every '
-                'device and must sign in with the new username. Email and '
-                'phone sign-in keep working.',
-              ),
+              Text(context.tr(UserText.currentTheUserIsSigned(user.username))),
               const SizedBox(height: 16),
               TextFormField(
                 controller: usernameController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'New username',
-                  helperText: 'Letters, digits, . _ -  (3-50, no spaces)',
+                decoration: InputDecoration(
+                  labelText: context.tr(UserText.newUsername),
+                  helperText: context.tr(UserText.lettersDigits350No),
                 ),
                 validator: (value) {
                   final name = value?.trim() ?? '';
-                  if (name.isEmpty) return 'Username is required';
+                  if (name.isEmpty) {
+                    return context.tr(UserText.usernameIsRequired);
+                  }
                   if (name == user.username) {
-                    return 'Enter a different username';
+                    return context.tr(UserText.enterADifferentUsername);
                   }
                   if (name.length < 3 || name.length > 50) {
-                    return 'Must be 3 to 50 characters';
+                    return context.tr(UserText.mustBe3To50);
                   }
                   if (!_usernamePattern.hasMatch(name)) {
-                    return 'Only English letters, digits, . _ -';
+                    return context.tr(UserText.onlyEnglishLettersDigits);
                   }
                   // Sign-in refuses "--", so the backend does too.
                   if (name.contains('--')) {
-                    return 'No two dashes in a row';
+                    return context.tr(UserText.noTwoDashesInA);
                   }
                   return null;
                 },
@@ -477,9 +473,9 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: reasonController,
-                decoration: const InputDecoration(
-                  labelText: 'Reason (optional)',
-                  hintText: 'e.g. old username had spaces',
+                decoration: InputDecoration(
+                  labelText: context.tr(UserText.reasonOptional),
+                  hintText: context.tr(UserText.eGOldUsernameHad),
                 ),
               ),
             ],
@@ -488,7 +484,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.tr(CommonText.cancel)),
           ),
           FilledButton(
             onPressed: () async {
@@ -502,15 +498,15 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                     .read(usersProvider.notifier)
                     .changeUsername(user.id, username, reason);
                 messenger.showSuccess(
-                  '"${user.username}" is now "$username". Tell them to sign in again.',
+                  UserText.isNowTellThemTo(user.username, username).current,
                 );
               } catch (e) {
                 messenger.showError(
-                  'Failed to change username: ${friendlyError(e)}',
+                  UserText.failedToChangeUsername(friendlyError(e)).current,
                 );
               }
             },
-            child: const Text('Change'),
+            child: Text(context.tr(CommonText.change)),
           ),
         ],
       ),
@@ -534,7 +530,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Mark Verified'),
+          title: Text(context.tr(UserText.markVerified)),
           content: Form(
             key: formKey,
             child: Column(
@@ -542,9 +538,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Use this when "${user.username}" never received their '
-                  'verification code. Only do it after confirming the contact '
-                  'belongs to the person asking.',
+                  context.tr(UserText.useThisWhenNeverReceived(user.username)),
                 ),
                 const SizedBox(height: 16),
                 Wrap(
@@ -555,8 +549,8 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       ChoiceChip(
                         label: Text(
                           option == 'phone'
-                              ? 'Phone: ${user.phone}'
-                              : 'Email: ${user.email}',
+                              ? context.tr(UserText.phone(user.phone))
+                              : context.tr(UserText.email(user.email)),
                         ),
                         selected: channel == option,
                         onSelected: (_) =>
@@ -567,12 +561,12 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: reasonController,
-                  decoration: const InputDecoration(
-                    labelText: 'How did you confirm it is them?',
-                    hintText: 'e.g. called back on the registered number',
+                  decoration: InputDecoration(
+                    labelText: context.tr(UserText.howDidYouConfirmIt),
+                    hintText: context.tr(UserText.eGCalledBackOn),
                   ),
                   validator: (value) => (value == null || value.trim().isEmpty)
-                      ? 'Reason is required'
+                      ? context.tr(UserText.reasonIsRequired)
                       : null,
                 ),
               ],
@@ -581,7 +575,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.tr(CommonText.cancel)),
             ),
             FilledButton(
               onPressed: () async {
@@ -594,15 +588,17 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       .read(usersProvider.notifier)
                       .markUserVerified(user.id, channel, reason);
                   messenger.showSuccess(
-                    '"${user.username}" ${channel == 'phone' ? 'phone' : 'email'} marked verified',
+                    channel == 'phone'
+                        ? UserText.phoneMarkedVerified(user.username).current
+                        : UserText.emailMarkedVerified(user.username).current,
                   );
                 } catch (e) {
                   messenger.showError(
-                    'Failed to mark verified: ${friendlyError(e)}',
+                    UserText.failedToMarkVerified(friendlyError(e)).current,
                   );
                 }
               },
-              child: const Text('Mark Verified'),
+              child: Text(context.tr(UserText.markVerified)),
             ),
           ],
         ),
@@ -673,41 +669,57 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                 ],
               ),
               const SizedBox(height: 24),
-              _buildDetailSection('Contact Information', [
-                _buildDetailRow('Email', user.email ?? 'N/A'),
-                _buildDetailRow('Phone', user.phone ?? 'N/A'),
+              _buildDetailSection(context.tr(UserText.contactInformation), [
                 _buildDetailRow(
-                  'Email Verified',
-                  user.emailVerified ? 'Yes' : 'No',
+                  context.tr(CommonText.email),
+                  user.email ?? 'N/A',
                 ),
                 _buildDetailRow(
-                  'Phone Verified',
-                  user.phoneVerified ? 'Yes' : 'No',
+                  context.tr(CommonText.phone),
+                  user.phone ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(UserText.emailVerified),
+                  user.emailVerified
+                      ? context.tr(CommonText.yes)
+                      : context.tr(CommonText.no),
+                ),
+                _buildDetailRow(
+                  context.tr(UserText.phoneVerified),
+                  user.phoneVerified
+                      ? context.tr(CommonText.yes)
+                      : context.tr(CommonText.no),
                 ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Account Status', [
-                _buildDetailRow('Status', user.status.toUpperCase()),
+              _buildDetailSection(context.tr(UserText.accountStatus), [
                 _buildDetailRow(
-                  'Deleted',
-                  user.status.toLowerCase() == 'deleted' ? 'Yes' : 'No',
+                  context.tr(CommonText.status),
+                  user.status.toUpperCase(),
+                ),
+                _buildDetailRow(
+                  context.tr(UserText.deleted2),
+                  user.status.toLowerCase() == 'deleted'
+                      ? context.tr(CommonText.yes)
+                      : context.tr(CommonText.no),
                 ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Activity', [
+              _buildDetailSection(context.tr(UserText.activity), [
                 _buildDetailRow(
-                  'Last Login',
-                  user.lastLogin?.toString().split('.')[0] ?? 'Never',
+                  context.tr(UserText.lastLogin),
+                  user.lastLogin?.toString().split('.')[0] ??
+                      context.tr(UserText.never),
                 ),
                 _buildDetailRow(
-                  'Created',
+                  context.tr(CommonText.created),
                   user.createdAt?.toString().split(' ')[0] ?? 'N/A',
                 ),
               ]),
               if (user.shops.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _buildDetailSection(
-                  'Shops (${user.shops.length})',
+                  context.tr(UserText.shops(user.shops.length)),
                   user.shops
                       .map((shop) => _buildDetailRow(shop.shopName, shop.role))
                       .toList(),
@@ -763,21 +775,23 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Reset Password'),
+          title: Text(context.tr(UserText.resetPassword)),
           content: Form(
             key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Set a new password for "${user.username}"'),
+                Text(context.tr(UserText.setANewPasswordFor(user.username))),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: passwordController,
                   obscureText: obscure,
                   decoration: InputDecoration(
-                    labelText: 'New Password',
+                    labelText: context.tr(UserText.newPassword),
                     suffixIcon: IconButton(
-                      tooltip: obscure ? 'Show password' : 'Hide password',
+                      tooltip: obscure
+                          ? context.tr(AuthText.showPassword)
+                          : context.tr(AuthText.hidePassword),
                       icon: Icon(
                         obscure ? Icons.visibility : Icons.visibility_off,
                       ),
@@ -786,10 +800,10 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Password is required';
+                      return context.tr(UserText.passwordIsRequired);
                     }
                     if (value.length < 8) {
-                      return 'Password must be at least 8 characters';
+                      return context.tr(UserText.passwordMustBeAtLeast);
                     }
                     return null;
                   },
@@ -800,7 +814,7 @@ class _UsersPageState extends ConsumerState<UsersPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.tr(CommonText.cancel)),
             ),
             FilledButton(
               onPressed: () async {
@@ -813,15 +827,15 @@ class _UsersPageState extends ConsumerState<UsersPage> {
                       .read(usersProvider.notifier)
                       .resetUserPassword(user.id, password);
                   messenger.showSuccess(
-                    'Password reset for "${user.username}"',
+                    UserText.passwordResetFor(user.username).current,
                   );
                 } catch (e) {
                   messenger.showError(
-                    'Failed to reset password: ${friendlyError(e)}',
+                    UserText.failedToResetPassword(friendlyError(e)).current,
                   );
                 }
               },
-              child: const Text('Reset'),
+              child: Text(context.tr(CommonText.reset)),
             ),
           ],
         ),
@@ -830,23 +844,20 @@ class _UsersPageState extends ConsumerState<UsersPage> {
   }
 
   Future<void> _showStatusDialog(AdminUser user, String newStatus) async {
-    final (title, verb, pastTense, icon) = switch (newStatus) {
+    final (title, verb, icon) = switch (newStatus) {
       'suspended' => (
-        'Suspend user',
-        'Suspend',
-        'suspended',
+        context.tr(UserText.suspendUser),
+        context.tr(UserText.suspend),
         Icons.block_rounded,
       ),
       'deleted' => (
-        'Delete user',
-        'Delete',
-        'deleted',
+        context.tr(UserText.deleteUser),
+        context.tr(CommonText.delete),
         Icons.delete_outline_rounded,
       ),
       _ => (
-        'Activate user',
-        'Activate',
-        'activated',
+        context.tr(UserText.activateUser),
+        context.tr(UserText.activate),
         Icons.check_circle_outline_rounded,
       ),
     };
@@ -855,10 +866,10 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       context,
       title: title,
       message: newStatus == 'deleted'
-          ? '"${user.username}" will lose access immediately. You can restore the account later from Deleted Users.'
+          ? context.tr(UserText.willLoseAccessImmediatelyYou(user.username))
           : newStatus == 'suspended'
-          ? '"${user.username}" will be signed out and unable to log in until reactivated.'
-          : '"${user.username}" will regain access to their account.',
+          ? context.tr(UserText.willBeSignedOutAnd(user.username))
+          : context.tr(UserText.willRegainAccessToTheir(user.username)),
       confirmLabel: verb,
       destructive: destructive,
       icon: icon,
@@ -870,10 +881,14 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       await ref
           .read(usersProvider.notifier)
           .updateUserStatus(user.id, newStatus, reason.isEmpty ? null : reason);
-      messenger.showSuccess('"${user.username}" has been $pastTense');
+      messenger.showSuccess(switch (newStatus) {
+        'suspended' => UserText.hasBeenSuspended(user.username).current,
+        'deleted' => UserText.hasBeenDeleted(user.username).current,
+        _ => UserText.hasBeenActivated(user.username).current,
+      });
     } catch (e) {
       messenger.showError(
-        'Could not update "${user.username}": ${friendlyError(e)}',
+        UserText.couldNotUpdate(user.username, friendlyError(e)).current,
       );
     }
   }

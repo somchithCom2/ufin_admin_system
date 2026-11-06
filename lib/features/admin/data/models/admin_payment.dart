@@ -1,3 +1,5 @@
+import 'package:ufin_admin_system/l10n/l10n.dart';
+
 /// Admin Payment model
 class AdminPayment {
   final int id;
@@ -168,13 +170,13 @@ class AdminPayment {
   String get statusDisplay {
     switch (status.toLowerCase()) {
       case 'completed':
-        return 'Completed';
+        return ModelText.completed.current;
       case 'pending':
-        return 'Pending';
+        return ModelText.pending.current;
       case 'failed':
-        return 'Failed';
+        return ModelText.failed.current;
       case 'refunded':
-        return 'Refunded';
+        return ModelText.refunded.current;
       default:
         return status;
     }
@@ -184,15 +186,15 @@ class AdminPayment {
   String get paymentMethodDisplay {
     switch (paymentMethod.toLowerCase()) {
       case 'cash':
-        return 'Cash';
+        return ModelText.cash2.current;
       case 'bank_transfer':
-        return 'Bank Transfer';
+        return ModelText.bankTransfer2.current;
       case 'qr_code':
         return 'QR Code';
       case 'card':
-        return 'Card';
+        return ModelText.card2.current;
       case 'credit_card':
-        return 'Credit Card';
+        return ModelText.creditCard2.current;
       default:
         return paymentMethod;
     }

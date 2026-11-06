@@ -1,3 +1,5 @@
+import 'package:ufin_admin_system/l10n/l10n.dart';
+
 /// Shop details for admin panel
 class AdminShop {
   final int id;
@@ -151,6 +153,6 @@ class AdminShop {
   /// The plan to show. A branch has no plan of its own - its own plan column
   /// always reads "free" - and runs on its main shop's, so name that instead.
   String? get planLabel => isBranch
-      ? 'Plan of ${parentShopName ?? '#$parentShopId'}'
+      ? ModelText.planOf(parentShopName ?? '#$parentShopId').current
       : subscriptionPlan;
 }

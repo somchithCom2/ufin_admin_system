@@ -249,31 +249,37 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
 
   static String? _validateUrl(String? v) {
     final t = v?.trim() ?? '';
-    if (t.isEmpty) return 'Download URL is required';
+    if (t.isEmpty) return ReleaseText.downloadUrlIsRequired.current;
     final uri = Uri.tryParse(t);
     if (uri == null ||
         !uri.hasAuthority ||
         !uri.isScheme('http') && !uri.isScheme('https')) {
-      return 'Enter a full http(s) link';
+      return ReleaseText.enterAFullHttpS.current;
     }
     return null;
   }
 
   String? _validateVersionName(String? v) {
     final name = v?.trim() ?? '';
-    if (name.isEmpty) return 'Version name is required';
+    if (name.isEmpty) return context.tr(ReleaseText.versionNameIsRequired);
     if (_hasVersionName(_platform, name)) {
-      return '${platformLabel(_platform)} already has v$name';
+      return context.tr(
+        ReleaseText.alreadyHasV(platformLabel(_platform), name),
+      );
     }
     return null;
   }
 
   String? _validateVersionCode(String? v) {
     final n = int.tryParse(v?.trim() ?? '');
-    if (n == null || n < 1) return 'Enter a positive build number';
+    if (n == null || n < 1) {
+      return context.tr(ReleaseText.enterAPositiveBuildNumber);
+    }
     for (final r in widget.releases) {
       if (r.platform == _platform && r.versionCode == n) {
-        return '${platformLabel(_platform)} build $n is v${r.versionName}';
+        return context.tr(
+          ReleaseText.buildIsV(platformLabel(_platform), n, r.versionName),
+        );
       }
     }
     return null;
@@ -321,30 +327,35 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
     final t = widget.template;
     if (widget.existing case final e?) {
       return (
-        'Edit release',
+        context.tr(ReleaseText.editRelease),
         '${platformLabel(e.platform)} · v${e.versionName} (${e.versionCode})',
         Icons.edit_outlined,
       );
     }
     if (t != null && widget.copy == ReleaseCopy.otherPlatform) {
       return (
-        'Copy v${t.versionName} to another platform',
-        'Notes and settings copied from ${platformLabel(t.platform)}. '
-            'Saved as a draft.',
+        context.tr(ReleaseText.copyVToAnotherPlatform(t.versionName)),
+        context.tr(
+          ReleaseText.notesAndSettingsCopiedFrom(platformLabel(t.platform)),
+        ),
         Icons.devices_rounded,
       );
     }
     if (t != null) {
       return (
-        'New version from v${t.versionName}',
-        'Notes and settings copied from ${platformLabel(t.platform)} '
-            'v${t.versionName}. Saved as a draft.',
+        context.tr(ReleaseText.newVersionFromV(t.versionName)),
+        context.tr(
+          ReleaseText.notesAndSettingsCopiedFrom2(
+            platformLabel(t.platform),
+            t.versionName,
+          ),
+        ),
         Icons.content_copy_rounded,
       );
     }
     return (
-      'New release',
-      'Saved as a draft. Publish it when ready.',
+      context.tr(ReleaseText.newRelease2),
+      context.tr(ReleaseText.savedAsADraftPublish),
       Icons.system_update_rounded,
     );
   }
@@ -361,31 +372,36 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
       icon: icon,
       title: title,
       subtitle: subtitle,
-      submitLabel: _isEdit ? 'Save changes' : 'Create release',
+      submitLabel: _isEdit
+          ? context.tr(CommonText.saveChanges)
+          : context.tr(ReleaseText.createRelease),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
         if (existing != null)
           FormSection(
-            title: 'Version',
+            title: context.tr(CommonText.version),
             children: [
               Text(
-                '${platformLabel(existing.platform)} · '
-                'v${existing.versionName} · build ${existing.versionCode}',
+                context.tr(
+                  ReleaseText.vBuild(
+                    platformLabel(existing.platform),
+                    existing.versionName,
+                    existing.versionCode,
+                  ),
+                ),
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               Text(
-                'Platform, version and build cannot change once a release is '
-                'made. To fix them, use "New version from this" or "Copy to '
-                'another platform" on the release, then delete this one.',
+                context.tr(ReleaseText.platformVersionAndBuildCannot2),
                 style: muted,
               ),
             ],
           )
         else
           FormSection(
-            title: 'Version',
+            title: context.tr(CommonText.version),
             children: [
               // Chips wrap on narrow screens instead of breaking words.
               Wrap(
@@ -407,8 +423,8 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
                   TextFormField(
                     controller: _versionName,
                     autofocus: widget.template != null,
-                    decoration: const InputDecoration(
-                      labelText: 'Version name',
+                    decoration: InputDecoration(
+                      labelText: context.tr(ReleaseText.versionName),
                       hintText: '1.2.6',
                     ),
                     autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -419,14 +435,17 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
-                      labelText: 'Version code',
+                      labelText: context.tr(ReleaseText.versionCode),
                       hintText: '13',
                       helperText:
                           _suggestedCode != null &&
                               _versionCode.text == '$_suggestedCode'
-                          ? 'Build number · next for '
-                                '${platformLabel(_platform)}'
-                          : 'Build number',
+                          ? context.tr(
+                              ReleaseText.buildNumberNextFor(
+                                platformLabel(_platform),
+                              ),
+                            )
+                          : context.tr(ReleaseText.buildNumber2),
                     ),
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     validator: _validateVersionCode,
@@ -437,50 +456,58 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
             ],
           ),
         FormSection(
-          title: 'Release notes',
+          title: context.tr(ReleaseText.releaseNotes3),
           children: [
             TextFormField(
               controller: _title,
               autofocus: _isEdit,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                hintText: 'Faster checkout and bug fixes',
+              decoration: InputDecoration(
+                labelText: context.tr(ReleaseText.title),
+                hintText: context.tr(ReleaseText.fasterCheckoutAndBugFixes),
               ),
-              validator: FormValidators.required('Title'),
+              validator: FormValidators.required(context.tr(ReleaseText.title)),
             ),
             TextFormField(
               controller: _changelog,
               minLines: 10,
               maxLines: 24,
               keyboardType: TextInputType.multiline,
-              decoration: const InputDecoration(
-                labelText: "What's new",
-                hintText: '• New receipt layout\n• Fixed printer disconnects',
-                helperText:
-                    'Shops see this exactly as typed. One change per line.',
+              decoration: InputDecoration(
+                labelText: context.tr(ReleaseText.whatSNew2),
+                hintText: context.tr(ReleaseText.newReceiptLayoutNFixed),
+                helperText: context.tr(ReleaseText.shopsSeeThisExactlyAs2),
                 alignLabelWithHint: true,
               ),
-              validator: FormValidators.required('Changelog'),
+              validator: FormValidators.required(
+                context.tr(ReleaseText.changelog),
+              ),
             ),
           ],
         ),
         FormSection(
-          title: 'Distribution',
+          title: context.tr(ReleaseText.distribution),
           children: [
             TextFormField(
               controller: _downloadUrl,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
-                labelText: 'Download URL',
+                labelText: context.tr(ReleaseText.downloadUrl),
                 hintText: 'https://…',
                 prefixIcon: const Icon(Icons.link_rounded, size: 20),
                 helperText: _urlFromOtherPlatform
-                    ? 'Copied from ${platformLabel(widget.template!.platform)}: '
-                          'check it points to the ${platformLabel(_platform)} '
-                          'store'
+                    ? context.tr(
+                        ReleaseText.copiedFromCheckItPoints(
+                          platformLabel(widget.template!.platform),
+                          platformLabel(_platform),
+                        ),
+                      )
                     : _suggestedUrl != null &&
                           _downloadUrl.text.trim() == _suggestedUrl
-                    ? 'From the newest ${platformLabel(_platform)} release'
+                    ? context.tr(
+                        ReleaseText.fromTheNewestRelease(
+                          platformLabel(_platform),
+                        ),
+                      )
                     : null,
                 helperMaxLines: 2,
               ),
@@ -488,8 +515,8 @@ class _AppReleaseFormState extends State<_AppReleaseForm> {
               onChanged: (_) => setState(() {}),
             ),
             FormSwitch(
-              title: 'Mandatory update',
-              subtitle: 'Users must update before they can keep using the app',
+              title: context.tr(ReleaseText.mandatoryUpdate),
+              subtitle: context.tr(ReleaseText.usersMustUpdateBeforeThey),
               value: _mandatory,
               onChanged: (v) => setState(() => _mandatory = v),
             ),

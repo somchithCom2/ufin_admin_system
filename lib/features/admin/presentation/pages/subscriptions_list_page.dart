@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_detail_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_history_page.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -12,13 +11,13 @@ import 'package:ufin_admin_system/core/widgets/widgets.dart';
 /// Which plans the list shows. Paid first: free trials outnumber paying shops,
 /// and paying shops are the ones to manage.
 enum SubscriptionPlanFilter {
-  paid('Paid'),
-  free('Free'),
-  all('All plans');
+  paid(Tr('Paid', 'ເສຍເງິນ')),
+  free(SubsText.free),
+  all(Tr('All plans', 'ທຸກແພັກເກດ'));
 
-  const SubscriptionPlanFilter(this.label);
+  const SubscriptionPlanFilter(this.title);
 
-  final String label;
+  final Tr title;
 }
 
 /// Filters another page asks the list to open with, e.g. the dashboard's
@@ -115,16 +114,15 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Subscriptions'),
+        title: Text(context.tr(NavText.subscriptions)),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            tooltip: 'All History',
+            tooltip: context.tr(SubsText.allHistory),
             onPressed: () => _navigateToAllHistory(),
           ),
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _reload,
           ),
@@ -138,7 +136,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
           ),
         ),
         icon: const Icon(Icons.add),
-        label: const Text('Create Subscription'),
+        label: Text(context.tr(SubsText.createSubscription)),
       ),
       body: ContentWidth(
         child: Column(
@@ -147,7 +145,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: AppSearchField(
                 controller: _searchController,
-                hintText: 'Shop, phone, email, owner or ID…',
+                hintText: context.tr(SubsText.shopPhoneEmailOwnerOr),
                 onSubmitted: (_) => _reload(),
               ),
             ),
@@ -167,11 +165,11 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Row(
                 children: [
-                  _buildFilterChip('All', null),
-                  _buildFilterChip('Active', 'active'),
-                  _buildFilterChip('Trial', 'trial'),
-                  _buildFilterChip('Expired', 'expired'),
-                  _buildFilterChip('Cancelled', 'cancelled'),
+                  _buildFilterChip(context.tr(CommonText.all), null),
+                  _buildFilterChip(context.tr(SubsText.active), 'active'),
+                  _buildFilterChip(context.tr(SubsText.trial), 'trial'),
+                  _buildFilterChip(context.tr(SubsText.expired), 'expired'),
+                  _buildFilterChip(context.tr(SubsText.cancelled), 'cancelled'),
                 ],
               ),
             ),
@@ -183,8 +181,12 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     subscriptionsState.totalElements == 1
-                        ? '1 subscription'
-                        : '${subscriptionsState.totalElements} subscriptions',
+                        ? context.tr(SubsText.n1Subscription)
+                        : context.tr(
+                            SubsText.subscriptions(
+                              subscriptionsState.totalElements,
+                            ),
+                          ),
                     style: TextStyle(
                       fontSize: 13,
                       color: context.colors.onSurfaceVariant,
@@ -213,7 +215,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
-        label: Text(plan.label),
+        label: Text(context.tr(plan.title)),
         selected: _planFilter == plan,
         onSelected: (_) {
           setState(() => _planFilter = plan);
@@ -250,7 +252,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
           Icon(Icons.inbox_outlined, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
-            'No subscriptions found',
+            context.tr(SubsText.noSubscriptionsFound),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           if (_statusFilter != null ||
@@ -264,7 +266,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                 });
                 _reload();
               },
-              child: const Text('Search all plans'),
+              child: Text(context.tr(SubsText.searchAllPlans)),
             ),
           ],
         ],
@@ -345,7 +347,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          subscription.planName ?? 'No Plan',
+                          subscription.planName ?? context.tr(SubsText.noPlan),
                           style: TextStyle(
                             color: context.colors.onSurfaceVariant,
                           ),
@@ -367,21 +369,21 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                   Expanded(
                     child: _buildInfoItem(
                       Icons.attach_money,
-                      'Price',
+                      context.tr(SubsText.price),
                       currencyFormat.format(subscription.pricePaid),
                     ),
                   ),
                   Expanded(
                     child: _buildInfoItem(
                       Icons.people,
-                      'Employees',
+                      context.tr(SubsText.employees),
                       '${subscription.currentEmployees}/${subscription.maxEmployees == 0 ? '∞' : subscription.maxEmployees}',
                     ),
                   ),
                   Expanded(
                     child: _buildInfoItem(
                       Icons.inventory_2,
-                      'Products',
+                      context.tr(SubsText.products),
                       '${subscription.currentProducts}/${subscription.maxProducts == 0 ? '∞' : subscription.maxProducts}',
                     ),
                   ),
@@ -423,10 +425,16 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                     Expanded(
                       child: Text(
                         isExpired
-                            ? 'Expired ${-daysLeft} days ago'
+                            ? context.tr(SubsText.expiredDaysAgo(-daysLeft))
                             : isExpiringSoon
-                            ? 'Expires in $daysLeft days'
-                            : 'Expires: ${DateFormat('MMM d, yyyy').format(subscription.expiresAt ?? DateTime.now())}',
+                            ? context.tr(SubsText.expiresInDays(daysLeft))
+                            : context.tr(
+                                SubsText.expires(
+                                  AppDateFormat.of('MMM d, yyyy').format(
+                                    subscription.expiresAt ?? DateTime.now(),
+                                  ),
+                                ),
+                              ),
                         style: TextStyle(
                           fontSize: 13,
                           color: isExpired

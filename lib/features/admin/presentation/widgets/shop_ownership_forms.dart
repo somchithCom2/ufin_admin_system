@@ -46,14 +46,14 @@ TextFormField confirmShopNameField(
 ) => TextFormField(
   controller: controller,
   decoration: InputDecoration(
-    labelText: 'Type the shop name to confirm',
+    labelText: ShopText.typeTheShopNameTo.current,
     hintText: name,
-    helperText: 'Exactly "$name"',
+    helperText: ShopText.exactly(name).current,
   ),
   validator: (v) {
     final typed = v?.trim() ?? '';
-    if (typed.isEmpty) return 'Type the shop name';
-    if (typed != name.trim()) return 'Does not match "$name"';
+    if (typed.isEmpty) return ShopText.typeTheShopName.current;
+    if (typed != name.trim()) return ShopText.doesNotMatch(name).current;
     return null;
   },
 );
@@ -64,11 +64,11 @@ TextFormField _reasonField(TextEditingController controller, String hint) =>
       maxLines: 3,
       maxLength: 500,
       decoration: InputDecoration(
-        labelText: 'Reason',
+        labelText: CommonText.reason.current,
         hintText: hint,
-        helperText: 'Kept in the shop\'s owner history',
+        helperText: ShopText.keptInTheShopS.current,
       ),
-      validator: FormValidators.required('Reason'),
+      validator: FormValidators.required(CommonText.reason.current),
     );
 
 /// A short paragraph explaining what the action does.
@@ -141,11 +141,7 @@ class _LinkBranchFormState extends ConsumerState<_LinkBranchForm> {
   Future<void> _submit() async {
     if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
     if (_ownersDiffer && !_transferOwnership) {
-      setState(
-        () => _error =
-            'The main shop has another owner. Turn on "Move to the main '
-            'shop\'s owner" to link it.',
-      );
+      setState(() => _error = context.tr(ShopText.theMainShopHasAnother));
       return;
     }
     setState(() {
@@ -183,30 +179,28 @@ class _LinkBranchFormState extends ConsumerState<_LinkBranchForm> {
     return AppFormModal(
       formKey: _formKey,
       icon: Icons.account_tree_outlined,
-      title: 'Link as branch',
+      title: context.tr(ShopText.linkAsBranch2),
       subtitle: '${shop.name} · #${shop.id}',
-      submitLabel: 'Link as branch',
+      submitLabel: context.tr(ShopText.linkAsBranch2),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
-        const FormNotice(
-          'For a customer who opened a second shop on its own account and now '
-          'wants one group. The shop keeps its products, sales, customers and '
-          'staff, and runs on the main shop\'s plan from now on. Its own plan '
-          'ends; paid time left on it blocks this until it is refunded or '
-          'carried over.',
-        ),
+        FormNotice(context.tr(ShopText.forACustomerWhoOpened)),
         const SizedBox(height: 20),
         FormSection(
-          title: 'Main shop',
-          hint: 'The shop that holds the plan. It cannot be a branch itself.',
+          title: context.tr(ShopText.mainShop),
+          hint: context.tr(ShopText.theShopThatHoldsThe),
           children: [
             ShopPickerField(
-              label: 'Main shop',
+              label: context.tr(ShopText.mainShop),
               validator: (v) {
-                if (v == null) return 'Please select the main shop';
-                if (v.id == shop.id) return 'Choose a different shop';
+                if (v == null) {
+                  return context.tr(ShopText.pleaseSelectTheMainShop);
+                }
+                if (v.id == shop.id) {
+                  return context.tr(ShopText.chooseADifferentShop);
+                }
                 return null;
               },
               onChanged: (v) => setState(() {
@@ -219,11 +213,14 @@ class _LinkBranchFormState extends ConsumerState<_LinkBranchForm> {
                 contentPadding: EdgeInsets.zero,
                 value: _transferOwnership,
                 onChanged: (v) => setState(() => _transferOwnership = v),
-                title: const Text("Move to the main shop's owner"),
+                title: Text(context.tr(ShopText.moveToTheMainShop)),
                 subtitle: Text(
-                  'Owned by ${shop.ownerUsername ?? 'another account'} now; '
-                  'it will belong to ${_parent!.owner ?? 'the main shop\'s owner'}, '
-                  'so one login sees the whole group.',
+                  context.tr(
+                    ShopText.ownedByNowItWill(
+                      shop.ownerUsername ?? 'another account',
+                      _parent!.owner ?? 'the main shop\'s owner',
+                    ),
+                  ),
                 ),
               ),
               if (_transferOwnership)
@@ -231,32 +228,24 @@ class _LinkBranchFormState extends ConsumerState<_LinkBranchForm> {
                   contentPadding: EdgeInsets.zero,
                   value: _revokePreviousOwner,
                   onChanged: (v) => setState(() => _revokePreviousOwner = v),
-                  title: const Text("Switch off the previous owner's access"),
-                  subtitle: const Text(
-                    'Off by default: tills may still be signed in with the old '
-                    'account. The new owner can switch it off later in Staff. '
-                    'Turning it on signs them out on every device.',
-                  ),
+                  title: Text(context.tr(ShopText.switchOffThePreviousOwner)),
+                  subtitle: Text(context.tr(ShopText.offByDefaultTillsMay)),
                 ),
             ],
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               value: _ignorePlanCheck,
               onChanged: (v) => setState(() => _ignorePlanCheck = v),
-              title: const Text('Link even if the plan has no branches'),
-              subtitle: const Text(
-                'Only for a deal agreed outside the price list. Without '
-                'branches on its plan the group\'s branches are read-only. '
-                'Noted in subscription history.',
-              ),
+              title: Text(context.tr(ShopText.linkEvenIfThePlan)),
+              subtitle: Text(context.tr(ShopText.onlyForADealAgreed)),
             ),
           ],
         ),
         FormSection(
-          title: 'Confirm',
+          title: context.tr(CommonText.confirm),
           children: [
             confirmShopNameField(_confirmName, shop.name),
-            _reasonField(_reason, 'e.g. owner asked to merge their two shops'),
+            _reasonField(_reason, context.tr(ShopText.eGOwnerAskedTo)),
           ],
         ),
       ],
@@ -326,27 +315,26 @@ class _UnlinkBranchFormState extends ConsumerState<_UnlinkBranchForm> {
     return AppFormModal(
       formKey: _formKey,
       icon: Icons.call_split_rounded,
-      title: 'Unlink from branch group',
-      subtitle:
-          '${shop.name} · branch of ${shop.parentShopName ?? '#${shop.parentShopId}'}',
-      submitLabel: 'Unlink',
+      title: context.tr(ShopText.unlinkFromBranchGroup),
+      subtitle: context.tr(
+        ShopText.branchOf3(
+          shop.name,
+          shop.parentShopName ?? '#${shop.parentShopId}',
+        ),
+      ),
+      submitLabel: context.tr(ShopText.unlink),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
-        const FormNotice(
-          'The shop becomes a separate shop on the Free plan, as a newly '
-          'registered one. It keeps its products, sales, customers and staff. '
-          'It stops sharing the group\'s plan, stock transfers and reports.',
-          warning: true,
-        ),
+        FormNotice(context.tr(ShopText.theShopBecomesASeparate), warning: true),
         const SizedBox(height: 20),
         FormSection(
-          title: 'Owner',
-          hint: 'Leave empty to keep it with the group\'s owner.',
+          title: context.tr(CommonText.owner),
+          hint: context.tr(ShopText.leaveEmptyToKeepIt),
           children: [
             UserPickerField(
-              label: 'Hand to another account (optional)',
+              label: context.tr(ShopText.handToAnotherAccountOptional),
               required: false,
               excludeIds: {?shop.ownerId},
               onChanged: (v) => setState(() => _newOwner = v),
@@ -356,19 +344,16 @@ class _UnlinkBranchFormState extends ConsumerState<_UnlinkBranchForm> {
                 contentPadding: EdgeInsets.zero,
                 value: _revokePreviousOwner,
                 onChanged: (v) => setState(() => _revokePreviousOwner = v),
-                title: const Text("Switch off the group owner's access"),
-                subtitle: const Text(
-                  'On by default: once handed back it is another business. '
-                  'Signs them out on every device.',
-                ),
+                title: Text(context.tr(ShopText.switchOffTheGroupOwner)),
+                subtitle: Text(context.tr(ShopText.onByDefaultOnceHanded)),
               ),
           ],
         ),
         FormSection(
-          title: 'Confirm',
+          title: context.tr(CommonText.confirm),
           children: [
             confirmShopNameField(_confirmName, shop.name),
-            _reasonField(_reason, 'e.g. branch sold to its manager'),
+            _reasonField(_reason, context.tr(ShopText.eGBranchSoldTo)),
           ],
         ),
       ],
@@ -438,26 +423,22 @@ class _ChangeOwnerFormState extends ConsumerState<_ChangeOwnerForm> {
     return AppFormModal(
       formKey: _formKey,
       icon: Icons.swap_horiz_rounded,
-      title: 'Change owner',
-      subtitle:
-          '${shop.name} · owned by ${shop.ownerUsername ?? '#${shop.ownerId}'}',
-      submitLabel: 'Change owner',
+      title: context.tr(ShopText.changeOwner2),
+      subtitle: context.tr(
+        ShopText.ownedBy(shop.name, shop.ownerUsername ?? '#${shop.ownerId}'),
+      ),
+      submitLabel: context.tr(ShopText.changeOwner2),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
-        const FormNotice(
-          'Hands the shop to another account. The plan, its expiry, the data '
-          'and the staff stay as they are. A shop with branches moves as a '
-          'group or not at all, so unlink its branches first.',
-          warning: true,
-        ),
+        FormNotice(context.tr(ShopText.handsTheShopToAnother), warning: true),
         const SizedBox(height: 20),
         FormSection(
-          title: 'New owner',
+          title: context.tr(ShopText.newOwner),
           children: [
             UserPickerField(
-              label: 'New owner',
+              label: context.tr(ShopText.newOwner),
               excludeIds: {?shop.ownerId},
               onChanged: (v) => setState(() => _newOwner = v),
             ),
@@ -465,19 +446,16 @@ class _ChangeOwnerFormState extends ConsumerState<_ChangeOwnerForm> {
               contentPadding: EdgeInsets.zero,
               value: _revokePreviousOwner,
               onChanged: (v) => setState(() => _revokePreviousOwner = v),
-              title: const Text("Switch off the previous owner's access"),
-              subtitle: const Text(
-                'On by default. Signs them out on every device, including '
-                'other shops they still own.',
-              ),
+              title: Text(context.tr(ShopText.switchOffThePreviousOwner)),
+              subtitle: Text(context.tr(ShopText.onByDefaultSignsThem)),
             ),
           ],
         ),
         FormSection(
-          title: 'Confirm',
+          title: context.tr(CommonText.confirm),
           children: [
             confirmShopNameField(_confirmName, shop.name),
-            _reasonField(_reason, 'e.g. shop sold; ID checked in person'),
+            _reasonField(_reason, context.tr(ShopText.eGShopSoldId)),
           ],
         ),
       ],
@@ -509,17 +487,31 @@ Future<void> showOwnershipResultDialog(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '"${result.shop.name}" is owned by '
-              '${result.shop.ownerUsername ?? '#${result.shop.ownerId}'}'
-              '${result.shop.isBranch ? ', as a branch of ${result.shop.parentShopName ?? '#${result.shop.parentShopId}'}' : ''}.',
+              result.shop.isBranch
+                  ? context.tr(
+                      ShopText.isOwnedByAsA(
+                        result.shop.name,
+                        result.shop.ownerUsername ?? '#${result.shop.ownerId}',
+                        result.shop.parentShopName ??
+                            '#${result.shop.parentShopId}',
+                      ),
+                    )
+                  : context.tr(
+                      ShopText.isOwnedBy(
+                        result.shop.name,
+                        result.shop.ownerUsername ?? '#${result.shop.ownerId}',
+                      ),
+                    ),
             ),
             if (staff.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text('Staff to review', style: ctx.text.titleSmall),
+              Text(
+                context.tr(ShopText.staffToReview),
+                style: ctx.text.titleSmall,
+              ),
               const SizedBox(height: 4),
               Text(
-                'Still active here and tied to the previous owner. Nobody was '
-                'removed. The shop\'s owner can switch them off in Staff.',
+                context.tr(ShopText.stillActiveHereAndTied),
                 style: ctx.text.bodySmall,
               ),
               const SizedBox(height: 8),
@@ -542,7 +534,8 @@ Future<void> showOwnershipResultDialog(
                           [
                             person.username,
                             if (person.roleName != null) person.roleName!,
-                            if (person.previousOwner) 'previous owner',
+                            if (person.previousOwner)
+                              context.tr(ShopText.previousOwner),
                           ].join(' · '),
                         ),
                       ),
@@ -556,7 +549,7 @@ Future<void> showOwnershipResultDialog(
       actions: [
         FilledButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: const Text('Done'),
+          child: Text(context.tr(CommonText.done)),
         ),
       ],
     ),
@@ -633,7 +626,7 @@ class _SheetScaffold extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Close',
+                  tooltip: context.tr(CommonText.close),
                   icon: const Icon(Icons.close_rounded),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
@@ -665,7 +658,7 @@ class _BranchesSheetState extends ConsumerState<_BranchesSheet> {
   @override
   Widget build(BuildContext context) {
     return _SheetScaffold(
-      title: 'Branches',
+      title: context.tr(ShopText.branches2),
       subtitle: '${widget.shop.name} · #${widget.shop.id}',
       body: FutureBuilder<List<AdminShop>>(
         future: _branches,
@@ -676,16 +669,16 @@ class _BranchesSheetState extends ConsumerState<_BranchesSheet> {
           if (snapshot.hasError) {
             return AppErrorView(
               error: snapshot.error,
-              title: "Couldn't load branches",
+              title: context.tr(ShopText.couldnTLoadBranches),
               onRetry: () => setState(() => _branches = _load()),
             );
           }
           final branches = snapshot.data!;
           if (branches.isEmpty) {
-            return const AppEmptyView(
+            return AppEmptyView(
               icon: Icons.account_tree_outlined,
-              title: 'No branches',
-              message: 'Link an existing shop with "Link as branch" on it.',
+              title: context.tr(ShopText.noBranches),
+              message: context.tr(ShopText.linkAnExistingShopWith),
             );
           }
           return ListView.separated(
@@ -709,8 +702,8 @@ class _BranchesSheetState extends ConsumerState<_BranchesSheet> {
                   [
                     '#${branch.id}',
                     if (branch.ownerUsername != null) branch.ownerUsername!,
-                    '${branch.employeeCount} staff',
-                    '${branch.productCount} products',
+                    context.tr(ShopText.staff(branch.employeeCount)),
+                    context.tr(ShopText.products2(branch.productCount)),
                   ].join(' · '),
                 ),
                 trailing: StatusBadge.fromStatus(status),
@@ -762,7 +755,7 @@ class _OwnerHistorySheetState extends ConsumerState<_OwnerHistorySheet> {
   @override
   Widget build(BuildContext context) {
     return _SheetScaffold(
-      title: 'Owner history',
+      title: context.tr(ShopText.ownerHistory2),
       subtitle: '${widget.shop.name} · #${widget.shop.id}',
       body: FutureBuilder<(List<OwnerChange>, Map<int, String>)>(
         future: _history,
@@ -773,17 +766,17 @@ class _OwnerHistorySheetState extends ConsumerState<_OwnerHistorySheet> {
           if (snapshot.hasError) {
             return AppErrorView(
               error: snapshot.error,
-              title: "Couldn't load owner history",
+              title: context.tr(ShopText.couldnTLoadOwnerHistory),
               onRetry: () => setState(() => _history = _load()),
             );
           }
           final (changes, names) = snapshot.data!;
           String who(int? id) => id == null ? '—' : names[id] ?? '#$id';
           if (changes.isEmpty) {
-            return const AppEmptyView(
+            return AppEmptyView(
               icon: Icons.history_rounded,
-              title: 'No owner changes',
-              message: 'This shop has kept the owner it was registered with.',
+              title: context.tr(ShopText.noOwnerChanges),
+              message: context.tr(ShopText.thisShopHasKeptThe),
             );
           }
           return ListView.separated(
@@ -803,7 +796,7 @@ class _OwnerHistorySheetState extends ConsumerState<_OwnerHistorySheet> {
                     change.sourceLabel,
                     if (change.createdAt != null)
                       change.createdAt!.toLocal().toString().split('.')[0],
-                    'by ${who(change.performedById)}',
+                    context.tr(ShopText.by(who(change.performedById))),
                     if ((change.reason ?? '').isNotEmpty) '"${change.reason}"',
                   ].join(' · '),
                 ),

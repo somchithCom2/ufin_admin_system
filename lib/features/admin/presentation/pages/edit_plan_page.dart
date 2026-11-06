@@ -24,6 +24,15 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
   final _names = <String, TextEditingController>{};
   final _descriptions = <String, TextEditingController>{};
   final _limits = <String, TextEditingController>{};
+
+  /// Display labels for the [_limits] keys (the keys stay English: they
+  /// identify the fields when saving).
+  static const _limitLabels = {
+    'Max Employees': Tr('Max Employees', 'ພະນັກງານສູງສຸດ'),
+    'Max Products': Tr('Max Products', 'ສິນຄ້າສູງສຸດ'),
+    'Max Orders/Month': Tr('Max Orders/Month', 'ອໍເດີສູງສຸດ/ເດືອນ'),
+    'Max Storage (MB)': Tr('Max Storage (MB)', 'ບ່ອນເກັບສູງສຸດ (MB)'),
+  };
   Map<String, dynamic> _features = {};
   bool _trial = false;
   bool _active = true;
@@ -105,7 +114,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
     if (optional && (text == null || text.trim().isEmpty)) return null;
     final value = int.tryParse(text?.trim() ?? '');
     if (value == null || value < minimum || value > 2147483647) {
-      return 'Enter a whole number from $minimum to 2147483647';
+      return context.tr(PlanEditText.enterAWholeNumberFrom(minimum));
     }
     return null;
   }
@@ -117,7 +126,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
         value < 0 ||
         value >= 10000000000000 ||
         !RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text!.trim())) {
-      return 'Enter a nonnegative price with at most 2 decimals';
+      return context.tr(PlanEditText.enterANonnegativePriceWith);
     }
     return null;
   }
@@ -194,8 +203,8 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
       AppFeedback.success(
         context,
         widget.plan == null
-            ? 'Plan created successfully'
-            : 'Plan updated successfully',
+            ? context.tr(PlanEditText.planCreatedSuccessfully)
+            : context.tr(PlanEditText.planUpdatedSuccessfully),
       );
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -211,7 +220,11 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
       canPop: !_isSaving,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.plan == null ? 'Create Plan' : 'Edit Plan'),
+          title: Text(
+            widget.plan == null
+                ? context.tr(PlanEditText.createPlan)
+                : context.tr(PlanEditText.editPlan),
+          ),
           actions: [
             TextButton.icon(
               onPressed: _isSaving ? null : _savePlan,
@@ -222,7 +235,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.save),
-              label: const Text('Save'),
+              label: Text(context.tr(CommonText.save)),
             ),
           ],
         ),
@@ -249,11 +262,15 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                     controller: _code,
                     enabled: widget.plan == null,
                     maxLength: 50,
-                    decoration: const InputDecoration(labelText: 'Plan Code *'),
+                    decoration: InputDecoration(
+                      labelText: context.tr(PlanEditText.planCode),
+                    ),
                     validator: (v) =>
                         v == null ||
                             !RegExp(r'^[A-Za-z0-9_-]{1,50}$').hasMatch(v.trim())
-                        ? 'Use letters, numbers, underscores or hyphens'
+                        ? context.tr(
+                            PlanEditText.useLettersNumbersUnderscoresOr,
+                          )
                         : null,
                   ),
                   for (final locale in _names.keys) ...[
@@ -261,10 +278,10 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                     TextFormField(
                       controller: _names[locale],
                       decoration: InputDecoration(
-                        labelText: 'Plan Name ($locale)',
+                        labelText: context.tr(PlanEditText.planName(locale)),
                       ),
                       validator: (_) => _translations(_names).isEmpty
-                          ? 'Enter a name in at least one language'
+                          ? context.tr(PlanEditText.enterANameInAt)
                           : null,
                     ),
                     const SizedBox(height: 12),
@@ -272,7 +289,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                       controller: _descriptions[locale],
                       maxLines: 2,
                       decoration: InputDecoration(
-                        labelText: 'Description ($locale)',
+                        labelText: context.tr(PlanEditText.description(locale)),
                       ),
                     ),
                   ],
@@ -280,39 +297,57 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                   TextFormField(
                     controller: _currency,
                     maxLength: 3,
-                    decoration: const InputDecoration(labelText: 'Currency'),
+                    decoration: InputDecoration(
+                      labelText: context.tr(CommonText.currency),
+                    ),
                     validator: (v) =>
                         RegExp(r'^[A-Za-z]{3}$').hasMatch(v?.trim() ?? '')
                         ? null
-                        : 'Enter a 3-letter currency code',
+                        : context.tr(PlanEditText.enterA3LetterCurrency),
                   ),
-                  _numberField('Monthly Price', _monthly, _priceError),
-                  _numberField('Yearly Price', _yearly, _priceError),
-                  const Padding(
+                  _numberField(
+                    context.tr(PlanEditText.monthlyPrice),
+                    _monthly,
+                    _priceError,
+                  ),
+                  _numberField(
+                    context.tr(PlanEditText.yearlyPrice),
+                    _yearly,
+                    _priceError,
+                  ),
+                  Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text('Limits (leave empty for unlimited)'),
+                    child: Text(
+                      context.tr(PlanEditText.limitsLeaveEmptyForUnlimited),
+                    ),
                   ),
                   for (final entry in _limits.entries)
                     _numberField(
-                      entry.key,
+                      context.tr(_limitLabels[entry.key]!),
                       entry.value,
                       (v) => _integerError(v, optional: true),
                     ),
-                  _numberField('Display Order', _order, _integerError),
+                  _numberField(
+                    context.tr(PlanEditText.displayOrder),
+                    _order,
+                    _integerError,
+                  ),
                   TextFormField(
                     controller: _badge,
                     maxLength: 50,
-                    decoration: const InputDecoration(labelText: 'Badge Text'),
+                    decoration: InputDecoration(
+                      labelText: context.tr(PlanEditText.badgeText),
+                    ),
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Trial Available'),
+                    title: Text(context.tr(PlanEditText.trialAvailable)),
                     value: _trial,
                     onChanged: (v) => setState(() => _trial = v),
                   ),
                   if (_trial)
                     _numberField(
-                      'Trial Days',
+                      context.tr(PlanEditText.trialDays),
                       _trialDays,
                       (v) => _integerError(v, minimum: 1),
                     ),
@@ -321,8 +356,10 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                   if (widget.plan == null &&
                       ref.watch(plansProvider).plans.isNotEmpty)
                     DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(
-                        labelText: 'Copy features from an existing plan',
+                      decoration: InputDecoration(
+                        labelText: context.tr(
+                          PlanEditText.copyFeaturesFromAnExisting,
+                        ),
                       ),
                       items: ref
                           .watch(plansProvider)
@@ -350,7 +387,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                   if (widget.plan != null)
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Active'),
+                      title: Text(context.tr(PlanEditText.active)),
                       value: _active,
                       onChanged: (v) => setState(() => _active = v),
                     ),
@@ -404,7 +441,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
             // Boolean toggles
             if (boolFeatures.isNotEmpty) ...[
               Text(
-                'Feature Flags',
+                context.tr(PlanEditText.featureFlags),
                 style: TextStyle(
                   color: context.colors.onSurfaceVariant,
                   fontSize: 12,
@@ -437,7 +474,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
             // String features
             if (stringFeatures.isNotEmpty) ...[
               Text(
-                'Support & Tier Settings',
+                context.tr(PlanEditText.supportTierSettings),
                 style: TextStyle(
                   color: context.colors.onSurfaceVariant,
                   fontSize: 12,
@@ -483,7 +520,7 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
             // Nullable int features
             if (nullableIntFeatures.isNotEmpty) ...[
               Text(
-                'Limits (leave empty for unlimited)',
+                context.tr(PlanEditText.limitsLeaveEmptyForUnlimited),
                 style: TextStyle(
                   color: context.colors.onSurfaceVariant,
                   fontSize: 12,
@@ -506,9 +543,9 @@ class _EditPlanPageState extends ConsumerState<EditPlanPage> {
                           initialValue: entry.value?.toString() ?? '',
                           validator: (value) =>
                               _integerError(value, optional: true),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             isDense: true,
-                            hintText: 'Unlimited',
+                            hintText: context.tr(PlanEditText.unlimited),
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 8,

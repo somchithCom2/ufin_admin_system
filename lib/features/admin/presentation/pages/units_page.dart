@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/unit_form.dart';
 
@@ -45,11 +44,10 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Units'),
+        title: Text(context.tr(NavText.units)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(unitsProvider.notifier).loadUnits(),
           ),
@@ -58,7 +56,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateDialog(),
         icon: const Icon(Icons.add),
-        label: const Text('Add Unit'),
+        label: Text(context.tr(ShopTypeText.addUnit)),
       ),
       body: ContentWidth(
         child: Column(
@@ -70,10 +68,10 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   : unitsState.error != null && unitsState.units.isEmpty
                   ? _buildErrorView(unitsState.error!)
                   : unitsState.units.isEmpty
-                  ? const AppEmptyView(
+                  ? AppEmptyView(
                       icon: Icons.straighten_outlined,
-                      title: 'No units found',
-                      message: 'Try a different filter or add a new unit.',
+                      title: context.tr(ShopTypeText.noUnitsFound),
+                      message: context.tr(ShopTypeText.tryADifferentFilterOr),
                     )
                   : _buildUnitsList(unitsState),
             ),
@@ -104,7 +102,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: FilterChip(
-                    label: const Text('All'),
+                    label: Text(context.tr(CommonText.all)),
                     selected: state.categoryFilter == null,
                     onSelected: (_) => ref
                         .read(unitsProvider.notifier)
@@ -115,7 +113,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   (cat) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: FilterChip(
-                      label: Text(cat),
+                      label: Text(unitCategoryLabel(context, cat)),
                       selected: state.categoryFilter == cat,
                       onSelected: (_) => ref
                           .read(unitsProvider.notifier)
@@ -132,7 +130,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
               children: [
                 const Expanded(child: SizedBox()),
                 FilterChip(
-                  label: const Text('Active'),
+                  label: Text(context.tr(ShopTypeText.active2)),
                   selected: state.isActiveFilter == true,
                   onSelected: (_) => ref
                       .read(unitsProvider.notifier)
@@ -142,7 +140,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
-                  label: const Text('Inactive'),
+                  label: Text(context.tr(ShopTypeText.inactive2)),
                   selected: state.isActiveFilter == false,
                   onSelected: (_) => ref
                       .read(unitsProvider.notifier)
@@ -236,7 +234,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Code: ${unit.code}',
+                context.tr(ShopTypeText.code(unit.code)),
                 style: TextStyle(
                   fontSize: 11,
                   color: context.colors.onSurfaceVariant,
@@ -257,7 +255,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        'DEFAULT',
+                        context.tr(ShopTypeText.defaultText),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -273,23 +271,23 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
           trailing: PopupMenuButton<String>(
             onSelected: (action) => _handleAction(unit, action),
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'view',
                 child: Row(
                   children: [
                     Icon(Icons.visibility),
                     SizedBox(width: 8),
-                    Text('View Details'),
+                    Text(context.tr(ShopTypeText.viewDetails2)),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'edit',
                 child: Row(
                   children: [
                     Icon(Icons.edit),
                     SizedBox(width: 8),
-                    Text('Edit'),
+                    Text(context.tr(CommonText.edit)),
                   ],
                 ),
               ),
@@ -300,7 +298,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                     children: [
                       Icon(Icons.visibility_off, color: context.status.warning),
                       SizedBox(width: 8),
-                      Text('Deactivate'),
+                      Text(context.tr(ShopTypeText.deactivate)),
                     ],
                   ),
                 )
@@ -311,17 +309,17 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                     children: [
                       Icon(Icons.visibility, color: context.status.success),
                       SizedBox(width: 8),
-                      Text('Activate'),
+                      Text(context.tr(ShopTypeText.activate)),
                     ],
                   ),
                 ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'set-default',
                 child: Row(
                   children: [
                     Icon(Icons.star_outline_rounded),
                     SizedBox(width: 8),
-                    Text('Set as Default'),
+                    Text(context.tr(ShopTypeText.setAsDefault)),
                   ],
                 ),
               ),
@@ -331,7 +329,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                   children: [
                     Icon(Icons.delete, color: context.colors.error),
                     SizedBox(width: 8),
-                    Text('Delete'),
+                    Text(context.tr(CommonText.delete)),
                   ],
                 ),
               ),
@@ -345,7 +343,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
 
   Widget _buildStatusChip(bool isActive) {
     return StatusBadge(
-      label: isActive ? 'Active' : 'Inactive',
+      label: isActive
+          ? context.tr(ShopTypeText.active2)
+          : context.tr(ShopTypeText.inactive2),
       tone: isActive ? StatusTone.success : StatusTone.neutral,
     );
   }
@@ -442,16 +442,28 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 ],
               ),
               const SizedBox(height: 24),
-              _buildDetailSection('Information', [
-                _buildDetailRow('Code', unit.code),
-                _buildDetailRow('Abbreviation', unit.abbreviation),
-                _buildDetailRow('Category', unit.category),
+              _buildDetailSection(context.tr(ShopTypeText.information2), [
+                _buildDetailRow(context.tr(CommonText.code), unit.code),
+                _buildDetailRow(
+                  context.tr(ShopTypeText.abbreviation),
+                  unit.abbreviation,
+                ),
+                _buildDetailRow(
+                  context.tr(ShopTypeText.category),
+                  unitCategoryLabel(context, unit.category),
+                ),
                 if (unit.description?.isNotEmpty == true)
-                  _buildDetailRow('Description', unit.description!),
-                _buildDetailRow('Display Order', unit.sortOrder.toString()),
+                  _buildDetailRow(
+                    context.tr(CommonText.description),
+                    unit.description!,
+                  ),
+                _buildDetailRow(
+                  context.tr(ShopTypeText.displayOrder),
+                  unit.sortOrder.toString(),
+                ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Multilingual Names', [
+              _buildDetailSection(context.tr(ShopTypeText.multilingualNames), [
                 ...unit.name.entries.map(
                   (e) => _buildDetailRow(
                     e.key.toUpperCase(),
@@ -460,18 +472,28 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
                 ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Status', [
-                _buildDetailRow('Active', unit.isActive ? 'Yes' : 'No'),
-                _buildDetailRow('Default', unit.isDefault ? 'Yes' : 'No'),
+              _buildDetailSection(context.tr(CommonText.status), [
+                _buildDetailRow(
+                  context.tr(ShopTypeText.active2),
+                  unit.isActive
+                      ? context.tr(CommonText.yes)
+                      : context.tr(CommonText.no),
+                ),
+                _buildDetailRow(
+                  context.tr(ShopTypeText.defaultText2),
+                  unit.isDefault
+                      ? context.tr(CommonText.yes)
+                      : context.tr(CommonText.no),
+                ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Timestamps', [
+              _buildDetailSection(context.tr(ShopTypeText.timestamps2), [
                 _buildDetailRow(
-                  'Created',
+                  context.tr(CommonText.created),
                   unit.createdAt?.toString().split(' ')[0] ?? 'N/A',
                 ),
                 _buildDetailRow(
-                  'Updated',
+                  context.tr(CommonText.updated),
                   unit.updatedAt?.toString().split(' ')[0] ?? 'N/A',
                 ),
               ]),
@@ -540,7 +562,11 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
       },
     );
     if (saved) {
-      messenger.showSuccess(existing == null ? 'Unit created' : 'Unit updated');
+      messenger.showSuccess(
+        existing == null
+            ? ShopTypeText.unitCreated.current
+            : ShopTypeText.unitUpdated.current,
+      );
     }
   }
 
@@ -580,48 +606,49 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
 
   void _showActivateDialog(Unit unit) => _confirmUnitAction(
     unit,
-    title: 'Activate "${unit.displayName()}"?',
-    message: 'The unit becomes available for use immediately.',
-    confirmLabel: 'Activate',
+    title: context.tr(ShopTypeText.activate2(unit.displayName())),
+    message: context.tr(ShopTypeText.theUnitBecomesAvailableFor),
+    confirmLabel: context.tr(ShopTypeText.activate),
     icon: Icons.visibility_outlined,
-    done: 'Unit activated',
-    failed: 'Could not activate unit',
+    done: context.tr(ShopTypeText.unitActivated),
+    failed: context.tr(ShopTypeText.couldNotActivateUnit),
     action: (n) => n.activateUnit(unit.id),
   );
 
   void _showDeactivateDialog(Unit unit) => _confirmUnitAction(
     unit,
-    title: 'Deactivate "${unit.displayName()}"?',
-    message: 'The unit can no longer be used. You can activate it again later.',
-    confirmLabel: 'Deactivate',
+    title: context.tr(ShopTypeText.deactivate2(unit.displayName())),
+    message: context.tr(ShopTypeText.theUnitCanNoLonger),
+    confirmLabel: context.tr(ShopTypeText.deactivate),
     icon: Icons.visibility_off_outlined,
-    done: 'Unit deactivated',
-    failed: 'Could not deactivate unit',
+    done: context.tr(ShopTypeText.unitDeactivated),
+    failed: context.tr(ShopTypeText.couldNotDeactivateUnit),
     action: (n) => n.deactivateUnit(unit.id),
   );
 
   void _showDeleteDialog(Unit unit) => _confirmUnitAction(
     unit,
-    title: 'Delete "${unit.displayName()}"?',
-    message:
-        'The unit is removed from every list. It cannot be restored from '
-        'this console.',
-    confirmLabel: 'Delete',
+    title: context.tr(ShopTypeText.delete2(unit.displayName())),
+    message: context.tr(ShopTypeText.theUnitIsRemovedFrom),
+    confirmLabel: context.tr(CommonText.delete),
     destructive: true,
     icon: Icons.delete_outline_rounded,
-    done: 'Unit deleted',
-    failed: 'Could not delete unit',
+    done: context.tr(ShopTypeText.unitDeleted),
+    failed: context.tr(ShopTypeText.couldNotDeleteUnit),
     action: (n) => n.deleteUnit(unit.id),
   );
 
   Future<void> _showSetDefaultDialog(Unit unit) async {
     final ok = await AppDialogs.confirm(
       context,
-      title: 'Set as default?',
-      message:
-          '"${unit.displayName()}" becomes the default unit for the '
-          '${unit.category} category, replacing the current default.',
-      confirmLabel: 'Set as default',
+      title: context.tr(ShopTypeText.setAsDefault2),
+      message: context.tr(
+        ShopTypeText.becomesTheDefaultUnitFor(
+          unit.displayName(),
+          unitCategoryLabel(context, unit.category),
+        ),
+      ),
+      confirmLabel: context.tr(ShopTypeText.setAsDefault3),
       icon: Icons.star_outline_rounded,
     );
     if (!ok || !mounted) return;
@@ -630,9 +657,9 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
         .read(unitsProvider.notifier)
         .setUnitDefault(unit.id);
     if (success) {
-      messenger.showSuccess('Unit set as default');
+      messenger.showSuccess(ShopTypeText.unitSetAsDefault.current);
     } else {
-      messenger.showError('Failed to set default unit');
+      messenger.showError(ShopTypeText.failedToSetDefaultUnit.current);
     }
   }
 }

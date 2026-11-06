@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/plan_detail_page.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
@@ -20,10 +19,9 @@ class _PlansPageState extends ConsumerState<PlansPage> {
     if (!active) {
       final ok = await AppDialogs.confirm(
         context,
-        title: 'Deactivate plan?',
-        message:
-            '"${plan.name}" will no longer be offered to shops. Existing subscriptions are not affected.',
-        confirmLabel: 'Deactivate',
+        title: context.tr(PlansText.deactivatePlan),
+        message: context.tr(PlansText.willNoLongerBeOffered(plan.name)),
+        confirmLabel: context.tr(PlansText.deactivate),
         destructive: true,
         icon: Icons.pause_circle_outline_rounded,
       );
@@ -42,7 +40,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
       );
     } catch (e) {
       messenger.showError(
-        'Could not update "${plan.name}": ${friendlyError(e)}',
+        PlansText.couldNotUpdate(plan.name, friendlyError(e)).current,
       );
     }
   }
@@ -65,11 +63,10 @@ class _PlansPageState extends ConsumerState<PlansPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Plans'),
+        title: Text(context.tr(NavText.plans)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(plansProvider.notifier).loadPlans(),
           ),
@@ -78,7 +75,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreatePlanDialog(),
         icon: const Icon(Icons.add),
-        label: const Text('Add Plan'),
+        label: Text(context.tr(PlansText.addPlan)),
       ),
       body: ContentWidth(
         child: plansState.isLoading
@@ -86,10 +83,10 @@ class _PlansPageState extends ConsumerState<PlansPage> {
             : plansState.error != null && plansState.plans.isEmpty
             ? _buildErrorView(plansState.error!)
             : plansState.plans.isEmpty
-            ? const AppEmptyView(
+            ? AppEmptyView(
                 icon: Icons.inventory_2_outlined,
-                title: 'No plans yet',
-                message: 'Create a plan to start offering subscriptions.',
+                title: context.tr(PlansText.noPlansYet),
+                message: context.tr(PlansText.createAPlanToStart),
               )
             : _buildPlanList(plansState.plans, currencyFormat),
       ),
@@ -189,7 +186,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildPriceColumn(
-                        'Monthly',
+                        context.tr(PlansText.monthly),
                         currencyFormat.format(plan.priceMonthly),
                       ),
                       Container(
@@ -198,7 +195,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                         color: context.colors.outline,
                       ),
                       _buildPriceColumn(
-                        'Yearly',
+                        context.tr(PlansText.yearly),
                         currencyFormat.format(plan.priceYearly),
                       ),
                     ],
@@ -211,17 +208,17 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                       _buildLimitItem(
                         Icons.people,
                         plan.maxEmployees?.toString() ?? '∞',
-                        'Employees',
+                        context.tr(PlansText.employees),
                       ),
                       _buildLimitItem(
                         Icons.inventory,
                         plan.maxProducts?.toString() ?? '∞',
-                        'Products',
+                        context.tr(PlansText.products),
                       ),
                       _buildLimitItem(
                         Icons.receipt_long,
                         plan.maxOrdersPerMonth?.toString() ?? '∞',
-                        'Orders/mo',
+                        context.tr(PlansText.ordersMo),
                       ),
                     ],
                   ),
@@ -231,11 +228,11 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Active: ${plan.activeSubscriptions}',
+                        context.tr(PlansText.active(plan.activeSubscriptions)),
                         style: TextStyle(color: context.status.success),
                       ),
                       Text(
-                        'Total: ${plan.totalSubscriptions}',
+                        context.tr(PlansText.total(plan.totalSubscriptions)),
                         style: TextStyle(
                           color: context.colors.onSurfaceVariant,
                         ),
@@ -259,7 +256,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                 children: [
                   if (plan.isTrialAvailable)
                     Text(
-                      '${plan.trialDays} days trial',
+                      context.tr(PlansText.daysTrial(plan.trialDays)),
                       style: TextStyle(
                         color: context.status.info,
                         fontSize: 12,
@@ -278,7 +275,7 @@ class _PlansPageState extends ConsumerState<PlansPage> {
                       );
                     },
                     icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Edit'),
+                    label: Text(context.tr(CommonText.edit)),
                   ),
                 ],
               ),

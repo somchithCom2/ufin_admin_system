@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:ufin_admin_system/config/theme/app_theme.dart';
 import 'package:ufin_admin_system/core/constants/error_messages.dart';
+import 'package:ufin_admin_system/l10n/l10n.dart';
 
 export 'package:ufin_admin_system/config/theme/app_theme.dart'
     show AppSpacing, StatusColors, StatusColorsX;
+export 'package:ufin_admin_system/l10n/l10n.dart';
 
 /// Short theme accessors: `context.colors.primary`, `context.text.bodySmall`.
 extension ThemeContextX on BuildContext {
@@ -17,7 +19,7 @@ extension ThemeContextX on BuildContext {
 
 /// Turns any thrown object into a short, user-facing sentence.
 String friendlyError(Object? error) {
-  if (error == null) return 'Something went wrong. Please try again.';
+  if (error == null) return CommonText.somethingWrong.current;
   var text = error.toString().trim();
   // Strip Dart's default exception prefixes ("Exception: ", "ApiException: ").
   text = text.replaceFirst(
@@ -25,10 +27,10 @@ String friendlyError(Object? error) {
     '',
   );
   if (text.isEmpty || text.startsWith('Instance of')) {
-    return 'Something went wrong. Please try again.';
+    return CommonText.somethingWrong.current;
   }
   // Server HTML error pages are not readable to users.
-  if (text.startsWith('<')) return 'Server error. Please try again later.';
+  if (text.startsWith('<')) return CommonText.serverError.current;
   // The backend answers with bare ERR_ codes so the shop app can translate
   // them; this console was putting those codes straight in front of an admin.
   final mapped = ErrorMessages.lookup(text);
@@ -99,9 +101,8 @@ abstract final class AppFeedback {
       FeedbackKind.info => (Icons.info_rounded, status.info),
     };
     // Inverted surface so the snackbar stands out in both themes.
-    final isDark = theme.brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
-    final fg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final bg = scheme.inverseSurface;
+    final fg = scheme.onInverseSurface;
 
     messenger
       ..hideCurrentSnackBar()
@@ -144,8 +145,8 @@ abstract final class AppDialogs {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmLabel = 'Confirm',
-    String cancelLabel = 'Cancel',
+    String? confirmLabel,
+    String? cancelLabel,
     bool destructive = false,
     IconData? icon,
   }) async {
@@ -169,8 +170,8 @@ abstract final class AppDialogs {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmLabel = 'Confirm',
-    String reasonLabel = 'Reason',
+    String? confirmLabel,
+    String? reasonLabel,
     bool reasonRequired = false,
     bool destructive = false,
     IconData? icon,
@@ -181,10 +182,10 @@ abstract final class AppDialogs {
         title: title,
         message: message,
         confirmLabel: confirmLabel,
-        cancelLabel: 'Cancel',
         destructive: destructive,
         icon: icon,
-        reasonLabel: reasonLabel,
+        reasonLabel: reasonLabel ?? CommonText.reason.of(ctx),
+        hasReason: true,
         reasonRequired: reasonRequired,
       ),
     );
@@ -194,22 +195,24 @@ abstract final class AppDialogs {
 class _ConfirmDialog extends StatefulWidget {
   final String title;
   final String message;
-  final String confirmLabel;
-  final String cancelLabel;
+  final String? confirmLabel;
+  final String? cancelLabel;
   final bool destructive;
   final IconData? icon;
   final String? reasonLabel;
   final bool reasonRequired;
+  final bool hasReason;
 
   const _ConfirmDialog({
     required this.title,
     required this.message,
-    required this.confirmLabel,
-    required this.cancelLabel,
+    this.confirmLabel,
+    this.cancelLabel,
     required this.destructive,
     this.icon,
     this.reasonLabel,
     this.reasonRequired = false,
+    this.hasReason = false,
   });
 
   @override
@@ -227,13 +230,13 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
   }
 
   void _submit() {
-    if (widget.reasonLabel == null) {
+    if (!widget.hasReason) {
       Navigator.of(context).pop(true);
       return;
     }
     final text = _reason.text.trim();
     if (widget.reasonRequired && text.isEmpty) {
-      setState(() => _reasonError = 'Please enter a reason');
+      setState(() => _reasonError = context.tr(CommonText.enterReason));
       return;
     }
     Navigator.of(context).pop(text);
@@ -243,7 +246,8 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final accent = widget.destructive ? scheme.error : scheme.primary;
-    final hasReason = widget.reasonLabel != null;
+    final hasReason = widget.hasReason;
+    final reasonLabel = widget.reasonLabel ?? context.tr(CommonText.reason);
 
     return AlertDialog(
       icon: widget.icon == null
@@ -275,8 +279,8 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
                 },
                 decoration: InputDecoration(
                   labelText: widget.reasonRequired
-                      ? widget.reasonLabel
-                      : '${widget.reasonLabel} (optional)',
+                      ? reasonLabel
+                      : context.tr(CommonText.optionalField(reasonLabel)),
                   errorText: _reasonError,
                   alignLabelWithHint: true,
                 ),
@@ -288,7 +292,7 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(widget.cancelLabel),
+          child: Text(widget.cancelLabel ?? context.tr(CommonText.cancel)),
         ),
         FilledButton(
           style: widget.destructive
@@ -298,7 +302,7 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
                 )
               : null,
           onPressed: _submit,
-          child: Text(widget.confirmLabel),
+          child: Text(widget.confirmLabel ?? context.tr(CommonText.confirm)),
         ),
       ],
     );
@@ -380,10 +384,20 @@ class AppMessageView extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        icon,
-                        color: color ?? scheme.onSurfaceVariant,
-                        size: 40,
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: (color ?? scheme.onSurfaceVariant).withValues(
+                            alpha: 0.08,
+                          ),
+                        ),
+                        child: Icon(
+                          icon,
+                          color: color ?? scheme.onSurfaceVariant,
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
@@ -421,13 +435,13 @@ class AppMessageView extends StatelessWidget {
 class AppErrorView extends StatelessWidget {
   final Object? error;
   final VoidCallback? onRetry;
-  final String title;
+  final String? title;
 
   const AppErrorView({
     super.key,
     required this.error,
     this.onRetry,
-    this.title = "Couldn't load data",
+    this.title,
   });
 
   @override
@@ -435,14 +449,14 @@ class AppErrorView extends StatelessWidget {
     return AppMessageView(
       icon: Icons.cloud_off_rounded,
       color: Theme.of(context).colorScheme.error,
-      title: title,
+      title: title ?? context.tr(CommonText.couldNotLoad),
       message: friendlyError(error),
       action: onRetry == null
           ? null
-          : FilledButton.tonalIcon(
+          : OutlinedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Try again'),
+              label: Text(context.tr(CommonText.retry)),
             ),
     );
   }
@@ -604,30 +618,36 @@ class StatusBadge extends StatelessWidget {
   final StatusTone tone;
   final IconData? icon;
 
+  /// Raw backend status; when set, the label is translated at build time.
+  final String? rawStatus;
+
   const StatusBadge({
     super.key,
     required this.label,
     required this.tone,
     this.icon,
-  });
+  }) : rawStatus = null;
 
-  /// Derives the tone from a raw backend status and title-cases the label.
-  factory StatusBadge.fromStatus(String? status, {Key? key}) {
-    return StatusBadge(
-      key: key,
-      label: humanize(status ?? 'Unknown'),
-      tone: StatusTone.fromStatus(status),
-    );
-  }
+  /// Derives the tone from a raw backend status and labels it in the
+  /// active language (title-cased raw value when the status is unknown).
+  StatusBadge.fromStatus(String? status, {super.key})
+    : label = humanize(status ?? 'Unknown'),
+      tone = StatusTone.fromStatus(status),
+      icon = null,
+      rawStatus = status ?? 'unknown';
 
   @override
   Widget build(BuildContext context) {
     final color = tone.foreground(context);
+    final label = rawStatus == null
+        ? this.label
+        : StatusText.lookup(rawStatus)?.of(context) ?? this.label;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -694,18 +714,33 @@ class StatCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     // Neutral unless the caller marks the metric with a status color.
-    final accent = color ?? scheme.onSurfaceVariant;
+    final accent = color ?? scheme.primary;
     return Card(
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(icon, color: accent, size: 17),
+                  ),
+                  const SizedBox(width: AppSpacing.sm + 2),
                   Expanded(
                     child: Text(
                       label,
@@ -717,18 +752,23 @@ class StatCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Icon(icon, color: accent, size: 18),
+                  if (onTap != null)
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md + 2),
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
                   value,
-                  style: textTheme.headlineSmall?.copyWith(
+                  style: textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
@@ -822,15 +862,15 @@ class SectionCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
-                AppSpacing.md + 2,
+                AppSpacing.md,
                 AppSpacing.sm,
-                AppSpacing.md + 2,
+                AppSpacing.md,
               ),
               child: Row(
                 children: [
                   if (icon != null) ...[
                     Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-                    const SizedBox(width: AppSpacing.sm),
+                    const SizedBox(width: AppSpacing.sm + 2),
                   ],
                   Expanded(
                     child: Column(
@@ -946,14 +986,14 @@ class SectionLabel extends StatelessWidget {
 /// Search field with a clear button; submits on enter.
 class AppSearchField extends StatefulWidget {
   final TextEditingController controller;
-  final String hintText;
+  final String? hintText;
   final ValueChanged<String> onSubmitted;
 
   const AppSearchField({
     super.key,
     required this.controller,
     required this.onSubmitted,
-    this.hintText = 'Search…',
+    this.hintText,
   });
 
   @override
@@ -998,12 +1038,12 @@ class _AppSearchFieldState extends State<AppSearchField> {
       textInputAction: TextInputAction.search,
       onSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
-        hintText: widget.hintText,
+        hintText: widget.hintText ?? context.tr(CommonText.searchHint),
         prefixIcon: const Icon(Icons.search_rounded, size: 20),
         suffixIcon: widget.controller.text.isEmpty
             ? null
             : IconButton(
-                tooltip: 'Clear',
+                tooltip: context.tr(CommonText.clear),
                 icon: const Icon(Icons.close_rounded, size: 18),
                 onPressed: () {
                   widget.controller.clear();

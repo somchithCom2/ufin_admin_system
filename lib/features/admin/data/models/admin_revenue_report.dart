@@ -1,3 +1,4 @@
+import 'package:ufin_admin_system/l10n/l10n.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 
 /// Admin Revenue Report model. Every amount is in [currency]; the backend
@@ -257,15 +258,15 @@ class RevenueByPaymentMethod {
   String get paymentMethodDisplay {
     switch (paymentMethod.toLowerCase()) {
       case 'cash':
-        return 'Cash';
+        return ModelText.cash.current;
       case 'bank_transfer':
-        return 'Bank Transfer';
+        return ModelText.bankTransfer.current;
       case 'qr_code':
         return 'QR Code';
       case 'card':
-        return 'Card';
+        return ModelText.card.current;
       case 'credit_card':
-        return 'Credit Card';
+        return ModelText.creditCard.current;
       default:
         return paymentMethod;
     }

@@ -22,7 +22,7 @@ class WorkQueueCard extends ConsumerWidget {
     final notifier = ref.read(workQueueProvider.notifier);
 
     return SectionCard(
-      title: 'Needs attention',
+      title: context.tr(DashText.needsAttention),
       icon: Icons.inbox_outlined,
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       trailing: state.isLoading
@@ -34,7 +34,7 @@ class WorkQueueCard extends ConsumerWidget {
               ),
             )
           : IconButton(
-              tooltip: 'Refresh',
+              tooltip: context.tr(CommonText.refresh),
               icon: const Icon(Icons.refresh_rounded, size: 20),
               onPressed: () => notifier.refresh(force: true),
             ),
@@ -61,11 +61,8 @@ class _AllClear extends StatelessWidget {
         color: context.status.success,
         size: 36,
       ),
-      title: const Text('Nothing needs you right now'),
-      subtitle: const Text(
-        'No upgrade requests waiting, no plans ending this week and no '
-        'lapsed shops.',
-      ),
+      title: Text(context.tr(DashText.allClear)),
+      subtitle: Text(context.tr(DashText.allClearHint)),
     );
   }
 }
@@ -89,20 +86,19 @@ class _QueueList extends ConsumerWidget {
         _GroupHeader(
           icon: Icons.upgrade_rounded,
           color: scheme.primary,
-          title: _count(pending, 'upgrade request', 'waiting for review'),
-          subtitle: _requestsSummary(queue.pendingPreview, pending),
-          actionLabel: 'Review',
+          title: context.tr(DashText.requestsWaiting(pending)),
+          subtitle: _requestsSummary(context, queue.pendingPreview, pending),
+          actionLabel: context.tr(DashText.review),
           onAction: () => openPendingUpgradeRequests(ref),
         ),
       if (trials.isNotEmpty)
         _ExpiringGroup(
           icon: Icons.hourglass_bottom_rounded,
           color: status.info,
-          title: _count(trials.length, 'trial', 'ending within 7 days'),
-          subtitle: locks
-              ? 'When a trial ends the shop moves to Free and cannot open '
-                    'new bills until a plan is paid.'
-              : 'When a trial ends the shop moves to Free.',
+          title: context.tr(DashText.trialsEnding(trials.length)),
+          subtitle: context.tr(
+            locks ? DashText.trialEndsLocks : DashText.trialEnds,
+          ),
           rows: trials,
           onSeeAll: () => openSubscriptionsWith(ref, status: 'trial'),
         ),
@@ -110,10 +106,8 @@ class _QueueList extends ConsumerWidget {
         _ExpiringGroup(
           icon: Icons.event_busy_rounded,
           color: status.warning,
-          title: _count(paid.length, 'plan', 'ending within 7 days'),
-          subtitle:
-              'Renews only once a payment for the next period is recorded '
-              'or the plan is extended; otherwise the shop drops to Free.',
+          title: context.tr(DashText.plansEnding(paid.length)),
+          subtitle: context.tr(DashText.paidRenewal),
           rows: paid,
           onSeeAll: () => openSubscriptionsWith(
             ref,
@@ -125,25 +119,22 @@ class _QueueList extends ConsumerWidget {
         _GroupHeader(
           icon: Icons.lock_clock_outlined,
           color: status.neutral,
-          title: _count(lapsed, 'shop', 'lapsed to Free'),
-          subtitle: locks
-              ? 'Trial or plan ended. They cannot open new bills until a '
-                    'plan is paid.'
-              : 'Trial or plan ended.',
-          actionLabel: 'View',
+          title: context.tr(DashText.shopsLapsed(lapsed)),
+          subtitle: context.tr(locks ? DashText.lapsedLocks : DashText.lapsed),
+          actionLabel: context.tr(CommonText.view),
           onAction: () => openSubscriptionsWith(ref, status: 'expired'),
         ),
       if (queue.isPartial)
         ListTile(
           leading: Icon(Icons.error_outline_rounded, color: scheme.error),
           title: Text(
-            "Couldn't load ${_failedParts(queue)}.",
+            context.tr(DashText.couldNotLoad(_failedParts(context, queue))),
             style: TextStyle(color: scheme.error),
           ),
           trailing: TextButton(
             onPressed: () =>
                 ref.read(workQueueProvider.notifier).refresh(force: true),
-            child: const Text('Retry'),
+            child: Text(context.tr(DashText.retry)),
           ),
         ),
     ];
@@ -156,24 +147,27 @@ class _QueueList extends ConsumerWidget {
     );
   }
 
-  /// "1 trial ending…", "3 trials ending…".
-  static String _count(int n, String noun, String rest) =>
-      '$n $noun${n == 1 ? '' : 's'} $rest';
-
   /// "Mekong Mart → Gold, Noy Cafe → Silver and 2 more".
-  static String? _requestsSummary(List<UpgradeRequestDto> preview, int total) {
+  static String? _requestsSummary(
+    BuildContext context,
+    List<UpgradeRequestDto> preview,
+    int total,
+  ) {
     if (preview.isEmpty) return null;
     final names = preview
-        .map((r) => '${r.shopName} → ${r.localizedToPlanName('en')}')
+        .map(
+          (r) =>
+              '${r.shopName} → ${r.localizedToPlanName(context.language.name)}',
+        )
         .join(', ');
     final more = total - preview.length;
-    return more > 0 ? '$names and $more more' : names;
+    return more > 0 ? context.tr(DashText.andMore(names, more)) : names;
   }
 
-  static String _failedParts(WorkQueue q) => [
-    if (q.pendingRequests == null) 'upgrade requests',
-    if (q.expiring == null) 'expiring plans',
-    if (q.lapsed == null) 'lapsed shops',
+  static String _failedParts(BuildContext context, WorkQueue q) => [
+    if (q.pendingRequests == null) context.tr(DashText.partRequests),
+    if (q.expiring == null) context.tr(DashText.partExpiring),
+    if (q.lapsed == null) context.tr(DashText.partLapsed),
   ].join(', ');
 }
 
@@ -247,7 +241,11 @@ class _ExpiringGroup extends ConsumerWidget {
             padding: const EdgeInsetsDirectional.only(start: 60, bottom: 4),
             child: TextButton(
               onPressed: onSeeAll,
-              child: Text(more > 0 ? 'See all · $more more' : 'See all'),
+              child: Text(
+                context.tr(
+                  more > 0 ? DashText.seeAllMore(more) : DashText.seeAll,
+                ),
+              ),
             ),
           ),
         ),
@@ -265,13 +263,13 @@ class _ShopRow extends ConsumerWidget {
     final s = subscription;
     final days = s.daysUntilExpiry;
     final when = days <= 0
-        ? 'Ends today'
+        ? context.tr(DashText.endsToday)
         : days == 1
-        ? 'Ends tomorrow'
-        : '$days days left';
+        ? context.tr(DashText.endsTomorrow)
+        : context.tr(DashText.daysLeft(days));
     final plan = [
       if (s.planName != null && s.planName!.isNotEmpty) s.planName!,
-      if (!s.isTrial && s.autoRenew) 'auto-renew on',
+      if (!s.isTrial && s.autoRenew) context.tr(DashText.autoRenewOn),
     ].join(' · ');
 
     return ListTile(

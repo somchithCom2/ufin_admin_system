@@ -1,3 +1,5 @@
+import 'package:ufin_admin_system/l10n/l10n.dart';
+
 /// Subscription history entry
 class SubscriptionHistory {
   final int id;
@@ -111,39 +113,39 @@ class SubscriptionHistory {
   String get actionDisplayText {
     switch (actionType.toLowerCase()) {
       case 'upgraded':
-        return 'Upgraded';
+        return ModelText.upgraded.current;
       case 'downgraded':
-        return 'Downgraded';
+        return ModelText.downgraded.current;
       case 'renewed':
-        return 'Renewed';
+        return ModelText.renewed.current;
       case 'cancelled':
-        return 'Cancelled';
+        return ModelText.cancelled.current;
       case 'extended':
-        return 'Extended';
+        return ModelText.extended.current;
       case 'created':
-        return 'Created';
+        return CommonText.created.current;
       case 'changed':
-        return 'Plan Changed';
+        return ModelText.planChanged.current;
       case 'expired':
-        return 'Expired';
+        return ModelText.expired.current;
       case 'reactivated':
-        return 'Reactivated';
+        return ModelText.reactivated.current;
       case 'trial_started':
-        return 'Trial Started';
+        return ModelText.trialStarted.current;
       case 'trial_ended':
-        return 'Trial Ended';
+        return ModelText.trialEnded.current;
       case 'payment_received':
-        return 'Payment Received';
+        return ModelText.paymentReceived.current;
       case 'payment_failed':
-        return 'Payment Failed';
+        return ModelText.paymentFailed.current;
       case 'suspended':
-        return 'Suspended';
+        return ModelText.suspended.current;
       case 'unsuspended':
-        return 'Unsuspended';
+        return ModelText.unsuspended.current;
       case 'auto_renew_enabled':
-        return 'Auto-renew On';
+        return ModelText.autoRenewOn.current;
       case 'auto_renew_disabled':
-        return 'Auto-renew Off';
+        return ModelText.autoRenewOff.current;
       default:
         // Unknown action: "some_new_action" reads better than the raw code.
         return actionType

@@ -36,9 +36,11 @@ class _SubscriptionActionPageState
   String? _error;
 
   String get _title => switch (widget.action) {
-    SubscriptionAction.create => 'Create Subscription',
-    SubscriptionAction.cancel => 'Cancel Subscription',
-    SubscriptionAction.reactivate => 'Reactivate Subscription',
+    SubscriptionAction.create => context.tr(SubsText.createSubscription2),
+    SubscriptionAction.cancel => context.tr(SubsText.cancelSubscription2),
+    SubscriptionAction.reactivate => context.tr(
+      SubsText.reactivateSubscription,
+    ),
   };
 
   @override
@@ -164,7 +166,9 @@ class _SubscriptionActionPageState
                               widget.action != SubscriptionAction.cancel)
                             TextButton(
                               onPressed: _loadPlans,
-                              child: const Text('Retry loading plans'),
+                              child: Text(
+                                context.tr(SubsText.retryLoadingPlans),
+                              ),
                             ),
                           const SizedBox(height: 16),
                         ],
@@ -178,8 +182,8 @@ class _SubscriptionActionPageState
                         if (widget.action != SubscriptionAction.cancel) ...[
                           DropdownButtonFormField<String>(
                             initialValue: _planCode,
-                            decoration: const InputDecoration(
-                              labelText: 'Plan',
+                            decoration: InputDecoration(
+                              labelText: context.tr(CommonText.plan),
                             ),
                             items: _plans
                                 .map(
@@ -193,27 +197,28 @@ class _SubscriptionActionPageState
                               _planCode = v;
                               _trial = false;
                             }),
-                            validator: (v) =>
-                                v == null ? 'Select an active plan' : null,
+                            validator: (v) => v == null
+                                ? context.tr(SubsText.selectAnActivePlan)
+                                : null,
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
                             initialValue: _cycle,
-                            decoration: const InputDecoration(
-                              labelText: 'Billing Cycle',
+                            decoration: InputDecoration(
+                              labelText: context.tr(SubsText.billingCycle2),
                             ),
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                 value: 'monthly',
-                                child: Text('Monthly'),
+                                child: Text(context.tr(SubsText.monthly)),
                               ),
                               DropdownMenuItem(
                                 value: 'yearly',
-                                child: Text('Yearly'),
+                                child: Text(context.tr(SubsText.yearly)),
                               ),
                               DropdownMenuItem(
                                 value: 'lifetime',
-                                child: Text('Lifetime'),
+                                child: Text(context.tr(SubsText.lifetime)),
                               ),
                             ],
                             onChanged: (v) => setState(() => _cycle = v!),
@@ -223,9 +228,20 @@ class _SubscriptionActionPageState
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               child: Text(
                                 _cycle == 'lifetime'
-                                    ? 'One-off price: ${selected.priceYearly} ${selected.currency} '
-                                          '— never expires and is never renewed.'
-                                    : 'Plan price: ${_cycle == 'yearly' ? selected.priceYearly : selected.priceMonthly} ${selected.currency}',
+                                    ? context.tr(
+                                        SubsText.oneOffPriceNeverExpires(
+                                          selected.priceYearly,
+                                          selected.currency,
+                                        ),
+                                      )
+                                    : context.tr(
+                                        SubsText.planPrice(
+                                          _cycle == 'yearly'
+                                              ? selected.priceYearly
+                                              : selected.priceMonthly,
+                                          selected.currency,
+                                        ),
+                                      ),
                               ),
                             ),
                           if (widget.action == SubscriptionAction.create &&
@@ -234,34 +250,38 @@ class _SubscriptionActionPageState
                             SwitchListTile(
                               contentPadding: EdgeInsets.zero,
                               title: Text(
-                                'Start with ${selected.trialDays} trial days',
+                                context.tr(
+                                  SubsText.startWithTrialDays(
+                                    selected.trialDays,
+                                  ),
+                                ),
                               ),
                               value: _trial,
                               onChanged: (v) => setState(() => _trial = v),
                             ),
                           Text(
                             _cycle == 'lifetime'
-                                ? 'This changes subscription access. A lifetime '
-                                      'subscription never expires and never renews.'
-                                : 'This changes subscription access. Auto-renew only '
-                                      'rolls the period forward once a matching payment '
-                                      'is recorded in Payments — record it there.',
+                                ? context.tr(
+                                    SubsText.thisChangesSubscriptionAccessA,
+                                  )
+                                : context.tr(
+                                    SubsText.thisChangesSubscriptionAccessAuto,
+                                  ),
                           ),
                         ],
                         if (widget.action == SubscriptionAction.cancel) ...[
                           SwitchListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('Cancel immediately'),
+                            title: Text(context.tr(SubsText.cancelImmediately)),
                             value: _immediate,
                             onChanged: (v) => setState(() => _immediate = v),
                           ),
                           Text(
                             _immediate
-                                ? 'The paid plan ends now and the shop drops to the '
-                                      'Free plan. It keeps working under Free limits '
-                                      'rather than being locked out.'
-                                : 'Access continues until the current billing period '
-                                      'ends; auto-renew is switched off.',
+                                ? context.tr(SubsText.thePaidPlanEndsNow)
+                                : context.tr(
+                                    SubsText.accessContinuesUntilTheCurrent,
+                                  ),
                           ),
                         ],
                         const SizedBox(height: 16),
@@ -269,25 +289,31 @@ class _SubscriptionActionPageState
                           TextFormField(
                             controller: _reason,
                             maxLength: 1000,
-                            decoration: const InputDecoration(
-                              labelText: 'Reason',
+                            decoration: InputDecoration(
+                              labelText: context.tr(CommonText.reason),
                             ),
                             validator: (v) =>
                                 widget.action == SubscriptionAction.cancel &&
                                     (v == null || v.trim().isEmpty)
-                                ? 'A cancellation reason is required'
+                                ? context.tr(
+                                    SubsText.aCancellationReasonIsRequired,
+                                  )
                                 : null,
                           ),
                         TextFormField(
                           controller: _notes,
                           maxLines: 3,
                           maxLength: 4000,
-                          decoration: const InputDecoration(labelText: 'Notes'),
+                          decoration: InputDecoration(
+                            labelText: context.tr(CommonText.notes),
+                          ),
                         ),
                         const SizedBox(height: 20),
                         FilledButton(
                           onPressed: _saving ? null : _submit,
-                          child: Text(_saving ? 'Saving…' : _title),
+                          child: Text(
+                            _saving ? context.tr(CommonText.saving) : _title,
+                          ),
                         ),
                       ],
                     ),

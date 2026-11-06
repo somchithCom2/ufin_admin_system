@@ -6,7 +6,6 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_detail_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class StatisticsPage extends ConsumerStatefulWidget {
@@ -46,11 +45,10 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Statistics'),
+        title: Text(context.tr(NavText.statistics)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
               ref.read(subscriptionStatsProvider.notifier).refresh();
@@ -60,9 +58,9 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
         ],
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Expiring'),
+          tabs: [
+            Tab(text: context.tr(FinText.overview)),
+            Tab(text: context.tr(FinText.expiring)),
           ],
         ),
       ),
@@ -89,10 +87,10 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
 
     final stats = state.stats;
     if (stats == null) {
-      return const AppEmptyView(
+      return AppEmptyView(
         icon: Icons.insights_outlined,
-        title: 'No data available',
-        message: 'There is nothing to show for this period.',
+        title: context.tr(FinText.noDataAvailable3),
+        message: context.tr(FinText.thereIsNothingToShow3),
       );
     }
     final currencies = _revenueCurrencies(stats);
@@ -108,37 +106,37 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
             minItemWidth: 180,
             children: [
               StatCard(
-                label: 'Total',
+                label: context.tr(CommonText.total),
                 value: stats.totalSubscriptions.toString(),
                 icon: Icons.card_membership_rounded,
               ),
               StatCard(
-                label: 'Active',
+                label: context.tr(FinText.active),
                 value: stats.activeSubscriptions.toString(),
                 icon: Icons.check_circle_outline_rounded,
                 color: status.success,
               ),
               StatCard(
-                label: 'Trial',
+                label: context.tr(FinText.trial),
                 value: stats.trialSubscriptions.toString(),
                 icon: Icons.hourglass_top_rounded,
                 color: status.info,
               ),
               StatCard(
-                label: 'Expiring soon',
+                label: context.tr(FinText.expiringSoon),
                 value: stats.expiringSoon.toString(),
-                caption: 'Within 30 days',
+                caption: context.tr(FinText.within30Days),
                 icon: Icons.schedule_rounded,
                 color: stats.expiringSoon > 0 ? status.warning : null,
                 onTap: () => _tabController.animateTo(1),
               ),
               StatCard(
-                label: 'Expired',
+                label: context.tr(FinText.expired),
                 value: stats.expiredSubscriptions.toString(),
                 icon: Icons.timer_off_outlined,
               ),
               StatCard(
-                label: 'Cancelled',
+                label: context.tr(FinText.cancelled),
                 value: stats.cancelledSubscriptions.toString(),
                 icon: Icons.cancel_outlined,
               ),
@@ -146,7 +144,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
           ),
           const SizedBox(height: AppSpacing.lg),
           SectionCard(
-            title: 'Revenue',
+            title: context.tr(FinText.revenue),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -163,17 +161,17 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
                     runSpacing: AppSpacing.md,
                     children: [
                       _buildRevenueItem(
-                        'Total revenue',
+                        context.tr(FinText.totalRevenue2),
                         stats.totalRevenue[currency] ?? 0,
                         currency,
                       ),
                       _buildRevenueItem(
-                        'Monthly recurring (MRR)',
+                        context.tr(FinText.monthlyRecurringMrr),
                         stats.monthlyRecurringRevenue[currency] ?? 0,
                         currency,
                       ),
                       _buildRevenueItem(
-                        'Average per paying shop (ARPU)',
+                        context.tr(FinText.averagePerPayingShopArpu),
                         stats.averageRevenuePerUser[currency] ?? 0,
                         currency,
                       ),
@@ -186,7 +184,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
           if (stats.byPlan.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
             SectionCard(
-              title: 'Active and trial by plan',
+              title: context.tr(FinText.activeAndTrialByPlan),
               child: Column(
                 children: [
                   for (final entry in stats.byPlan.entries)
@@ -202,7 +200,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
           if (stats.byStatus.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.lg),
             SectionCard(
-              title: 'By status',
+              title: context.tr(FinText.byStatus),
               child: Wrap(
                 spacing: AppSpacing.lg,
                 runSpacing: AppSpacing.sm,
@@ -237,10 +235,19 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
             children: [
               SegmentedButton<int>(
                 showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: 7, label: Text('7 days')),
-                  ButtonSegment(value: 14, label: Text('14 days')),
-                  ButtonSegment(value: 30, label: Text('30 days')),
+                segments: [
+                  ButtonSegment(
+                    value: 7,
+                    label: Text(context.tr(FinText.n7Days)),
+                  ),
+                  ButtonSegment(
+                    value: 14,
+                    label: Text(context.tr(FinText.n14Days)),
+                  ),
+                  ButtonSegment(
+                    value: 30,
+                    label: Text(context.tr(FinText.n30Days)),
+                  ),
                 ],
                 selected: {_expiringDaysFilter},
                 onSelectionChanged: (s) {
@@ -250,9 +257,13 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
               ),
               if (!state.isLoading && state.subscriptions.isNotEmpty)
                 Text(
-                  '${state.subscriptions.length} expiring · '
-                  '${state.urgentCount} within 7 days · '
-                  '${state.criticalCount} within 3 days',
+                  context.tr(
+                    FinText.expiringWithin7DaysWithin(
+                      state.subscriptions.length,
+                      state.urgentCount,
+                      state.criticalCount,
+                    ),
+                  ),
                   style: context.text.bodySmall?.copyWith(
                     color: context.colors.onSurfaceVariant,
                   ),
@@ -269,9 +280,10 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
               : state.subscriptions.isEmpty
               ? AppEmptyView(
                   icon: Icons.event_available_outlined,
-                  title: 'Nothing expiring',
-                  message:
-                      'No subscription expires in the next $_expiringDaysFilter days.',
+                  title: context.tr(FinText.nothingExpiring),
+                  message: context.tr(
+                    FinText.noSubscriptionExpiresInThe(_expiringDaysFilter),
+                  ),
                 )
               : RefreshIndicator(
                   onRefresh: notifier.loadExpiringSubscriptions,
@@ -370,7 +382,7 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
               style: context.text.titleMedium?.copyWith(color: urgency),
             ),
             Text(
-              sub.daysUntilExpiry == 1 ? 'day' : 'days',
+              context.tr(CommonText.days),
               style: context.text.labelSmall?.copyWith(color: urgency),
             ),
           ],
@@ -378,7 +390,8 @@ class _StatisticsPageState extends ConsumerState<StatisticsPage>
       ),
       title: Text(sub.shopName, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
-        '${sub.planName} · expires ${DateFormat('d MMM y').format(sub.endDate)}',
+        '${sub.planName} · ${context.tr(SubsText.expires2).toLowerCase()} '
+        '${DateFormat('d MMM y', context.localeName).format(sub.endDate)}',
       ),
       trailing: opening
           ? const SizedBox(

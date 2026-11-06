@@ -18,7 +18,7 @@ class AppReleaseDetailPage extends ConsumerStatefulWidget {
 }
 
 class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
-  static final _date = DateFormat('d MMM y, HH:mm');
+  static DateFormat get _date => AppDateFormat.of('d MMM y, HH:mm');
 
   late AppRelease _release = widget.release;
   bool _busy = false;
@@ -70,27 +70,27 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
         title: Text('${platformLabel(r.platform)} v${r.versionName}'),
         actions: [
           IconButton(
-            tooltip: 'Edit notes',
+            tooltip: context.tr(ReleaseText.editNotes2),
             icon: const Icon(Icons.edit_outlined),
             onPressed: _busy ? null : () => _apply(AppReleaseActions.edit),
           ),
           PopupMenuButton<VoidCallback>(
-            tooltip: 'More',
+            tooltip: context.tr(CommonText.more),
             enabled: !_busy,
             onSelected: (run) => run(),
             itemBuilder: (_) => [
               PopupMenuItem(
                 value: () => _copy(ReleaseCopy.nextVersion),
-                child: const ListTile(
+                child: ListTile(
                   leading: Icon(Icons.content_copy_rounded),
-                  title: Text('New version from this'),
+                  title: Text(context.tr(ReleaseText.newVersionFromThis2)),
                 ),
               ),
               PopupMenuItem(
                 value: () => _copy(ReleaseCopy.otherPlatform),
-                child: const ListTile(
+                child: ListTile(
                   leading: Icon(Icons.devices_rounded),
-                  title: Text('Copy to another platform'),
+                  title: Text(context.tr(ReleaseText.copyToAnotherPlatform2)),
                 ),
               ),
               const PopupMenuDivider(),
@@ -102,7 +102,7 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                     color: context.colors.error,
                   ),
                   title: Text(
-                    'Delete',
+                    context.tr(CommonText.delete),
                     style: TextStyle(color: context.colors.error),
                   ),
                 ),
@@ -154,8 +154,8 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                           r.isPublished ? 'published' : 'draft',
                         ),
                         if (r.isMandatory)
-                          const StatusBadge(
-                            label: 'Mandatory',
+                          StatusBadge(
+                            label: context.tr(ReleaseText.mandatory2),
                             tone: StatusTone.danger,
                           ),
                       ],
@@ -164,10 +164,9 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                     Text(
                       r.isPublished
                           ? (r.isMandatory
-                                ? 'Live: shops on an older version must update.'
-                                : 'Live: shops on an older version are offered '
-                                      'this update.')
-                          : 'Draft: no shop sees it until it is published.',
+                                ? context.tr(ReleaseText.liveShopsOnAnOlder)
+                                : context.tr(ReleaseText.liveShopsOnAnOlder2))
+                          : context.tr(ReleaseText.draftNoShopSeesIt),
                       style: muted,
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -181,7 +180,7 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                                 ? null
                                 : () => _apply(AppReleaseActions.unpublish),
                             icon: const Icon(Icons.unpublished_outlined),
-                            label: const Text('Unpublish'),
+                            label: Text(context.tr(ReleaseText.unpublish2)),
                           )
                         else
                           FilledButton.icon(
@@ -189,21 +188,23 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
                                 ? null
                                 : () => _apply(AppReleaseActions.publish),
                             icon: const Icon(Icons.publish_rounded),
-                            label: const Text('Publish'),
+                            label: Text(context.tr(ReleaseText.publish2)),
                           ),
                         OutlinedButton.icon(
                           onPressed: _busy
                               ? null
                               : () => _apply(AppReleaseActions.edit),
                           icon: const Icon(Icons.edit_outlined),
-                          label: const Text('Edit notes'),
+                          label: Text(context.tr(ReleaseText.editNotes2)),
                         ),
                         OutlinedButton.icon(
                           onPressed: _busy
                               ? null
                               : () => _copy(ReleaseCopy.nextVersion),
                           icon: const Icon(Icons.content_copy_rounded),
-                          label: const Text('New version from this'),
+                          label: Text(
+                            context.tr(ReleaseText.newVersionFromThis2),
+                          ),
                         ),
                       ],
                     ),
@@ -213,17 +214,17 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
               const SizedBox(height: AppSpacing.lg),
 
               SectionCard(
-                title: "What's new",
+                title: context.tr(ReleaseText.whatSNew),
                 icon: Icons.notes_rounded,
-                subtitle: 'Shops see this exactly as written',
+                subtitle: context.tr(ReleaseText.shopsSeeThisExactlyAs),
                 trailing: TextButton.icon(
                   onPressed: () => AppReleaseActions.copy(
                     context,
                     AppReleaseActions.notesText(r),
-                    what: 'Release notes',
+                    what: context.tr(ReleaseText.releaseNotes2),
                   ),
                   icon: const Icon(Icons.copy_rounded, size: 18),
-                  label: const Text('Copy'),
+                  label: Text(context.tr(CommonText.copy)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,32 +244,32 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
               const SizedBox(height: AppSpacing.lg),
 
               SectionCard(
-                title: 'Details',
+                title: context.tr(CommonText.details),
                 icon: Icons.info_outline_rounded,
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Column(
                   children: [
                     _CopyRow(
-                      label: 'Version',
+                      label: context.tr(CommonText.version),
                       value: r.versionName,
-                      what: 'Version',
+                      what: context.tr(CommonText.version),
                     ),
                     _CopyRow(
-                      label: 'Build',
+                      label: context.tr(ReleaseText.build2),
                       value: '${r.versionCode}',
-                      what: 'Build number',
+                      what: context.tr(ReleaseText.buildNumber),
                     ),
                     _CopyRow(
-                      label: 'Download link',
+                      label: context.tr(ReleaseText.downloadLink),
                       value: r.downloadUrl,
-                      what: 'Download link',
+                      what: context.tr(ReleaseText.downloadLink),
                     ),
                     _CopyRow(
-                      label: 'Released',
+                      label: context.tr(ReleaseText.released),
                       value: _date.format(r.releasedAt.toLocal()),
                     ),
                     _CopyRow(
-                      label: 'Last edited',
+                      label: context.tr(ReleaseText.lastEdited),
                       value: _date.format(r.updatedAt.toLocal()),
                     ),
                   ],
@@ -277,9 +278,7 @@ class _AppReleaseDetailPageState extends ConsumerState<AppReleaseDetailPage> {
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Text(
-                  'Platform, version and build cannot be changed after a '
-                  'release is made. To fix them, use "New version from this" '
-                  'or "Copy to another platform", then delete this one.',
+                  context.tr(ReleaseText.platformVersionAndBuildCannot),
                   style: muted,
                 ),
               ),
@@ -317,7 +316,7 @@ class _CopyRow extends StatelessWidget {
       trailing: what == null
           ? null
           : IconButton(
-              tooltip: 'Copy ${what.toLowerCase()}',
+              tooltip: context.tr(ReleaseText.copy(what.toLowerCase())),
               icon: const Icon(Icons.copy_rounded, size: 18),
               onPressed: () =>
                   AppReleaseActions.copy(context, value, what: what),

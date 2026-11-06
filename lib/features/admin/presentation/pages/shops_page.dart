@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_products_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_data_reset_form.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_ownership_forms.dart';
@@ -52,11 +51,10 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Shops'),
+        title: Text(context.tr(NavText.shops)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.read(shopsProvider.notifier).loadShops(),
           ),
@@ -73,7 +71,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   Expanded(
                     child: AppSearchField(
                       controller: _searchController,
-                      hintText: 'Name, phone, email, owner or ID…',
+                      hintText: context.tr(ShopText.namePhoneEmailOwnerOr),
                       onSubmitted: (value) {
                         if (_scrollController.hasClients) {
                           _scrollController.jumpTo(0);
@@ -103,22 +101,25 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                           );
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(value: null, child: Text('All')),
-                      const PopupMenuItem(
+                      PopupMenuItem(
+                        value: null,
+                        child: Text(context.tr(CommonText.all)),
+                      ),
+                      PopupMenuItem(
                         value: 'active',
-                        child: Text('Active'),
+                        child: Text(context.tr(ShopText.active)),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'suspended',
-                        child: Text('Suspended'),
+                        child: Text(context.tr(ShopText.suspended)),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'inactive',
-                        child: Text('Inactive'),
+                        child: Text(context.tr(ShopText.inactive)),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'deleted',
-                        child: Text('Deleted'),
+                        child: Text(context.tr(ShopText.deleted)),
                       ),
                     ],
                   ),
@@ -132,10 +133,10 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   : shopsState.error != null && shopsState.shops.isEmpty
                   ? _buildErrorView(shopsState.error!)
                   : shopsState.shops.isEmpty
-                  ? const AppEmptyView(
+                  ? AppEmptyView(
                       icon: Icons.storefront_outlined,
-                      title: 'No shops found',
-                      message: 'Try a different search or filter.',
+                      title: context.tr(ShopText.noShopsFound),
+                      message: context.tr(ShopText.tryADifferentSearchOr),
                     )
                   : _buildShopList(shopsState.shops, shopsState.isLoadingMore),
             ),
@@ -222,10 +223,14 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (shop.ownerUsername != null)
-              Text('Owner: ${shop.ownerUsername}'),
+              Text(context.tr(ShopText.owner(shop.ownerUsername))),
             if (shop.isBranch)
               Text(
-                'Branch of: ${shop.parentShopName ?? '#${shop.parentShopId}'}',
+                context.tr(
+                  ShopText.branchOf(
+                    shop.parentShopName ?? '#${shop.parentShopId}',
+                  ),
+                ),
               ),
             // Wraps: a branch's plan chip names its main shop, which can be
             // longer than a phone-width row.
@@ -251,13 +256,13 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
         trailing: PopupMenuButton<String>(
           onSelected: (action) => _handleShopAction(shop, action),
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'view',
               child: Row(
                 children: [
                   Icon(Icons.visibility),
                   SizedBox(width: 8),
-                  Text('View Details'),
+                  Text(context.tr(ShopText.viewDetails)),
                 ],
               ),
             ),
@@ -268,7 +273,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   children: [
                     Icon(Icons.restore, color: context.status.success),
                     SizedBox(width: 8),
-                    Text('Restore'),
+                    Text(context.tr(ShopText.restore)),
                   ],
                 ),
               ),
@@ -278,7 +283,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 children: [
                   Icon(Icons.inventory_2_outlined, color: context.status.info),
                   SizedBox(width: 8),
-                  Text('View Products'),
+                  Text(context.tr(ShopText.viewProducts)),
                 ],
               ),
             ),
@@ -289,7 +294,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   children: [
                     Icon(Icons.block, color: context.status.warning),
                     SizedBox(width: 8),
-                    Text('Suspend'),
+                    Text(context.tr(ShopText.suspend)),
                   ],
                 ),
               ),
@@ -300,30 +305,30 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   children: [
                     Icon(Icons.check_circle, color: context.status.success),
                     SizedBox(width: 8),
-                    Text('Activate'),
+                    Text(context.tr(ShopText.activate)),
                   ],
                 ),
               ),
             const PopupMenuDivider(),
             if (!shop.isBranch)
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'branches',
                 child: Row(
                   children: [
                     Icon(Icons.account_tree_outlined),
                     SizedBox(width: 8),
-                    Text('Branches'),
+                    Text(context.tr(ShopText.branches)),
                   ],
                 ),
               ),
             if (!shop.isDeleted && !shop.isBranch)
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'link',
                 child: Row(
                   children: [
                     Icon(Icons.link_rounded),
                     SizedBox(width: 8),
-                    Text('Link as branch…'),
+                    Text(context.tr(ShopText.linkAsBranch)),
                   ],
                 ),
               ),
@@ -337,7 +342,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                       color: context.status.warning,
                     ),
                     SizedBox(width: 8),
-                    Text('Unlink branch…'),
+                    Text(context.tr(ShopText.unlinkBranch)),
                   ],
                 ),
               ),
@@ -351,17 +356,17 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                       color: context.status.warning,
                     ),
                     SizedBox(width: 8),
-                    Text('Change owner…'),
+                    Text(context.tr(ShopText.changeOwner)),
                   ],
                 ),
               ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'owner_history',
               child: Row(
                 children: [
                   Icon(Icons.history_rounded),
                   SizedBox(width: 8),
-                  Text('Owner history'),
+                  Text(context.tr(ShopText.ownerHistory)),
                 ],
               ),
             ),
@@ -377,7 +382,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Reset data…',
+                      context.tr(ShopText.resetData),
                       style: TextStyle(color: context.colors.error),
                     ),
                   ],
@@ -390,7 +395,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                     Icon(Icons.delete_outline, color: context.colors.error),
                     const SizedBox(width: 8),
                     Text(
-                      'Delete shop…',
+                      context.tr(ShopText.deleteShop),
                       style: TextStyle(color: context.colors.error),
                     ),
                   ],
@@ -448,19 +453,19 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       case 'link':
         _runOwnershipAction(
           showLinkBranchForm(context, shop),
-          'Linked as a branch',
+          context.tr(ShopText.linkedAsABranch),
         );
         break;
       case 'unlink':
         _runOwnershipAction(
           showUnlinkBranchForm(context, shop),
-          'Unlinked from the group',
+          context.tr(ShopText.unlinkedFromTheGroup),
         );
         break;
       case 'owner':
         _runOwnershipAction(
           showChangeOwnerForm(context, shop),
-          'Owner changed',
+          context.tr(ShopText.ownerChanged),
         );
         break;
       case 'owner_history':
@@ -534,50 +539,83 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 ],
               ),
               const SizedBox(height: 24),
-              _buildDetailSection('Shop Information', [
-                _buildDetailRow('Business Name', shop.businessName ?? 'N/A'),
+              _buildDetailSection(context.tr(ShopText.shopInformation), [
                 _buildDetailRow(
-                  'Business Type',
+                  context.tr(ShopText.businessName),
+                  shop.businessName ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(ShopText.businessType),
                   shop.businessType?['en'] ??
                       shop.businessType?.values.firstOrNull ??
                       'N/A',
                 ),
-                _buildDetailRow('Email', shop.email ?? 'N/A'),
-                _buildDetailRow('Phone', shop.phone ?? 'N/A'),
-                _buildDetailRow('Address', shop.address ?? 'N/A'),
+                _buildDetailRow(
+                  context.tr(CommonText.email),
+                  shop.email ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(CommonText.phone),
+                  shop.phone ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(CommonText.address),
+                  shop.address ?? 'N/A',
+                ),
                 if (shop.isBranch)
                   _buildDetailRow(
-                    'Branch of',
+                    context.tr(ShopText.branchOf2),
                     shop.parentShopName ?? '#${shop.parentShopId}',
                   ),
                 if (shop.isDeleted)
                   _buildDetailRow(
-                    'Deleted on',
+                    context.tr(ShopText.deletedOn),
                     shop.deletedAt!.toLocal().toString().split('.')[0],
                   ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Owner', [
-                _buildDetailRow('Username', shop.ownerUsername ?? 'N/A'),
-                _buildDetailRow('Email', shop.ownerEmail ?? 'N/A'),
-                _buildDetailRow('Phone', shop.ownerPhone ?? 'N/A'),
+              _buildDetailSection(context.tr(CommonText.owner), [
+                _buildDetailRow(
+                  context.tr(AuthText.username),
+                  shop.ownerUsername ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(CommonText.email),
+                  shop.ownerEmail ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(CommonText.phone),
+                  shop.ownerPhone ?? 'N/A',
+                ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Subscription', [
-                _buildDetailRow('Plan', shop.planLabel ?? 'N/A'),
-                _buildDetailRow('Status', shop.subscriptionStatus ?? 'N/A'),
+              _buildDetailSection(context.tr(ShopText.subscription), [
                 _buildDetailRow(
-                  'Expires',
+                  context.tr(CommonText.plan),
+                  shop.planLabel ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(CommonText.status),
+                  shop.subscriptionStatus ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(ShopText.expires),
                   shop.isBranch
-                      ? 'Same as main shop'
+                      ? context.tr(ShopText.sameAsMainShop)
                       : shop.subscriptionExpires?.toString().split(' ')[0] ??
                             'N/A',
                 ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Statistics', [
-                _buildDetailRow('Employees', shop.employeeCount.toString()),
-                _buildDetailRow('Products', shop.productCount.toString()),
+              _buildDetailSection(context.tr(NavText.statistics), [
+                _buildDetailRow(
+                  context.tr(ShopText.employees),
+                  shop.employeeCount.toString(),
+                ),
+                _buildDetailRow(
+                  context.tr(ShopText.products),
+                  shop.productCount.toString(),
+                ),
               ]),
               const SizedBox(height: 24),
               if (shop.isDeleted) ...[
@@ -585,7 +623,7 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     icon: const Icon(Icons.restore),
-                    label: const Text('Restore Shop'),
+                    label: Text(context.tr(ShopText.restoreShop)),
                     onPressed: () {
                       Navigator.pop(context);
                       _showRestoreDialog(shop);
@@ -598,7 +636,9 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
                 width: double.infinity,
                 child: FilledButton.icon(
                   icon: const Icon(Icons.inventory_2_outlined),
-                  label: Text('View Products (${shop.productCount})'),
+                  label: Text(
+                    context.tr(ShopText.viewProducts2(shop.productCount)),
+                  ),
                   onPressed: () {
                     Navigator.pop(context);
                     Navigator.push(
@@ -654,11 +694,9 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
   Future<void> _showRestoreDialog(AdminShop shop) async {
     final confirmed = await AppDialogs.confirm(
       context,
-      title: 'Restore shop',
-      message:
-          '"${shop.name}" will be active again with all its products, staff '
-          'and sales history. Its owner and staff can sign in to it right away.',
-      confirmLabel: 'Restore',
+      title: context.tr(ShopText.restoreShop2),
+      message: context.tr(ShopText.willBeActiveAgainWith(shop.name)),
+      confirmLabel: context.tr(ShopText.restore),
       icon: Icons.restore_rounded,
     );
     if (!confirmed || !mounted) return;
@@ -666,10 +704,10 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(shopsProvider.notifier).restoreShop(shop.id);
-      messenger.showSuccess('"${shop.name}" has been restored');
+      messenger.showSuccess(ShopText.hasBeenRestored(shop.name).current);
     } catch (e) {
       messenger.showError(
-        'Could not restore "${shop.name}": ${friendlyError(e)}',
+        ShopText.couldNotRestore(shop.name, friendlyError(e)).current,
       );
     }
   }
@@ -680,12 +718,9 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
   Future<void> _showDeleteDialog(AdminShop shop) async {
     final confirmed = await AppDialogs.confirm(
       context,
-      title: 'Delete shop',
-      message:
-          '"${shop.name}" will be closed: its owner and staff can no longer '
-          'use it. Its products, staff and sales history are kept, and you '
-          'can restore it from the Deleted filter.',
-      confirmLabel: 'Delete',
+      title: context.tr(ShopText.deleteShop2),
+      message: context.tr(ShopText.willBeClosedItsOwner(shop.name)),
+      confirmLabel: context.tr(CommonText.delete),
       destructive: true,
       icon: Icons.delete_outline_rounded,
     );
@@ -694,10 +729,10 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(shopsProvider.notifier).deleteShop(shop.id);
-      messenger.showSuccess('"${shop.name}" has been deleted');
+      messenger.showSuccess(ShopText.hasBeenDeleted(shop.name).current);
     } catch (e) {
       messenger.showError(
-        'Could not delete "${shop.name}": ${friendlyError(e)}',
+        ShopText.couldNotDelete(shop.name, friendlyError(e)).current,
       );
     }
   }
@@ -706,11 +741,15 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     final suspend = newStatus == 'suspended';
     final reason = await AppDialogs.confirmWithReason(
       context,
-      title: suspend ? 'Suspend shop' : 'Activate shop',
+      title: suspend
+          ? context.tr(ShopText.suspendShop)
+          : context.tr(ShopText.activateShop),
       message: suspend
-          ? '"${shop.name}" and its staff will be blocked from using UFin until reactivated.'
-          : '"${shop.name}" and its staff will regain access to UFin.',
-      confirmLabel: suspend ? 'Suspend' : 'Activate',
+          ? context.tr(ShopText.andItsStaffWillBe(shop.name))
+          : context.tr(ShopText.andItsStaffWillRegain(shop.name)),
+      confirmLabel: suspend
+          ? context.tr(ShopText.suspend)
+          : context.tr(ShopText.activate),
       destructive: suspend,
       icon: suspend ? Icons.block_rounded : Icons.check_circle_outline_rounded,
     );
@@ -722,11 +761,13 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
           .read(shopsProvider.notifier)
           .updateShopStatus(shop.id, newStatus, reason.isEmpty ? null : reason);
       messenger.showSuccess(
-        '"${shop.name}" has been ${suspend ? 'suspended' : 'activated'}',
+        suspend
+            ? ShopText.hasBeenSuspended(shop.name).current
+            : ShopText.hasBeenActivated(shop.name).current,
       );
     } catch (e) {
       messenger.showError(
-        'Could not update "${shop.name}": ${friendlyError(e)}',
+        ShopText.couldNotUpdate(shop.name, friendlyError(e)).current,
       );
     }
   }

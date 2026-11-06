@@ -102,7 +102,7 @@ class AppFormModal extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: context.tr(CommonText.close),
                     icon: const Icon(Icons.close_rounded),
                     onPressed: saving ? null : () => Navigator.pop(context),
                   ),
@@ -146,7 +146,7 @@ class AppFormModal extends StatelessWidget {
                           onPressed: saving
                               ? null
                               : () => Navigator.pop(context),
-                          child: const Text('Cancel'),
+                          child: Text(context.tr(CommonText.cancel)),
                         );
                         final submit = FilledButton(
                           onPressed: saving ? null : onSubmit,
@@ -163,9 +163,9 @@ class AppFormModal extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Flexible(
+                                    Flexible(
                                       child: Text(
-                                        'Saving…',
+                                        context.tr(CommonText.saving),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
@@ -339,7 +339,7 @@ abstract final class FormValidators {
   static String? optionalInt(String? v) {
     final t = v?.trim() ?? '';
     if (t.isEmpty) return null;
-    return int.tryParse(t) == null ? 'Enter a whole number' : null;
+    return int.tryParse(t) == null ? ModelText.enterAWholeNumber.current : null;
   }
 }
 

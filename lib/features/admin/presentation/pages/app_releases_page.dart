@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/app_release_detail_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/app_release_actions.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/app_release_form.dart';
@@ -41,11 +40,10 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('App Releases'),
+        title: Text(context.tr(NavText.appReleases)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: context.tr(CommonText.refresh),
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.invalidate(appReleasesProvider),
           ),
@@ -54,7 +52,7 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
             child: FilledButton.icon(
               onPressed: () => _create(),
               icon: const Icon(Icons.add),
-              label: const Text('New release'),
+              label: Text(context.tr(ReleaseText.newRelease)),
             ),
           ),
         ],
@@ -86,11 +84,15 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
                     AppEmptyView(
                       icon: Icons.system_update_outlined,
                       title: _platform == null
-                          ? 'No releases yet'
-                          : 'No ${platformLabel(_platform!)} releases yet',
-                      message:
-                          'Create a release, then publish it to offer the '
-                          'update to shops.',
+                          ? context.tr(ReleaseText.noReleasesYet)
+                          : context.tr(
+                              ReleaseText.noReleasesYet2(
+                                platformLabel(_platform!),
+                              ),
+                            ),
+                      message: context.tr(
+                        ReleaseText.createAReleaseThenPublish,
+                      ),
                     )
                   else
                     for (final r in shown)
@@ -128,7 +130,7 @@ class _PlatformFilter extends StatelessWidget {
       runSpacing: AppSpacing.sm,
       children: [
         ChoiceChip(
-          label: Text('All · ${releases.length}'),
+          label: Text(context.tr(ReleaseText.all(releases.length))),
           selected: selected == null,
           showCheckmark: false,
           onSelected: (_) => onSelected(null),
@@ -147,7 +149,7 @@ class _PlatformFilter extends StatelessWidget {
 }
 
 class _ReleaseCard extends ConsumerWidget {
-  static final _date = DateFormat('d MMM y');
+  static DateFormat get _date => AppDateFormat.of('d MMM y');
 
   final AppRelease release;
   final VoidCallback onOpen;
@@ -201,8 +203,13 @@ class _ReleaseCard extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      '${platformLabel(r.platform)} · build ${r.versionCode}'
-                      ' · ${_date.format(r.releasedAt.toLocal())}',
+                      context.tr(
+                        ReleaseText.build(
+                          platformLabel(r.platform),
+                          r.versionCode,
+                          _date.format(r.releasedAt.toLocal()),
+                        ),
+                      ),
                       style: muted,
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -214,8 +221,8 @@ class _ReleaseCard extends ConsumerWidget {
                           r.isPublished ? 'published' : 'draft',
                         ),
                         if (r.isMandatory)
-                          const StatusBadge(
-                            label: 'Mandatory',
+                          StatusBadge(
+                            label: context.tr(ReleaseText.mandatory),
                             tone: StatusTone.danger,
                           ),
                       ],
@@ -235,7 +242,7 @@ class _ReleaseCard extends ConsumerWidget {
                 ),
               ),
               PopupMenuButton<VoidCallback>(
-                tooltip: 'Actions',
+                tooltip: context.tr(NavText.actions),
                 onSelected: (run) => run(),
                 itemBuilder: (_) => [
                   PopupMenuItem(
@@ -248,39 +255,45 @@ class _ReleaseCard extends ConsumerWidget {
                             ? Icons.unpublished_outlined
                             : Icons.publish_rounded,
                       ),
-                      title: Text(r.isPublished ? 'Unpublish' : 'Publish'),
+                      title: Text(
+                        r.isPublished
+                            ? context.tr(ReleaseText.unpublish)
+                            : context.tr(ReleaseText.publish),
+                      ),
                     ),
                   ),
                   PopupMenuItem(
                     value: () => AppReleaseActions.edit(context, ref, r),
-                    child: const ListTile(
+                    child: ListTile(
                       leading: Icon(Icons.edit_outlined),
-                      title: Text('Edit notes'),
+                      title: Text(context.tr(ReleaseText.editNotes)),
                     ),
                   ),
                   PopupMenuItem(
                     value: () => onCopy(ReleaseCopy.nextVersion),
-                    child: const ListTile(
+                    child: ListTile(
                       leading: Icon(Icons.content_copy_rounded),
-                      title: Text('New version from this'),
+                      title: Text(context.tr(ReleaseText.newVersionFromThis)),
                     ),
                   ),
                   PopupMenuItem(
                     value: () => onCopy(ReleaseCopy.otherPlatform),
-                    child: const ListTile(
+                    child: ListTile(
                       leading: Icon(Icons.devices_rounded),
-                      title: Text('Copy to another platform'),
+                      title: Text(
+                        context.tr(ReleaseText.copyToAnotherPlatform),
+                      ),
                     ),
                   ),
                   PopupMenuItem(
                     value: () => AppReleaseActions.copy(
                       context,
                       AppReleaseActions.notesText(r),
-                      what: 'Release notes',
+                      what: context.tr(ReleaseText.releaseNotes),
                     ),
-                    child: const ListTile(
+                    child: ListTile(
                       leading: Icon(Icons.copy_rounded),
-                      title: Text('Copy notes'),
+                      title: Text(context.tr(ReleaseText.copyNotes)),
                     ),
                   ),
                   const PopupMenuDivider(),
@@ -292,7 +305,7 @@ class _ReleaseCard extends ConsumerWidget {
                         color: context.colors.error,
                       ),
                       title: Text(
-                        'Delete',
+                        context.tr(CommonText.delete),
                         style: TextStyle(color: context.colors.error),
                       ),
                     ),
