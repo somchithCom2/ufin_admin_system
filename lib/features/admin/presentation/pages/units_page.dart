@@ -92,68 +92,36 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
       'custom',
     ];
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: FilterChip(
-                    label: Text(context.tr(CommonText.all)),
-                    selected: state.categoryFilter == null,
-                    onSelected: (_) => ref
-                        .read(unitsProvider.notifier)
-                        .setCategoryFilter(null),
-                  ),
-                ),
-                ...categories.map(
-                  (cat) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: FilterChip(
-                      label: Text(unitCategoryLabel(context, cat)),
-                      selected: state.categoryFilter == cat,
-                      onSelected: (_) => ref
-                          .read(unitsProvider.notifier)
-                          .setCategoryFilter(cat),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              children: [
-                const Expanded(child: SizedBox()),
-                FilterChip(
-                  label: Text(context.tr(ShopTypeText.active2)),
-                  selected: state.isActiveFilter == true,
-                  onSelected: (_) => ref
-                      .read(unitsProvider.notifier)
-                      .setActiveFilter(
-                        state.isActiveFilter == true ? null : true,
-                      ),
-                ),
-                const SizedBox(width: 8),
-                FilterChip(
-                  label: Text(context.tr(ShopTypeText.inactive2)),
-                  selected: state.isActiveFilter == false,
-                  onSelected: (_) => ref
-                      .read(unitsProvider.notifier)
-                      .setActiveFilter(
-                        state.isActiveFilter == false ? null : false,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    final notifier = ref.read(unitsProvider.notifier);
+    return FilterBar(
+      filters: [
+        FilterSelect<String>(
+          icon: AppIcons.shapes,
+          label: context.tr(ShopTypeText.category),
+          value: state.categoryFilter,
+          allLabel: context.tr(CommonText.all),
+          options: [
+            for (final cat in categories)
+              FilterOption(
+                cat,
+                unitCategoryLabel(context, cat),
+                icon: _getCategoryIcon(cat),
+              ),
+          ],
+          onChanged: notifier.setCategoryFilter,
+        ),
+        FilterSelect<bool>(
+          icon: AppIcons.flag,
+          label: context.tr(CommonText.status),
+          value: state.isActiveFilter,
+          allLabel: context.tr(CommonText.all),
+          options: [
+            FilterOption(true, context.tr(ShopTypeText.active2)),
+            FilterOption(false, context.tr(ShopTypeText.inactive2)),
+          ],
+          onChanged: notifier.setActiveFilter,
+        ),
+      ],
     );
   }
 
@@ -171,7 +139,7 @@ class _UnitsPageState extends ConsumerState<UnitsPage> {
       },
       child: ListView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
         itemCount: state.units.length + (state.hasNext ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == state.units.length) {

@@ -25,7 +25,6 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
     (label: Tr('Pending', 'ລໍຖ້າ'), value: 'PENDING'),
     (label: Tr('Approved', 'ອະນຸມັດແລ້ວ'), value: 'APPROVED'),
     (label: Tr('Rejected', 'ຖືກປະຕິເສດ'), value: 'REJECTED'),
-    (label: CommonText.all, value: null),
   ];
 
   @override
@@ -72,26 +71,24 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
       body: ContentWidth(
         child: Column(
           children: [
-            // Status filter chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: _statusFilters.map((f) {
-                  final isSelected = _statusFilter == f.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(context.tr(f.label)),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() => _statusFilter = f.value);
-                        _load();
-                      },
-                    ),
-                  );
-                }).toList(),
-              ),
+            FilterBar(
+              filters: [
+                // The queue opens on Pending; "All" clears it.
+                FilterSelect<String>(
+                  icon: AppIcons.flag,
+                  label: context.tr(CommonText.status),
+                  value: _statusFilter,
+                  allLabel: context.tr(CommonText.all),
+                  options: [
+                    for (final f in _statusFilters)
+                      FilterOption(f.value, context.tr(f.label)),
+                  ],
+                  onChanged: (status) {
+                    setState(() => _statusFilter = status);
+                    _load();
+                  },
+                ),
+              ],
             ),
 
             // Content
@@ -115,7 +112,7 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
 
   Widget _buildList(List<UpgradeRequestDto> items, ColorScheme colorScheme) {
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) => _RequestCard(

@@ -142,37 +142,46 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
       body: ContentWidth(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: AppSearchField(
+            FilterBar(
+              search: AppSearchField(
                 controller: _searchController,
                 hintText: context.tr(SubsText.shopPhoneEmailOwnerOr),
                 onSubmitted: (_) => _reload(),
               ),
-            ),
-            // Filter Chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
-                children: [
-                  for (final plan in SubscriptionPlanFilter.values)
-                    _buildPlanChip(plan),
-                ],
-              ),
-            ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Row(
-                children: [
-                  _buildFilterChip(context.tr(CommonText.all), null),
-                  _buildFilterChip(context.tr(SubsText.active), 'active'),
-                  _buildFilterChip(context.tr(SubsText.trial), 'trial'),
-                  _buildFilterChip(context.tr(SubsText.expired), 'expired'),
-                  _buildFilterChip(context.tr(SubsText.cancelled), 'cancelled'),
-                ],
-              ),
+              filters: [
+                // Always scoped (Paid by default), so never cleared to null;
+                // highlighted only while it narrows the list.
+                FilterSelect<SubscriptionPlanFilter>(
+                  icon: AppIcons.crown,
+                  label: context.tr(CommonText.plan),
+                  value: _planFilter,
+                  highlighted: _planFilter != SubscriptionPlanFilter.all,
+                  options: [
+                    for (final plan in SubscriptionPlanFilter.values)
+                      FilterOption(plan, context.tr(plan.title)),
+                  ],
+                  onChanged: (plan) {
+                    setState(() => _planFilter = plan!);
+                    _reload();
+                  },
+                ),
+                FilterSelect<String>(
+                  icon: AppIcons.flag,
+                  label: context.tr(CommonText.status),
+                  value: _statusFilter,
+                  allLabel: context.tr(CommonText.all),
+                  options: [
+                    FilterOption('active', context.tr(SubsText.active)),
+                    FilterOption('trial', context.tr(SubsText.trial)),
+                    FilterOption('expired', context.tr(SubsText.expired)),
+                    FilterOption('cancelled', context.tr(SubsText.cancelled)),
+                  ],
+                  onChanged: (status) {
+                    setState(() => _statusFilter = status);
+                    _reload();
+                  },
+                ),
+              ],
             ),
             if (!subscriptionsState.isLoading &&
                 subscriptionsState.subscriptions.isNotEmpty)
@@ -212,34 +221,9 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     );
   }
 
-  Widget _buildPlanChip(SubscriptionPlanFilter plan) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(context.tr(plan.title)),
-        selected: _planFilter == plan,
-        onSelected: (_) {
-          setState(() => _planFilter = plan);
-          _reload();
-        },
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, String? status) {
-    final isSelected = _statusFilter == status;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (selected) {
-          setState(() => _statusFilter = selected ? status : null);
-          _reload();
-        },
-      ),
-    );
-  }
+  /// "3/10", or "3/∞" when the plan has no limit (stored as null or 0).
+  static String _usage(int used, int? limit) =>
+      '$used/${limit == null || limit == 0 ? '∞' : limit}';
 
   Widget _buildErrorView(String error) {
     return AppErrorView(error: error, onRetry: _reload);
@@ -378,14 +362,20 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
                     child: _buildInfoItem(
                       AppIcons.users,
                       context.tr(SubsText.employees),
-                      '${subscription.currentEmployees}/${subscription.maxEmployees == 0 ? '∞' : subscription.maxEmployees}',
+                      _usage(
+                        subscription.currentEmployees,
+                        subscription.maxEmployees,
+                      ),
                     ),
                   ),
                   Expanded(
                     child: _buildInfoItem(
                       AppIcons.package,
                       context.tr(SubsText.products),
-                      '${subscription.currentProducts}/${subscription.maxProducts == 0 ? '∞' : subscription.maxProducts}',
+                      _usage(
+                        subscription.currentProducts,
+                        subscription.maxProducts,
+                      ),
                     ),
                   ),
                 ],

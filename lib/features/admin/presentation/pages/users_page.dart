@@ -75,103 +75,52 @@ class _UsersPageState extends ConsumerState<UsersPage> {
       body: ContentWidth(
         child: Column(
           children: [
-            // Search and Filter
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AppSearchField(
-                      controller: _searchController,
-                      hintText: context.tr(UserText.searchUsers),
-                      onSubmitted: (value) {
-                        if (_scrollController.hasClients) {
-                          _scrollController.jumpTo(0);
-                        }
-                        ref
-                            .read(usersProvider.notifier)
-                            .loadUsers(
-                              search: value,
-                              status: _statusFilter,
-                              userType: _typeFilter,
-                            );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  PopupMenuButton<String?>(
-                    icon: Badge(
-                      isLabelVisible:
-                          _statusFilter != null || _typeFilter != null,
-                      child: const AppIcon(AppIcons.filter),
-                    ),
-                    onSelected: (value) {
-                      if (value?.startsWith('status:') == true) {
-                        setState(() => _statusFilter = value?.substring(7));
-                      } else if (value?.startsWith('type:') == true) {
-                        setState(() => _typeFilter = value?.substring(5));
-                      } else {
-                        setState(() {
-                          _statusFilter = null;
-                          _typeFilter = null;
-                        });
-                      }
-                      if (_scrollController.hasClients) {
-                        _scrollController.jumpTo(0);
-                      }
-                      ref
-                          .read(usersProvider.notifier)
-                          .loadUsers(
-                            search: _searchController.text,
-                            status: _statusFilter,
-                            userType: _typeFilter,
-                          );
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'clear',
-                        child: Text(context.tr(UserText.clearFilters)),
-                      ),
-                      const PopupMenuDivider(),
-                      PopupMenuItem(
-                        enabled: false,
-                        child: Text(
-                          context.tr(CommonText.status),
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'status:active',
-                        child: Text(context.tr(UserText.active)),
-                      ),
-                      PopupMenuItem(
-                        value: 'status:suspended',
-                        child: Text(context.tr(UserText.suspended)),
-                      ),
-                      PopupMenuItem(
-                        value: 'status:deleted',
-                        child: Text(context.tr(UserText.deleted)),
-                      ),
-                      const PopupMenuDivider(),
-                      PopupMenuItem(
-                        enabled: false,
-                        child: Text(
-                          context.tr(CommonText.type),
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'type:CLIENT',
-                        child: Text(context.tr(UserText.shopOwner)),
-                      ),
-                      PopupMenuItem(
-                        value: 'type:STAFF',
-                        child: Text(context.tr(UserText.employee)),
-                      ),
-                    ],
-                  ),
-                ],
+            FilterBar(
+              search: AppSearchField(
+                controller: _searchController,
+                hintText: context.tr(UserText.searchUsers),
+                onSubmitted: (value) => _reload(search: value),
               ),
+              filters: [
+                FilterSelect<String>(
+                  icon: AppIcons.flag,
+                  label: context.tr(CommonText.status),
+                  value: _statusFilter,
+                  allLabel: context.tr(CommonText.all),
+                  options: [
+                    FilterOption('active', context.tr(UserText.active)),
+                    FilterOption('suspended', context.tr(UserText.suspended)),
+                    FilterOption('deleted', context.tr(UserText.deleted)),
+                  ],
+                  onChanged: (status) {
+                    setState(() => _statusFilter = status);
+                    _reload();
+                  },
+                ),
+                FilterSelect<String>(
+                  icon: AppIcons.idCard,
+                  label: context.tr(CommonText.type),
+                  value: _typeFilter,
+                  allLabel: context.tr(CommonText.all),
+                  options: [
+                    FilterOption('CLIENT', context.tr(UserText.shopOwner)),
+                    FilterOption('STAFF', context.tr(UserText.employee)),
+                  ],
+                  onChanged: (type) {
+                    setState(() => _typeFilter = type);
+                    _reload();
+                  },
+                ),
+              ],
+              onClearAll: _statusFilter != null && _typeFilter != null
+                  ? () {
+                      setState(() {
+                        _statusFilter = null;
+                        _typeFilter = null;
+                      });
+                      _reload();
+                    }
+                  : null,
             ),
             // User List
             Expanded(
@@ -191,6 +140,17 @@ class _UsersPageState extends ConsumerState<UsersPage> {
         ),
       ),
     );
+  }
+
+  void _reload({String? search}) {
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+    ref
+        .read(usersProvider.notifier)
+        .loadUsers(
+          search: search ?? _searchController.text,
+          status: _statusFilter,
+          userType: _typeFilter,
+        );
   }
 
   Widget _buildErrorView(String error) {

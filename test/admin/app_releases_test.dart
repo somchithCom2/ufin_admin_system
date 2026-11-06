@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/config/theme/app_theme.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
@@ -285,9 +286,13 @@ void main() {
     testWidgets('filters by platform and opens a release', (tester) async {
       await pump(tester, const AppReleasesPage(), size: const Size(390, 844));
 
-      expect(find.text('All · 3'), findsOneWidget);
-      await tester.tap(find.text('iOS · 1'));
+      // One Platform chip; the per-platform counts live in its menu.
+      await tester.tap(find.widgetWithText(FilterButton, 'Platform'));
       await tester.pumpAndSettle();
+      expect(find.widgetWithText(MenuItemButton, 'All · 3'), findsOneWidget);
+      await tester.tap(find.widgetWithText(MenuItemButton, 'iOS · 1'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(FilterButton, 'iOS · 1'), findsOneWidget);
       expect(find.text('v2.2.0'), findsNothing);
       expect(find.text('v2.1.1'), findsOneWidget);
 

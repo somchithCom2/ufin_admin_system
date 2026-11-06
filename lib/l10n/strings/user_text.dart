@@ -2,7 +2,6 @@ import 'package:ufin_admin_system/l10n/tr.dart';
 
 abstract final class UserText {
   static const searchUsers = Tr('Search users…', 'ຄົ້ນຫາຜູ້ໃຊ້…');
-  static const clearFilters = Tr('Clear Filters', 'ລ້າງຕົວກັ່ນຕອງ');
   static const active = Tr('  Active', '  ເປີດໃຊ້ງານ');
   static const suspended = Tr('  Suspended', '  ຖືກລະງັບ');
   static const deleted = Tr('  Deleted', '  ຖືກລຶບ');

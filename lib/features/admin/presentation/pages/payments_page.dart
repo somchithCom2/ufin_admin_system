@@ -137,8 +137,8 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
   /// Active filters move to the front so they're never scrolled out of view.
   static List<Widget> _activeFirst(List<Widget> chips) {
     bool isActive(Widget w) =>
-        (w is _FilterButton && w.value != null) ||
-        (w is _FilterMenu && w.value != null);
+        (w is FilterButton && w.value != null) ||
+        (w is FilterMenu && w.value != null);
     return [...chips.where(isActive), ...chips.where((w) => !isActive(w))];
   }
 
@@ -184,133 +184,86 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
       state.startDateFilter,
     ].where((f) => f != null).length;
 
-    return Container(
-      height: 56,
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        border: Border(
-          bottom: BorderSide(color: context.colors.outlineVariant),
+    return FilterBar(
+      filters: _activeFirst([
+        FilterButton(
+          key: const ValueKey('shop'),
+          icon: AppIcons.shop,
+          label: context.tr(CommonText.shop),
+          value: state.shopIdFilter == null
+              ? null
+              : (_shopFilter?.name ??
+                    context.tr(FinText.shop(state.shopIdFilter))),
+          onTap: _pickShop,
+          onClear: () {
+            setState(() => _shopFilter = null);
+            notifier.setShopFilter(null);
+          },
         ),
-      ),
-      child: LayoutBuilder(
-        builder: (context, c) {
-          // Phones drop the chip icons so all four filters fit on screen.
-          final compact = c.maxWidth < 600;
-          return Row(
-            children: [
-              Expanded(
-                // Fade the right edge so overflowing chips read as scrollable.
-                child: ShaderMask(
-                  blendMode: BlendMode.dstIn,
-                  shaderCallback: (rect) => const LinearGradient(
-                    colors: [Colors.black, Colors.black, Colors.transparent],
-                    stops: [0, 0.92, 1],
-                  ).createShader(rect),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
-                    child: Row(
-                      children: _activeFirst([
-                        _FilterButton(
-                          key: const ValueKey('shop'),
-                          compact: compact,
-                          icon: AppIcons.shop,
-                          label: context.tr(CommonText.shop),
-                          value: state.shopIdFilter == null
-                              ? null
-                              : (_shopFilter?.name ??
-                                    context.tr(
-                                      FinText.shop(state.shopIdFilter),
-                                    )),
-                          onTap: _pickShop,
-                          onClear: () {
-                            setState(() => _shopFilter = null);
-                            notifier.setShopFilter(null);
-                          },
-                        ),
-                        _FilterMenu(
-                          key: const ValueKey('status'),
-                          compact: compact,
-                          icon: AppIcons.flag,
-                          label: context.tr(CommonText.status),
-                          value:
-                              _trOrNull(_statuses[state.statusFilter]?.$1) ??
-                              state.statusFilter,
-                          options: [
-                            for (final e in _statuses.entries)
-                              (
-                                context.tr(e.value.$1),
-                                e.value.$2,
-                                e.key == state.statusFilter,
-                                () => notifier.setStatusFilter(e.key),
-                              ),
-                          ],
-                          onClear: () => notifier.setStatusFilter(null),
-                        ),
-                        _FilterMenu(
-                          key: const ValueKey('method'),
-                          compact: compact,
-                          icon: AppIcons.wallet,
-                          label: context.tr(FinText.method),
-                          value:
-                              _trOrNull(
-                                _methods[state.paymentMethodFilter]?.$1,
-                              ) ??
-                              state.paymentMethodFilter,
-                          options: [
-                            for (final e in _methods.entries)
-                              (
-                                context.tr(e.value.$1),
-                                e.value.$2,
-                                e.key == state.paymentMethodFilter,
-                                () => notifier.setPaymentMethodFilter(e.key),
-                              ),
-                          ],
-                          onClear: () => notifier.setPaymentMethodFilter(null),
-                        ),
-                        _FilterMenu(
-                          key: const ValueKey('date'),
-                          compact: compact,
-                          icon: AppIcons.calendar,
-                          label: context.tr(CommonText.date),
-                          value: dateLabel,
-                          options: [
-                            for (final (label, range) in _datePresets)
-                              (
-                                context.tr(label),
-                                AppIcons.calendar,
-                                context.tr(label) == dateLabel,
-                                () {
-                                  final r = range(today);
-                                  notifier.setDateRangeFilter(r.start, r.end);
-                                },
-                              ),
-                            (
-                              context.tr(FinText.customRange),
-                              AppIcons.calendarRange,
-                              false,
-                              () => _pickCustomRange(state),
-                            ),
-                          ],
-                          onClear: () =>
-                              notifier.setDateRangeFilter(null, null),
-                        ),
-                      ]),
-                    ),
-                  ),
-                ),
+        FilterMenu(
+          key: const ValueKey('status'),
+          icon: AppIcons.flag,
+          label: context.tr(CommonText.status),
+          value:
+              _trOrNull(_statuses[state.statusFilter]?.$1) ??
+              state.statusFilter,
+          entries: [
+            for (final e in _statuses.entries)
+              FilterMenuEntry(
+                label: context.tr(e.value.$1),
+                icon: e.value.$2,
+                selected: e.key == state.statusFilter,
+                onSelected: () => notifier.setStatusFilter(e.key),
               ),
-              // Pinned so it stays reachable however far the chips scroll.
-              if (activeCount >= 2)
-                IconButton(
-                  tooltip: context.tr(CommonText.clearAllFilters),
-                  icon: const AppIcon(AppIcons.filterX, size: 20),
-                  onPressed: _clearAll,
-                ),
-            ],
-          );
-        },
-      ),
+          ],
+          onClear: () => notifier.setStatusFilter(null),
+        ),
+        FilterMenu(
+          key: const ValueKey('method'),
+          icon: AppIcons.wallet,
+          label: context.tr(FinText.method),
+          value:
+              _trOrNull(_methods[state.paymentMethodFilter]?.$1) ??
+              state.paymentMethodFilter,
+          entries: [
+            for (final e in _methods.entries)
+              FilterMenuEntry(
+                label: context.tr(e.value.$1),
+                icon: e.value.$2,
+                selected: e.key == state.paymentMethodFilter,
+                onSelected: () => notifier.setPaymentMethodFilter(e.key),
+              ),
+          ],
+          onClear: () => notifier.setPaymentMethodFilter(null),
+        ),
+        FilterMenu(
+          key: const ValueKey('date'),
+          icon: AppIcons.calendar,
+          label: context.tr(CommonText.date),
+          value: dateLabel,
+          entries: [
+            for (final (label, range) in _datePresets)
+              FilterMenuEntry(
+                label: context.tr(label),
+                icon: AppIcons.calendar,
+                selected: context.tr(label) == dateLabel,
+                onSelected: () {
+                  final r = range(today);
+                  notifier.setDateRangeFilter(r.start, r.end);
+                },
+              ),
+            FilterMenuEntry(
+              label: context.tr(FinText.customRange),
+              icon: AppIcons.calendarRange,
+              selected: false,
+              onSelected: () => _pickCustomRange(state),
+            ),
+          ],
+          onClear: () => notifier.setDateRangeFilter(null, null),
+        ),
+      ]),
+      // Pinned so it stays reachable however far the chips scroll.
+      onClearAll: activeCount >= 2 ? _clearAll : null,
     );
   }
 
@@ -329,10 +282,13 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
           ).map((c) => MoneyFormat.format(revenue[c]!, c)).join(' · ');
     final muted = context.colors.onSurfaceVariant;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+      padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
+      // Both sides flexible + spaceBetween: the total sits flush right instead
+      // of at the start of its half of the row.
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
+          Flexible(
             child: Text.rich(
               TextSpan(
                 children: [
@@ -392,7 +348,7 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         // Bottom space keeps the last card clear of the "+" button.
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 88),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 88),
         itemCount: state.payments.length + 1,
         itemBuilder: (context, index) => index == 0
             ? _buildSummary(state)
@@ -1027,150 +983,6 @@ class _Pill extends StatelessWidget {
           color: color,
           height: 1.2,
         ),
-      ),
-    );
-  }
-}
-
-/// Filter chip: shows the label, or the active value with a clear button.
-class _FilterButton extends StatelessWidget {
-  final bool compact;
-  final AppIconData icon;
-  final String label;
-  final String? value;
-  final VoidCallback onTap;
-  final VoidCallback onClear;
-
-  const _FilterButton({
-    super.key,
-    this.compact = false,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onTap,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = context.colors;
-    final active = value != null;
-    final fg = active ? scheme.primary : scheme.onSurface;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: Material(
-        color: active ? scheme.primary.withValues(alpha: 0.10) : scheme.surface,
-        shape: StadiumBorder(
-          side: BorderSide(
-            color: active
-                ? scheme.primary.withValues(alpha: 0.5)
-                : scheme.outlineVariant,
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.only(left: 12, right: active ? 4 : 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!compact) ...[
-                  AppIcon(
-                    icon,
-                    size: 16,
-                    color: active ? fg : scheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 6),
-                ],
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 160),
-                  child: Text(
-                    value ?? label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                      color: fg,
-                    ),
-                  ),
-                ),
-                if (active)
-                  IconButton(
-                    tooltip: context.tr(CommonText.clearFilter(label)),
-                    visualDensity: VisualDensity.compact,
-                    iconSize: 16,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 28,
-                      height: 28,
-                    ),
-                    padding: EdgeInsets.zero,
-                    icon: AppIcon(AppIcons.close, color: fg),
-                    onPressed: onClear,
-                  )
-                else ...[
-                  const SizedBox(width: 2),
-                  AppIcon(
-                    AppIcons.chevronDown,
-                    size: 18,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// [_FilterButton] that opens a dropdown menu of options anchored to it.
-class _FilterMenu extends StatelessWidget {
-  final bool compact;
-  final AppIconData icon;
-  final String label;
-  final String? value;
-  final List<(String, AppIconData, bool, VoidCallback)> options;
-  final VoidCallback onClear;
-
-  const _FilterMenu({
-    super.key,
-    this.compact = false,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.options,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return MenuAnchor(
-      alignmentOffset: const Offset(0, 4),
-      menuChildren: [
-        for (final (text, optionIcon, selected, onSelect) in options)
-          MenuItemButton(
-            leadingIcon: AppIcon(optionIcon, size: 18),
-            trailingIcon: selected
-                ? AppIcon(
-                    AppIcons.check,
-                    size: 18,
-                    color: context.colors.primary,
-                  )
-                : null,
-            onPressed: onSelect,
-            child: Text(text),
-          ),
-      ],
-      builder: (context, controller, _) => _FilterButton(
-        compact: compact,
-        icon: icon,
-        label: label,
-        value: value,
-        onTap: () => controller.isOpen ? controller.close() : controller.open(),
-        onClear: onClear,
       ),
     );
   }

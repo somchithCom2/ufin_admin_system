@@ -35,6 +35,25 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
     if (created != null && mounted) _open(created);
   }
 
+  Widget _platformFilter(List<AppRelease> releases) {
+    int count(String p) => releases.where((r) => r.platform == p).length;
+    return FilterSelect<String>(
+      icon: AppIcons.devices,
+      label: context.tr(CommonText.platform),
+      value: _platform,
+      allLabel: context.tr(ReleaseText.all(releases.length)),
+      options: [
+        for (final e in releasePlatforms.entries)
+          FilterOption(
+            e.key,
+            '${e.value.$1} · ${count(e.key)}',
+            icon: e.value.$2,
+          ),
+      ],
+      onChanged: (p) => setState(() => _platform = p),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final releasesAsync = ref.watch(appReleasesProvider);
@@ -48,15 +67,14 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
             icon: const AppIcon(AppIcons.refresh),
             onPressed: () => ref.invalidate(appReleasesProvider),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilledButton.icon(
-              onPressed: () => _create(),
-              icon: const AppIcon(AppIcons.add),
-              label: Text(context.tr(ReleaseText.newRelease)),
-            ),
-          ),
         ],
+      ),
+      // Same place as every other page's create action; the AppBar keeps
+      // its width for the title on phones.
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _create(),
+        icon: const AppIcon(AppIcons.add),
+        label: Text(context.tr(ReleaseText.newRelease)),
       ),
       body: ContentWidth(
         child: releasesAsync.when(
@@ -69,82 +87,53 @@ class _AppReleasesPageState extends ConsumerState<AppReleasesPage> {
             final shown = _platform == null
                 ? all
                 : all.where((r) => r.platform == _platform).toList();
-            return RefreshIndicator(
-              onRefresh: () => ref.refresh(appReleasesProvider.future),
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                children: [
-                  _PlatformFilter(
-                    releases: all,
-                    selected: _platform,
-                    onSelected: (p) => setState(() => _platform = p),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  if (shown.isEmpty)
-                    AppEmptyView(
-                      icon: AppIcons.appUpdate,
-                      title: _platform == null
-                          ? context.tr(ReleaseText.noReleasesYet)
-                          : context.tr(
-                              ReleaseText.noReleasesYet2(
-                                platformLabel(_platform!),
-                              ),
+            return Column(
+              children: [
+                FilterBar(filters: [_platformFilter(all)]),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => ref.refresh(appReleasesProvider.future),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      // Bottom space keeps the last card clear of the FAB.
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        0,
+                        AppSpacing.lg,
+                        88,
+                      ),
+                      children: [
+                        if (shown.isEmpty)
+                          AppEmptyView(
+                            icon: AppIcons.appUpdate,
+                            title: _platform == null
+                                ? context.tr(ReleaseText.noReleasesYet)
+                                : context.tr(
+                                    ReleaseText.noReleasesYet2(
+                                      platformLabel(_platform!),
+                                    ),
+                                  ),
+                            message: context.tr(
+                              ReleaseText.createAReleaseThenPublish,
                             ),
-                      message: context.tr(
-                        ReleaseText.createAReleaseThenPublish,
-                      ),
-                    )
-                  else
-                    for (final r in shown)
-                      _ReleaseCard(
-                        release: r,
-                        onOpen: () => _open(r),
-                        onCopy: (copy) => _create(template: r, copy: copy),
-                      ),
-                ],
-              ),
+                          )
+                        else
+                          for (final r in shown)
+                            _ReleaseCard(
+                              release: r,
+                              onOpen: () => _open(r),
+                              onCopy: (copy) =>
+                                  _create(template: r, copy: copy),
+                            ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),
       ),
-    );
-  }
-}
-
-class _PlatformFilter extends StatelessWidget {
-  final List<AppRelease> releases;
-  final String? selected;
-  final ValueChanged<String?> onSelected;
-
-  const _PlatformFilter({
-    required this.releases,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    int count(String p) => releases.where((r) => r.platform == p).length;
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      children: [
-        ChoiceChip(
-          label: Text(context.tr(ReleaseText.all(releases.length))),
-          selected: selected == null,
-          showCheckmark: false,
-          onSelected: (_) => onSelected(null),
-        ),
-        for (final e in releasePlatforms.entries)
-          ChoiceChip(
-            avatar: AppIcon(e.value.$2, size: 18),
-            label: Text('${e.value.$1} · ${count(e.key)}'),
-            selected: selected == e.key,
-            showCheckmark: false,
-            onSelected: (_) => onSelected(e.key),
-          ),
-      ],
     );
   }
 }

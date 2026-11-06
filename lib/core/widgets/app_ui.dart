@@ -1040,10 +1040,22 @@ class _AppSearchFieldState extends State<AppSearchField> {
       onSubmitted: widget.onSubmitted,
       decoration: InputDecoration(
         hintText: widget.hintText ?? context.tr(CommonText.searchHint),
+        // 40px slots instead of Material's 48 keep the field toolbar-height
+        // and the hint close to its icon.
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         prefixIcon: const AppIcon(AppIcons.search, size: 20),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 40,
+          minHeight: 40,
+        ),
+        suffixIconConstraints: const BoxConstraints(
+          minWidth: 40,
+          minHeight: 40,
+        ),
         suffixIcon: widget.controller.text.isEmpty
             ? null
             : IconButton(
+                visualDensity: VisualDensity.compact,
                 tooltip: context.tr(CommonText.clear),
                 icon: const AppIcon(AppIcons.close, size: 18),
                 onPressed: () {

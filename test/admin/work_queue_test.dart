@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
@@ -264,10 +265,8 @@ void main() {
     // The page's own load, not the default "Paid, any status".
     expect(repository.subscriptionStatuses.last, 'expired');
     expect(c.read(subscriptionsListPresetProvider), isNull);
-    final expired = tester.widget<FilterChip>(
-      find.widgetWithText(FilterChip, 'Expired'),
-    );
-    expect(expired.selected, isTrue);
+    // The status chip names the preset's filter.
+    expect(find.widgetWithText(FilterButton, 'Expired'), findsOneWidget);
   });
 
   testWidgets('the sidebar counts requests and expiring plans', (tester) async {

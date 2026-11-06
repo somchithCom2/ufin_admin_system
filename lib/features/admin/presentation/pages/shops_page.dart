@@ -64,68 +64,30 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       body: ContentWidth(
         child: Column(
           children: [
-            // Search and Filter
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AppSearchField(
-                      controller: _searchController,
-                      hintText: context.tr(ShopText.namePhoneEmailOwnerOr),
-                      onSubmitted: (value) {
-                        if (_scrollController.hasClients) {
-                          _scrollController.jumpTo(0);
-                        }
-                        ref
-                            .read(shopsProvider.notifier)
-                            .loadShops(search: value);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  PopupMenuButton<String?>(
-                    icon: Badge(
-                      isLabelVisible: _statusFilter != null,
-                      child: const AppIcon(AppIcons.filter),
-                    ),
-                    onSelected: (status) {
-                      setState(() => _statusFilter = status);
-                      if (_scrollController.hasClients) {
-                        _scrollController.jumpTo(0);
-                      }
-                      ref
-                          .read(shopsProvider.notifier)
-                          .loadShops(
-                            search: _searchController.text,
-                            status: status,
-                          );
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: null,
-                        child: Text(context.tr(CommonText.all)),
-                      ),
-                      PopupMenuItem(
-                        value: 'active',
-                        child: Text(context.tr(ShopText.active)),
-                      ),
-                      PopupMenuItem(
-                        value: 'suspended',
-                        child: Text(context.tr(ShopText.suspended)),
-                      ),
-                      PopupMenuItem(
-                        value: 'inactive',
-                        child: Text(context.tr(ShopText.inactive)),
-                      ),
-                      PopupMenuItem(
-                        value: 'deleted',
-                        child: Text(context.tr(ShopText.deleted)),
-                      ),
-                    ],
-                  ),
-                ],
+            FilterBar(
+              search: AppSearchField(
+                controller: _searchController,
+                hintText: context.tr(ShopText.namePhoneEmailOwnerOr),
+                onSubmitted: (value) => _reload(search: value),
               ),
+              filters: [
+                FilterSelect<String>(
+                  icon: AppIcons.flag,
+                  label: context.tr(CommonText.status),
+                  value: _statusFilter,
+                  allLabel: context.tr(CommonText.all),
+                  options: [
+                    FilterOption('active', context.tr(ShopText.active)),
+                    FilterOption('suspended', context.tr(ShopText.suspended)),
+                    FilterOption('inactive', context.tr(ShopText.inactive)),
+                    FilterOption('deleted', context.tr(ShopText.deleted)),
+                  ],
+                  onChanged: (status) {
+                    setState(() => _statusFilter = status);
+                    _reload();
+                  },
+                ),
+              ],
             ),
             // Shop List
             Expanded(
@@ -145,6 +107,16 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
         ),
       ),
     );
+  }
+
+  void _reload({String? search}) {
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+    ref
+        .read(shopsProvider.notifier)
+        .loadShops(
+          search: search ?? _searchController.text,
+          status: _statusFilter,
+        );
   }
 
   Widget _buildErrorView(String error) {

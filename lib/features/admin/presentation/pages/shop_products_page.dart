@@ -85,43 +85,25 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
       ),
       body: Column(
         children: [
-          // Search & Filter bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppSearchField(
-                    controller: _searchController,
-                    hintText: context.tr(ShopText.searchProducts),
-                    onSubmitted: (_) => _applyFilters(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                PopupMenuButton<String?>(
-                  icon: Badge(
-                    isLabelVisible: _inStockFilter != null,
-                    child: const AppIcon(AppIcons.filter),
-                  ),
-                  onSelected: (value) {
-                    setState(() {
-                      _inStockFilter = value == 'inStock' ? true : null;
-                    });
-                    _applyFilters();
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: null,
-                      child: Text(context.tr(ShopText.allProducts)),
-                    ),
-                    PopupMenuItem(
-                      value: 'inStock',
-                      child: Text(context.tr(ShopText.inStockOnly)),
-                    ),
-                  ],
-                ),
-              ],
+          FilterBar(
+            search: AppSearchField(
+              controller: _searchController,
+              hintText: context.tr(ShopText.searchProducts),
+              onSubmitted: (_) => _applyFilters(),
             ),
+            filters: [
+              FilterSelect<bool>(
+                icon: AppIcons.packages,
+                label: context.tr(CommonText.stock),
+                value: _inStockFilter,
+                allLabel: context.tr(ShopText.allProducts),
+                options: [FilterOption(true, context.tr(ShopText.inStockOnly))],
+                onChanged: (inStock) {
+                  setState(() => _inStockFilter = inStock);
+                  _applyFilters();
+                },
+              ),
+            ],
           ),
           // Summary chip row
           if (state.products.isNotEmpty)
