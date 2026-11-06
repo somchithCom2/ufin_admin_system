@@ -8,6 +8,7 @@ import 'package:ufin_admin_system/features/admin/presentation/providers/dashboar
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_history_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/change_plan_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/subscription_days_form.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/subscription_reset_form.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class SubscriptionDetailPage extends ConsumerStatefulWidget {
@@ -216,6 +217,12 @@ class _SubscriptionDetailPageState
               onPressed: _showExtendForm,
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Extend'),
+            ),
+            // Open in every state: a locked Free shop is what it is mostly for.
+            OutlinedButton.icon(
+              onPressed: _showResetForm,
+              icon: const Icon(Icons.restart_alt_rounded, size: 18),
+              label: const Text('Reset'),
             ),
             OutlinedButton.icon(
               onPressed: _navigateToChangePlan,
@@ -468,6 +475,19 @@ class _SubscriptionDetailPageState
       context,
       'Extended by $days ${days == 1 ? 'day' : 'days'}',
     );
+    _refreshSubscription();
+  }
+
+  Future<void> _showResetForm() async {
+    final done = await showSubscriptionResetForm(
+      context,
+      subscription: _subscription,
+      save: (days, reason) => ref
+          .read(subscriptionsProvider.notifier)
+          .resetSubscription(_subscription.shopId, days: days, reason: reason),
+    );
+    if (done != true || !mounted) return;
+    AppFeedback.success(context, 'Subscription reset');
     _refreshSubscription();
   }
 

@@ -7,6 +7,8 @@ import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import 'package:ufin_admin_system/features/admin/presentation/providers/work_queue_provider.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/work_queue_card.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -25,6 +27,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ref.read(dashboardProvider.notifier).loadDashboard();
     });
   }
+
+  /// Reloads the figures and the work queue together.
+  Future<void> _refreshAll() => Future.wait([
+    ref.read(dashboardProvider.notifier).loadDashboard(),
+    ref.read(workQueueProvider.notifier).refresh(force: true),
+  ]);
 
   void _goTo(AdminSection section) =>
       ref.read(adminSectionProvider.notifier).state = section;
@@ -59,9 +67,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: state.isLoading
-                ? null
-                : () => ref.read(dashboardProvider.notifier).refresh(),
+            onPressed: state.isLoading ? null : _refreshAll,
           ),
           const SizedBox(width: 8),
         ],
@@ -76,7 +82,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         (true, _, _) => const AppLoadingView(message: 'Loading dashboard…'),
         (_, final String error, null) => AppErrorView(
           error: error,
-          onRetry: () => ref.read(dashboardProvider.notifier).refresh(),
+          onRetry: _refreshAll,
         ),
         (_, _, null) => const AppEmptyView(
           icon: Icons.space_dashboard_outlined,
@@ -96,7 +102,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final textTheme = Theme.of(context).textTheme;
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(dashboardProvider.notifier).loadDashboard(),
+      onRefresh: _refreshAll,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -117,17 +123,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   color: scheme.onSurfaceVariant,
                 ),
               ),
-              if (stats.expiringSoon > 0) ...[
-                const SizedBox(height: AppSpacing.lg),
-                _AttentionBanner(
-                  message:
-                      '${stats.expiringSoon} subscription${stats.expiringSoon == 1 ? '' : 's'} '
-                      'will expire within 7 days.',
-                  actionLabel: 'Review',
-                  onAction: () => _goTo(AdminSection.subscriptions),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.lg),
+              // What to act on comes before the figures.
+              const WorkQueueCard(),
+              const SizedBox(height: AppSpacing.lg),
 
               // KPIs
               ResponsiveGrid(
@@ -382,52 +381,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ],
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AttentionBanner extends StatelessWidget {
-  final String message;
-  final String actionLabel;
-  final VoidCallback onAction;
-
-  const _AttentionBanner({
-    required this.message,
-    required this.actionLabel,
-    required this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final status = context.status;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-      decoration: BoxDecoration(
-        color: status.warningContainer,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.schedule_rounded, color: status.warning, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                color: status.onWarningContainer,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: onAction,
-            style: TextButton.styleFrom(
-              foregroundColor: status.onWarningContainer,
-            ),
-            child: Text(actionLabel),
-          ),
         ],
       ),
     );

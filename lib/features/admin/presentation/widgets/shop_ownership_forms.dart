@@ -39,8 +39,8 @@ Future<ShopOwnershipResult?> showChangeOwnerForm(
 );
 
 /// The shop's name typed back, so a mistyped id moves nothing. Exact after
-/// trimming, as the backend checks it.
-TextFormField _confirmNameField(
+/// trimming, as the backend checks it. Also used by the data reset form.
+TextFormField confirmShopNameField(
   TextEditingController controller,
   String name,
 ) => TextFormField(
@@ -72,10 +72,10 @@ TextFormField _reasonField(TextEditingController controller, String hint) =>
     );
 
 /// A short paragraph explaining what the action does.
-class _Notice extends StatelessWidget {
+class FormNotice extends StatelessWidget {
   final String text;
   final bool warning;
-  const _Notice(this.text, {this.warning = false});
+  const FormNotice(this.text, {super.key, this.warning = false});
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +190,7 @@ class _LinkBranchFormState extends ConsumerState<_LinkBranchForm> {
       saving: _saving,
       error: _error,
       children: [
-        const _Notice(
+        const FormNotice(
           'For a customer who opened a second shop on its own account and now '
           'wants one group. The shop keeps its products, sales, customers and '
           'staff, and runs on the main shop\'s plan from now on. Its own plan '
@@ -255,7 +255,7 @@ class _LinkBranchFormState extends ConsumerState<_LinkBranchForm> {
         FormSection(
           title: 'Confirm',
           children: [
-            _confirmNameField(_confirmName, shop.name),
+            confirmShopNameField(_confirmName, shop.name),
             _reasonField(_reason, 'e.g. owner asked to merge their two shops'),
           ],
         ),
@@ -334,7 +334,7 @@ class _UnlinkBranchFormState extends ConsumerState<_UnlinkBranchForm> {
       saving: _saving,
       error: _error,
       children: [
-        const _Notice(
+        const FormNotice(
           'The shop becomes a separate shop on the Free plan, as a newly '
           'registered one. It keeps its products, sales, customers and staff. '
           'It stops sharing the group\'s plan, stock transfers and reports.',
@@ -367,7 +367,7 @@ class _UnlinkBranchFormState extends ConsumerState<_UnlinkBranchForm> {
         FormSection(
           title: 'Confirm',
           children: [
-            _confirmNameField(_confirmName, shop.name),
+            confirmShopNameField(_confirmName, shop.name),
             _reasonField(_reason, 'e.g. branch sold to its manager'),
           ],
         ),
@@ -446,7 +446,7 @@ class _ChangeOwnerFormState extends ConsumerState<_ChangeOwnerForm> {
       saving: _saving,
       error: _error,
       children: [
-        const _Notice(
+        const FormNotice(
           'Hands the shop to another account. The plan, its expiry, the data '
           'and the staff stay as they are. A shop with branches moves as a '
           'group or not at all, so unlink its branches first.',
@@ -476,7 +476,7 @@ class _ChangeOwnerFormState extends ConsumerState<_ChangeOwnerForm> {
         FormSection(
           title: 'Confirm',
           children: [
-            _confirmNameField(_confirmName, shop.name),
+            confirmShopNameField(_confirmName, shop.name),
             _reasonField(_reason, 'e.g. shop sold; ID checked in person'),
           ],
         ),

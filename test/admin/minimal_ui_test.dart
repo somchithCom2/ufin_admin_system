@@ -58,6 +58,9 @@ class _Repository extends AdminRepository {
     int page = 0,
     int size = 20,
     String? status,
+    String? planCode,
+    bool paid = false,
+    String? search,
   }) async => const PaginatedResponse(
     content: [_yearly],
     page: 0,

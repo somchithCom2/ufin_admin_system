@@ -20,11 +20,14 @@ abstract final class ErrorMessages {
     'ERR_SUBSCRIPTION_EXPIRED': 'This subscription has expired.',
     'ERR_CANNOT_REDUCE_BELOW_CURRENT_DATE':
         'That would move the expiry date into the past.',
+    'ERR_INVALID_DAYS': 'Days must be 0 or more.',
     'ERR_LIFETIME_SUBSCRIPTION':
         'A lifetime subscription is never renewed, so it cannot auto-renew.',
     'ERR_INVALID_BILLING_CYCLE':
         'Billing cycle must be monthly, yearly or lifetime.',
     'ERR_AUTO_RENEW_REQUIRED': 'Choose whether auto-renew should be on or off.',
+    'ERR_FREE_PLAN_NEEDS_TRIAL':
+        'Free cannot sell without a trial, so its trial must stay on.',
 
     // --- Approval flow (shop-side self-service is restricted) ---
     'ERR_UPGRADE_REQUIRES_APPROVAL':
@@ -71,6 +74,10 @@ abstract final class ErrorMessages {
     'ERR_SHOP_NAME_ALREADY_EXISTS':
         'The owner already has another shop with this name. Ask them to rename it first.',
     'ERR_INVALID_SHOP_STATUS': 'Unknown shop status.',
+    'ERR_SHOP_DATA_SHARED_WITH_ANOTHER_SHOP':
+        "Records of another shop are tied to this shop's data, so nothing was removed. Ask a developer to look at the shop.",
+    'ERR_SHOP_DATA_RESET_CONFLICT':
+        'The shop changed while resetting, maybe a till just sent a sale. Nothing was removed. Try again.',
 
     // --- Branch groups and ownership (link, unlink, change owner) ---
     'ERR_SHOP_IS_BRANCH':

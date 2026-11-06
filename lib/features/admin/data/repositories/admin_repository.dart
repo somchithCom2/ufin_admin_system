@@ -158,6 +158,34 @@ class AdminRepository {
     }
   }
 
+  /// What a data reset would remove from the shop now. Changes nothing.
+  Future<ShopDataReset> previewShopDataReset(int shopId) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminShopDataResetPreview(shopId),
+      );
+      return _parseResponse<ShopDataReset>(response, ShopDataReset.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Empty the shop's catalog, sales, stock and customers
+  Future<ShopDataReset> resetShopData(
+    int shopId,
+    ResetShopDataRequest request,
+  ) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.adminShopDataReset(shopId),
+        data: request.toJson(),
+      );
+      return _parseResponse<ShopDataReset>(response, ShopDataReset.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   /// Every owner change made from the admin console, newest first
   Future<List<OwnerChange>> getOwnerHistory(int shopId) async {
     try {
@@ -404,6 +432,9 @@ class AdminRepository {
     int page = 0,
     int size = 20,
     String? status,
+    String? planCode,
+    bool paid = false,
+    String? search,
   }) async {
     try {
       final response = await _dio.get(
@@ -412,6 +443,9 @@ class AdminRepository {
           'page': page,
           'size': size,
           if (status != null) 'status': status,
+          if (planCode != null) 'planCode': planCode,
+          if (paid) 'paid': true,
+          if (search != null && search.isNotEmpty) 'search': search,
         },
       );
       return _parsePaginatedResponse(response, AdminSubscription.fromJson);
@@ -462,6 +496,25 @@ class AdminRepository {
     try {
       final response = await _dio.put(
         ApiConstants.adminSubscriptionReduce(shopId),
+        data: request.toJson(),
+      );
+      return _parseResponse<AdminSubscription>(
+        response,
+        AdminSubscription.fromJson,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// Restart the shop's current plan from today, Free included
+  Future<AdminSubscription> resetSubscription(
+    int shopId,
+    ResetSubscriptionRequest request,
+  ) async {
+    try {
+      final response = await _dio.put(
+        ApiConstants.adminSubscriptionReset(shopId),
         data: request.toJson(),
       );
       return _parseResponse<AdminSubscription>(
@@ -690,6 +743,22 @@ class AdminRepository {
         queryParameters: {'days': days},
       );
       return _parseListResponse(response, ExpiringSubscription.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  /// The same expiring list as full subscriptions, so a row opens straight
+  /// into its detail page. The backend sends one DTO for both.
+  Future<List<AdminSubscription>> getExpiringAdminSubscriptions({
+    int days = 7,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminSubscriptionExpiring,
+        queryParameters: {'days': days},
+      );
+      return _parseListResponse(response, AdminSubscription.fromJson);
     } on DioException catch (e) {
       throw ApiException.fromDioException(e);
     }

@@ -96,6 +96,20 @@ class ExtendSubscriptionRequest {
   }
 }
 
+/// Request to restart a shop's current plan. Null [days] means the whole trial
+/// or billing period; 0 ends it now.
+class ResetSubscriptionRequest {
+  final int? days;
+  final String? reason;
+
+  const ResetSubscriptionRequest({this.days, this.reason});
+
+  Map<String, dynamic> toJson() => {
+    if (days != null) 'days': days,
+    if (reason != null) 'reason': reason,
+  };
+}
+
 /// Request to create a new plan
 class CreatePlanRequest {
   final String code;

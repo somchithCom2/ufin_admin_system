@@ -4,6 +4,7 @@ import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shop_products_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_data_reset_form.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_ownership_forms.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
@@ -367,6 +368,22 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
             if (!shop.isDeleted) ...[
               const PopupMenuDivider(),
               PopupMenuItem(
+                value: 'reset_data',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.restart_alt_rounded,
+                      color: context.colors.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Reset data…',
+                      style: TextStyle(color: context.colors.error),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
                 value: 'delete',
                 child: Row(
                   children: [
@@ -422,6 +439,9 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
       case 'delete':
         _showDeleteDialog(shop);
         break;
+      case 'reset_data':
+        _resetShopData(shop);
+        break;
       case 'branches':
         showBranchesSheet(context, shop);
         break;
@@ -458,6 +478,13 @@ class _ShopsPageState extends ConsumerState<ShopsPage> {
     final result = await form;
     if (result == null || !mounted) return;
     await showOwnershipResultDialog(context, title: title, result: result);
+  }
+
+  /// Waits for the reset form and, once it is done, shows what was removed.
+  Future<void> _resetShopData(AdminShop shop) async {
+    final result = await showResetShopDataForm(context, shop);
+    if (result == null || !mounted) return;
+    await showShopDataResetResultDialog(context, result);
   }
 
   void _showShopDetails(AdminShop shop) {
