@@ -1,13 +1,12 @@
-import 'dart:ui' show PlatformDispatcher;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ufin_admin_system/l10n/tr.dart';
 
-/// User interface preferences. Not secret, so they live in shared
-/// preferences rather than secure storage, which is wiped on sign-out.
+/// User interface preferences, held by [appSettingsProvider] and saved to
+/// shared preferences on every change. Not secret, so not in secure storage,
+/// which is wiped on sign-out: the choice survives signing out.
 @immutable
 class AppSettings {
   final ThemeMode themeMode;
@@ -18,7 +17,7 @@ class AppSettings {
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
-    this.language = AppLanguage.en,
+    this.language = AppLanguage.fallback,
     this.sidebarCollapsed = false,
   });
 
@@ -69,10 +68,9 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         (m) => m.name == storedTheme,
         orElse: () => ThemeMode.system,
       ),
-      // First launch follows the device: a Lao phone opens in Lao.
-      language: AppLanguage.fromCode(
-        storedLanguage ?? PlatformDispatcher.instance.locale.languageCode,
-      ),
+      // Lao until the user picks English; an unreadable value also falls
+      // back to Lao. Nothing is written until the user changes it.
+      language: AppLanguage.fromCode(storedLanguage),
       sidebarCollapsed: prefs?.getBool(_sidebarKey) ?? false,
     );
     AppLanguage.current = settings.language;

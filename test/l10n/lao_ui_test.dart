@@ -197,21 +197,45 @@ void main() {
       expect(AppLanguage.current, AppLanguage.lo);
     });
 
-    test('persists changes and ignores unknown stored values', () async {
-      final p = await _prefs({'ui.themeMode': 'sepia'});
+    test('first launch opens in Lao and writes nothing', () async {
+      final p = await _prefs({});
       final c = ProviderContainer(
         overrides: [sharedPreferencesProvider.overrideWithValue(p)],
       );
       addTearDown(c.dispose);
-      expect(c.read(appSettingsProvider).themeMode, ThemeMode.system);
+      final s = c.read(appSettingsProvider);
+      expect(s.language, AppLanguage.lo);
+      expect(s.themeMode, ThemeMode.system);
+      expect(AppLanguage.current, AppLanguage.lo);
+      expect(p.getKeys(), isEmpty);
+    });
+
+    test('persists changes and ignores unknown stored values', () async {
+      final p = await _prefs({'ui.themeMode': 'sepia', 'ui.language': 'xx'});
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(p)],
+      );
+      addTearDown(c.dispose);
+      final s = c.read(appSettingsProvider);
+      expect(s.themeMode, ThemeMode.system);
+      expect(s.language, AppLanguage.lo);
 
       c.read(appSettingsProvider.notifier)
         ..setThemeMode(ThemeMode.light)
-        ..setLanguage(AppLanguage.lo)
+        ..setLanguage(AppLanguage.en)
         ..toggleSidebar();
       expect(p.getString('ui.themeMode'), 'light');
-      expect(p.getString('ui.language'), 'lo');
+      expect(p.getString('ui.language'), 'en');
       expect(p.getBool('ui.sidebarCollapsed'), isTrue);
+      expect(AppLanguage.current, AppLanguage.en);
+
+      // A fresh start (next launch) reads the saved choice back.
+      final next = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(p)],
+      );
+      addTearDown(next.dispose);
+      expect(next.read(appSettingsProvider).language, AppLanguage.en);
+      expect(next.read(appSettingsProvider).sidebarCollapsed, isTrue);
     });
 
     test('works without a preferences store', () {
@@ -285,12 +309,15 @@ void main() {
     });
 
     testWidgets('desktop: sidebar collapses and remembers it', (tester) async {
+      // No saved preferences: the shell opens in Lao.
       await pumpShell(tester, width: 1280, prefs: const {});
-      expect(find.text('Search or jump to…'), findsOneWidget);
+      expect(find.text('ຄົ້ນຫາ ຫຼື ໄປທີ່…'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Collapse sidebar'));
+      await tester.tap(find.byTooltip('ຫຍໍ້ແຖບຂ້າງ'));
       await tester.pumpAndSettle();
-      expect(find.text('Search or jump to…'), findsNothing);
+      expect(find.text('ຄົ້ນຫາ ຫຼື ໄປທີ່…'), findsNothing);
+      final saved = await SharedPreferences.getInstance();
+      expect(saved.getBool('ui.sidebarCollapsed'), isTrue);
       expect(tester.takeException(), isNull);
     });
 

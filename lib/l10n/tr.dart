@@ -12,12 +12,20 @@ enum AppLanguage {
 
   const AppLanguage(this.locale, this.nativeName);
 
-  static AppLanguage fromCode(String? code) => code == 'lo' ? lo : en;
+  /// The console's language until the user picks another: first launch,
+  /// a missing or unreadable preference, or an unsupported locale.
+  static const AppLanguage fallback = lo;
+
+  static AppLanguage fromCode(String? code) => switch (code) {
+    'en' => en,
+    'lo' => lo,
+    _ => fallback,
+  };
 
   /// Mirror of the active language for code with no [BuildContext]
   /// (providers, error mapping). Kept in sync by the settings notifier.
   /// Widgets must use `context.language` so they rebuild on change.
-  static AppLanguage current = en;
+  static AppLanguage current = fallback;
 
   static List<Locale> get supportedLocales => [
     for (final l in values) l.locale,
