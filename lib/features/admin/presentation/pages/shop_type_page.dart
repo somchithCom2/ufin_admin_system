@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/presentation/widgets/shop_type_form.dart';
 
@@ -28,12 +28,11 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Shop Types'),
+        title: Text(context.tr(NavText.shopTypes)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
+            tooltip: context.tr(CommonText.refresh),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () =>
                 ref.read(shopTypesProvider.notifier).loadShopTypes(),
           ),
@@ -41,8 +40,8 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateDialog(),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Type'),
+        icon: const AppIcon(AppIcons.add),
+        label: Text(context.tr(ShopTypeText.addType)),
       ),
       body: ContentWidth(
         child: shopTypesState.isLoading
@@ -50,10 +49,10 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
             : shopTypesState.error != null && shopTypesState.shopTypes.isEmpty
             ? _buildErrorView(shopTypesState.error!)
             : shopTypesState.shopTypes.isEmpty
-            ? const AppEmptyView(
-                icon: Icons.category_outlined,
-                title: 'No shop types yet',
-                message: 'Add a shop type to categorize shops.',
+            ? AppEmptyView(
+                icon: AppIcons.shapes,
+                title: context.tr(ShopTypeText.noShopTypesYet),
+                message: context.tr(ShopTypeText.addAShopTypeTo),
               )
             : _buildShopTypeList(shopTypesState.shopTypes),
       ),
@@ -94,7 +93,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
             backgroundColor: shopType.enabled
                 ? context.status.success.withValues(alpha: 0.1)
                 : context.status.neutral.withValues(alpha: 0.1),
-            child: Icon(
+            child: AppIcon(
               shopTypeIcon(shopType.code),
               color: shopType.enabled
                   ? context.status.success
@@ -138,25 +137,26 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
             ],
           ),
           trailing: PopupMenuButton<String>(
+            icon: const AppIcon(AppIcons.moreVertical),
             onSelected: (action) => _handleAction(shopType, action),
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'view',
                 child: Row(
                   children: [
-                    Icon(Icons.visibility),
+                    AppIcon(AppIcons.eye),
                     SizedBox(width: 8),
-                    Text('View Details'),
+                    Text(context.tr(ShopTypeText.viewDetails)),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'edit',
                 child: Row(
                   children: [
-                    Icon(Icons.edit),
+                    AppIcon(AppIcons.edit),
                     SizedBox(width: 8),
-                    Text('Edit'),
+                    Text(context.tr(CommonText.edit)),
                   ],
                 ),
               ),
@@ -164,16 +164,18 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 value: 'toggle',
                 child: Row(
                   children: [
-                    Icon(
-                      shopType.enabled
-                          ? Icons.visibility_off
-                          : Icons.visibility,
+                    AppIcon(
+                      shopType.enabled ? AppIcons.eyeOff : AppIcons.eye,
                       color: shopType.enabled
                           ? context.status.warning
                           : context.status.success,
                     ),
                     const SizedBox(width: 8),
-                    Text(shopType.enabled ? 'Disable' : 'Enable'),
+                    Text(
+                      shopType.enabled
+                          ? context.tr(CommonText.disable)
+                          : context.tr(CommonText.enable),
+                    ),
                   ],
                 ),
               ),
@@ -181,9 +183,9 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, color: context.colors.error),
+                    AppIcon(AppIcons.delete, color: context.colors.error),
                     SizedBox(width: 8),
-                    Text('Delete'),
+                    Text(context.tr(CommonText.delete)),
                   ],
                 ),
               ),
@@ -197,15 +199,17 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
 
   Widget _buildStatusChip(bool enabled) {
     return StatusBadge(
-      label: enabled ? 'Enabled' : 'Disabled',
+      label: enabled
+          ? context.tr(ShopTypeText.enabled)
+          : context.tr(ShopTypeText.disabled),
       tone: enabled ? StatusTone.success : StatusTone.neutral,
     );
   }
 
   String _shopCountLabel(ShopTypeUsage? usage) => switch (usage) {
-    null => 'Shop count unavailable',
-    ShopTypeUsage(total: 1) => '1 shop',
-    ShopTypeUsage(:final total) => '$total shops',
+    null => context.tr(ShopTypeText.shopCountUnavailable),
+    ShopTypeUsage(total: 1) => context.tr(ShopTypeText.n1Shop),
+    ShopTypeUsage(:final total) => context.tr(ShopTypeText.shops(total)),
   };
 
   void _handleAction(ShopType shopType, String action) {
@@ -229,12 +233,10 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
     if (shopType.enabled) {
       final ok = await AppDialogs.confirm(
         context,
-        title: 'Disable "${shopType.name}"?',
-        message:
-            'New shops can no longer choose this type. Shops already using '
-            'it keep it.',
-        confirmLabel: 'Disable',
-        icon: Icons.toggle_off_outlined,
+        title: context.tr(ShopTypeText.disable(shopType.name)),
+        message: context.tr(ShopTypeText.newShopsCanNoLonger),
+        confirmLabel: context.tr(CommonText.disable),
+        icon: AppIcons.toggleOff,
       );
       if (!ok || !mounted) return;
     }
@@ -245,7 +247,9 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
         '"${shopType.name}" ${shopType.enabled ? 'disabled' : 'enabled'}',
       );
     } catch (e) {
-      messenger.showError('Could not update shop type: ${friendlyError(e)}');
+      messenger.showError(
+        ShopTypeText.couldNotUpdateShopType(friendlyError(e)).current,
+      );
     }
   }
 
@@ -274,7 +278,7 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                     backgroundColor: shopType.enabled
                         ? context.status.success.withValues(alpha: 0.1)
                         : context.status.neutral.withValues(alpha: 0.1),
-                    child: Icon(
+                    child: AppIcon(
                       shopTypeIcon(shopType.code),
                       size: 30,
                       color: shopType.enabled
@@ -299,18 +303,21 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                 ],
               ),
               const SizedBox(height: 24),
-              _buildDetailSection('Information', [
-                _buildDetailRow('Code', shopType.code),
-                _buildDetailRow('Name', shopType.name),
-                _buildDetailRow('Description', shopType.description ?? 'N/A'),
+              _buildDetailSection(context.tr(ShopTypeText.information), [
+                _buildDetailRow(context.tr(CommonText.code), shopType.code),
+                _buildDetailRow(context.tr(CommonText.name), shopType.name),
+                _buildDetailRow(
+                  context.tr(CommonText.description),
+                  shopType.description ?? 'N/A',
+                ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Features', [
+              _buildDetailSection(context.tr(ShopTypeText.features), [
                 if (shopType.features.isEmpty)
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'No features defined',
+                      context.tr(ShopTypeText.noFeaturesDefined),
                       style: TextStyle(color: context.status.neutral),
                     ),
                   )
@@ -331,23 +338,40 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
                   ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Statistics', [
+              _buildDetailSection(context.tr(NavText.statistics), [
                 if (shopType.usage case final usage?) ...[
-                  _buildDetailRow('Shops', usage.total.toString()),
-                  _buildDetailRow('Active', usage.active.toString()),
-                  _buildDetailRow('Inactive', usage.inactive.toString()),
-                  _buildDetailRow('Suspended', usage.suspended.toString()),
+                  _buildDetailRow(
+                    context.tr(NavText.shops),
+                    usage.total.toString(),
+                  ),
+                  _buildDetailRow(
+                    context.tr(ShopTypeText.active),
+                    usage.active.toString(),
+                  ),
+                  _buildDetailRow(
+                    context.tr(ShopTypeText.inactive),
+                    usage.inactive.toString(),
+                  ),
+                  _buildDetailRow(
+                    context.tr(ShopTypeText.suspended),
+                    usage.suspended.toString(),
+                  ),
                 ] else
-                  _buildDetailRow('Shops', 'Unavailable'),
+                  _buildDetailRow(
+                    context.tr(NavText.shops),
+                    context.tr(ShopTypeText.unavailable),
+                  ),
                 _buildDetailRow(
-                  'Status',
-                  shopType.enabled ? 'Enabled' : 'Disabled',
+                  context.tr(CommonText.status),
+                  shopType.enabled
+                      ? context.tr(ShopTypeText.enabled)
+                      : context.tr(ShopTypeText.disabled),
                 ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Timestamps', [
+              _buildDetailSection(context.tr(ShopTypeText.timestamps), [
                 _buildDetailRow(
-                  'Created',
+                  context.tr(CommonText.created),
                   shopType.createdAt?.toString().split(' ')[0] ?? 'N/A',
                 ),
               ]),
@@ -418,7 +442,9 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
     );
     if (saved) {
       messenger.showSuccess(
-        existing == null ? 'Shop type created' : 'Shop type updated',
+        existing == null
+            ? ShopTypeText.created.current
+            : ShopTypeText.updated.current,
       );
     }
   }
@@ -426,22 +452,23 @@ class _ShopTypePageState extends ConsumerState<ShopTypePage> {
   Future<void> _showDeleteDialog(ShopType shopType) async {
     final ok = await AppDialogs.confirm(
       context,
-      title: 'Delete "${shopType.name}"?',
-      message: 'This cannot be undone.',
-      confirmLabel: 'Delete',
+      title: context.tr(ShopTypeText.delete(shopType.name)),
+      message: context.tr(ShopTypeText.thisCannotBeUndone),
+      confirmLabel: context.tr(CommonText.delete),
       destructive: true,
-      icon: Icons.delete_outline_rounded,
+      icon: AppIcons.delete,
     );
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final notifier = ref.read(shopTypesProvider.notifier);
     final success = await notifier.deleteShopType(shopType.id);
     if (success) {
-      messenger.showSuccess('Shop type deleted');
+      messenger.showSuccess(ShopTypeText.shopTypeDeleted.current);
     } else {
       messenger.showError(
-        'Could not delete shop type: '
-        '${friendlyError(ref.read(shopTypesProvider).error)}',
+        ShopTypeText.couldNotDeleteShopType(
+          friendlyError(ref.read(shopTypesProvider).error),
+        ).current,
       );
     }
   }

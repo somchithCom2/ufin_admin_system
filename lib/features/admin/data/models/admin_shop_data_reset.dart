@@ -1,3 +1,5 @@
+import 'package:ufin_admin_system/l10n/l10n.dart';
+
 /// Empties a shop's catalog, sales, stock and customers so it can be keyed in
 /// again (POST /admin/shops/{id}/data-reset). Settings, staff, payment
 /// methods, tables and the subscription stay.
@@ -68,18 +70,18 @@ class ShopDataReset {
   /// The tables an operator recognises, by the name the shop app gives them.
   /// Everything else is a line, payment or link belonging to one of these.
   static const _labels = {
-    'categories': 'Categories',
-    'products': 'Products',
-    'product_variants': 'Variants',
-    'transactions': 'Orders',
-    'customers': 'Customers',
-    'debts': 'Debts',
-    'inventory_movements': 'Stock movements',
-    'product_batches': 'Stock batches',
-    'purchase_orders': 'Purchase orders',
-    'expenses': 'Expenses',
-    'suppliers': 'Suppliers',
-    'discounts': 'Discounts',
+    'categories': ModelText.categories,
+    'products': ModelText.products,
+    'product_variants': ModelText.variants,
+    'transactions': ModelText.orders,
+    'customers': ModelText.customers,
+    'debts': ModelText.debts,
+    'inventory_movements': ModelText.stockMovements,
+    'product_batches': ModelText.stockBatches,
+    'purchase_orders': ModelText.purchaseOrders,
+    'expenses': ModelText.expenses,
+    'suppliers': ModelText.suppliers,
+    'discounts': ModelText.discounts,
   };
 
   /// Non-empty named counts, then one line for the rest. Empty when there is
@@ -87,12 +89,12 @@ class ShopDataReset {
   List<(String, int)> get summary {
     final lines = <(String, int)>[
       for (final MapEntry(key: table, value: label) in _labels.entries)
-        if ((rows[table] ?? 0) > 0) (label, rows[table]!),
+        if ((rows[table] ?? 0) > 0) (label.current, rows[table]!),
     ];
     final other = rows.entries
         .where((e) => !_labels.containsKey(e.key))
         .fold<int>(0, (sum, e) => sum + e.value);
-    if (other > 0) lines.add(('Linked records', other));
+    if (other > 0) lines.add((ModelText.linkedRecords.current, other));
     return lines;
   }
 }

@@ -10,8 +10,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   cupertino_icons: ^1.0.8
+
+  # Line icons shared in style with the shop app (assets/icons/). Pinned to
+  # the versions the shop app ships so both render SVGs identically.
+  flutter_svg: 2.3.0
+  # RenderingStrategy (raster SVGs); already pulled in by flutter_svg.
+  vector_graphics: 1.2.3
   
   # State Management
   riverpod: ^2.5.1
@@ -39,6 +47,9 @@ dependencies:
   logger: ^2.4.0
   intl: ^0.20.2
 
+  # Non-secret UI preferences (theme, language); survives sign-out.
+  shared_preferences: ^2.5.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -50,3 +61,17 @@ flutter:
 
   assets:
     - .env
+    - assets/icons/
+
+  # Bundled so Lao renders identically on every platform (system Lao fonts
+  # differ per OS and are missing on some Windows/Linux installs).
+  fonts:
+    - family: NotoSansLao
+      fonts:
+        - asset: assets/fonts/NotoSansLao-Regular.ttf
+        - asset: assets/fonts/NotoSansLao-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansLao-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansLao-Bold.ttf
+          weight: 700

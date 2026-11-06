@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'subscription_action_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -23,7 +24,7 @@ class SubscriptionDetailPage extends ConsumerStatefulWidget {
 
 class _SubscriptionDetailPageState
     extends ConsumerState<SubscriptionDetailPage> {
-  static final _dateFormat = DateFormat('d MMM y');
+  static DateFormat get _dateFormat => AppDateFormat.of('d MMM y');
 
   late AdminSubscription _subscription;
   bool _savingAutoRenew = false;
@@ -73,8 +74,8 @@ class _SubscriptionDetailPageState
             UpdateAutoRenewRequest(
               autoRenew: value,
               reason: value
-                  ? 'Enabled from admin console'
-                  : 'Disabled from admin console',
+                  ? context.tr(SubsText.enabledFromAdminConsole)
+                  : context.tr(SubsText.disabledFromAdminConsole),
             ),
           );
       if (!mounted) return;
@@ -82,7 +83,9 @@ class _SubscriptionDetailPageState
       ref.read(subscriptionsProvider.notifier).refresh();
       AppFeedback.success(
         context,
-        value ? 'Auto-renew is on' : 'Auto-renew is off',
+        value
+            ? context.tr(SubsText.autoRenewIsOn)
+            : context.tr(SubsText.autoRenewIsOff),
       );
     } catch (e) {
       if (mounted) AppFeedback.error(context, e);
@@ -108,13 +111,13 @@ class _SubscriptionDetailPageState
         title: Text(_subscription.shopName),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history_rounded),
-            tooltip: 'History',
+            icon: const AppIcon(AppIcons.history),
+            tooltip: context.tr(CommonText.history),
             onPressed: _navigateToHistory,
           ),
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
+            tooltip: context.tr(CommonText.refresh),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: _refreshSubscription,
           ),
         ],
@@ -160,16 +163,17 @@ class _SubscriptionDetailPageState
     final String timeLine;
     Color? timeColor;
     if (_subscription.billingCycle == 'lifetime') {
-      timeLine = 'Lifetime · never expires';
+      timeLine = context.tr(SubsText.lifetimeNeverExpires);
     } else if (expiresAt == null) {
-      timeLine = 'No expiry date';
+      timeLine = context.tr(SubsText.noExpiryDate);
     } else if (isExpired) {
-      timeLine = 'Expired ${_date(expiresAt)}';
+      timeLine = context.tr(SubsText.expired2(_date(expiresAt)));
       timeColor = context.colors.error;
     } else {
-      timeLine =
-          'Expires ${_date(expiresAt)} · '
-          '${daysLeft == 0 ? 'today' : '$daysLeft ${daysLeft == 1 ? 'day' : 'days'} left'}';
+      final left = daysLeft == 0
+          ? context.tr(DashText.endsToday)
+          : context.tr(DashText.daysLeft(daysLeft!));
+      timeLine = '${context.tr(SubsText.expires2)} ${_date(expiresAt)} · $left';
       if (daysLeft! <= 7) timeColor = context.status.warning;
     }
 
@@ -182,7 +186,7 @@ class _SubscriptionDetailPageState
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             Text(
-              _subscription.planName ?? 'No plan',
+              _subscription.planName ?? context.tr(SubsText.noPlan2),
               style: context.text.headlineSmall,
             ),
             StatusBadge.fromStatus(_subscription.status),
@@ -210,24 +214,24 @@ class _SubscriptionDetailPageState
               FilledButton.icon(
                 onPressed: () =>
                     _manageSubscription(SubscriptionAction.reactivate),
-                icon: const Icon(Icons.restore_rounded, size: 18),
-                label: const Text('Reactivate'),
+                icon: const AppIcon(AppIcons.undo, size: 18),
+                label: Text(context.tr(SubsText.reactivate)),
               ),
             FilledButton.tonalIcon(
               onPressed: _showExtendForm,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Extend'),
+              icon: const AppIcon(AppIcons.add, size: 18),
+              label: Text(context.tr(SubsText.extend)),
             ),
             // Open in every state: a locked Free shop is what it is mostly for.
             OutlinedButton.icon(
               onPressed: _showResetForm,
-              icon: const Icon(Icons.restart_alt_rounded, size: 18),
-              label: const Text('Reset'),
+              icon: const AppIcon(AppIcons.reset, size: 18),
+              label: Text(context.tr(CommonText.reset)),
             ),
             OutlinedButton.icon(
               onPressed: _navigateToChangePlan,
-              icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-              label: const Text('Change plan'),
+              icon: const AppIcon(AppIcons.swap, size: 18),
+              label: Text(context.tr(SubsText.changePlan)),
             ),
             // Shortening a period only applies to a running subscription; the
             // server refuses this for an expired or cancelled one rather than
@@ -235,8 +239,8 @@ class _SubscriptionDetailPageState
             if (_isRunning)
               OutlinedButton.icon(
                 onPressed: _showReduceForm,
-                icon: const Icon(Icons.remove_rounded, size: 18),
-                label: const Text('Reduce'),
+                icon: const AppIcon(AppIcons.minus, size: 18),
+                label: Text(context.tr(SubsText.reduce)),
               ),
             if (_isRunning)
               TextButton.icon(
@@ -244,8 +248,8 @@ class _SubscriptionDetailPageState
                 style: TextButton.styleFrom(
                   foregroundColor: context.colors.error,
                 ),
-                icon: const Icon(Icons.cancel_outlined, size: 18),
-                label: const Text('Cancel subscription'),
+                icon: const AppIcon(AppIcons.closeCircle, size: 18),
+                label: Text(context.tr(SubsText.cancelSubscription)),
               ),
           ],
         ),
@@ -256,28 +260,40 @@ class _SubscriptionDetailPageState
   Widget _buildDetailsCard() {
     final cycle = _subscription.billingCycle;
     return SectionCard(
-      title: 'Details',
+      title: context.tr(CommonText.details),
       child: Column(
         children: [
-          InfoRow(label: 'Shop ID', value: '#${_subscription.shopId}'),
-          if (_subscription.shopOwnerEmail != null)
-            InfoRow(label: 'Owner email', value: _subscription.shopOwnerEmail!),
-          if (_subscription.planCode != null)
-            InfoRow(label: 'Plan code', value: _subscription.planCode!),
           InfoRow(
-            label: 'Price paid',
+            label: context.tr(SubsText.shopId),
+            value: '#${_subscription.shopId}',
+          ),
+          if (_subscription.shopOwnerEmail != null)
+            InfoRow(
+              label: context.tr(SubsText.ownerEmail),
+              value: _subscription.shopOwnerEmail!,
+            ),
+          if (_subscription.planCode != null)
+            InfoRow(
+              label: context.tr(SubsText.planCode),
+              value: _subscription.planCode!,
+            ),
+          InfoRow(
+            label: context.tr(SubsText.pricePaid),
             value: MoneyFormat.format(
               _subscription.pricePaid,
               _subscription.currency,
             ),
           ),
           InfoRow(
-            label: 'Billing cycle',
+            label: context.tr(SubsText.billingCycle),
             value: cycle == null ? '—' : humanize(cycle),
           ),
-          InfoRow(label: 'Started', value: _date(_subscription.startedAt)),
           InfoRow(
-            label: 'Expires',
+            label: context.tr(SubsText.started),
+            value: _date(_subscription.startedAt),
+          ),
+          InfoRow(
+            label: context.tr(SubsText.expires2),
             value: _date(_subscription.expiresAt),
             valueColor:
                 _subscription.expiresAt != null &&
@@ -287,12 +303,12 @@ class _SubscriptionDetailPageState
           ),
           if (_subscription.trialEndsAt != null)
             InfoRow(
-              label: 'Trial ends',
+              label: context.tr(SubsText.trialEnds),
               value: _date(_subscription.trialEndsAt),
             ),
           if (_subscription.cancelledAt != null)
             InfoRow(
-              label: 'Cancelled',
+              label: context.tr(SubsText.cancelled2),
               value: _date(_subscription.cancelledAt),
             ),
         ],
@@ -313,7 +329,7 @@ class _SubscriptionDetailPageState
     );
 
     return SectionCard(
-      title: 'Renewal',
+      title: context.tr(SubsText.renewal),
       trailing: _savingAutoRenew
           ? const Padding(
               padding: EdgeInsets.only(right: AppSpacing.sm),
@@ -328,25 +344,25 @@ class _SubscriptionDetailPageState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           InfoRow(
-            label: 'Next billing date',
+            label: context.tr(SubsText.nextBillingDate),
             value: _date(_subscription.nextBillingDate),
           ),
           if (isLifetime)
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: Text(
-                'A lifetime subscription never expires and is never renewed.',
+                context.tr(SubsText.aLifetimeSubscriptionNeverExpires),
                 style: muted,
               ),
             )
           else ...[
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Auto-renew'),
+              title: Text(context.tr(SubsText.autoRenew)),
               subtitle: Text(
                 _subscription.autoRenew
-                    ? 'Rolls forward automatically when the next period is paid for.'
-                    : 'Will not roll forward; the shop drops to the Free plan at expiry.',
+                    ? context.tr(SubsText.rollsForwardAutomaticallyWhenThe)
+                    : context.tr(SubsText.willNotRollForwardThe),
               ),
               value: _subscription.autoRenew,
               onChanged: _savingAutoRenew || _isLapsed
@@ -355,16 +371,11 @@ class _SubscriptionDetailPageState
             ),
             if (_isLapsed)
               Text(
-                'Reactivate the subscription before changing auto-renew.',
+                context.tr(SubsText.reactivateTheSubscriptionBeforeChanging),
                 style: muted,
               )
             else if (isPaid && _subscription.autoRenew)
-              Text(
-                'This is a paid plan. It only renews if a completed payment '
-                'covering the next period is recorded in Payments, or if you '
-                'extend it manually.',
-                style: muted,
-              ),
+              Text(context.tr(SubsText.thisIsAPaidPlan), style: muted),
           ],
         ],
       ),
@@ -373,17 +384,17 @@ class _SubscriptionDetailPageState
 
   Widget _buildUsageCard() {
     return SectionCard(
-      title: 'Usage',
+      title: context.tr(SubsText.usage),
       child: Column(
         children: [
           _buildUsageRow(
-            'Employees',
+            context.tr(SubsText.employees2),
             _subscription.currentEmployees,
             _subscription.maxEmployees,
           ),
           const SizedBox(height: AppSpacing.lg),
           _buildUsageRow(
-            'Products',
+            context.tr(SubsText.products2),
             _subscription.currentProducts,
             _subscription.maxProducts,
           ),
@@ -416,7 +427,9 @@ class _SubscriptionDetailPageState
               ),
             ),
             Text(
-              isUnlimited ? '$current · unlimited' : '$current of $max',
+              isUnlimited
+                  ? context.tr(SubsText.unlimited(current))
+                  : context.tr(SubsText.of(current, max)),
               style: context.text.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: isNearLimit ? context.status.warning : null,
@@ -473,7 +486,7 @@ class _SubscriptionDetailPageState
     if (days == null || !mounted) return;
     AppFeedback.success(
       context,
-      'Extended by $days ${days == 1 ? 'day' : 'days'}',
+      context.tr(SubsText.extendedBy(days, days == 1 ? 'day' : 'days')),
     );
     _refreshSubscription();
   }
@@ -487,7 +500,7 @@ class _SubscriptionDetailPageState
           .resetSubscription(_subscription.shopId, days: days, reason: reason),
     );
     if (done != true || !mounted) return;
-    AppFeedback.success(context, 'Subscription reset');
+    AppFeedback.success(context, context.tr(SubsText.subscriptionReset));
     _refreshSubscription();
   }
 
@@ -503,7 +516,7 @@ class _SubscriptionDetailPageState
     if (days == null || !mounted) return;
     AppFeedback.success(
       context,
-      'Reduced by $days ${days == 1 ? 'day' : 'days'}',
+      context.tr(SubsText.reducedBy(days, days == 1 ? 'day' : 'days')),
     );
     _refreshSubscription();
   }

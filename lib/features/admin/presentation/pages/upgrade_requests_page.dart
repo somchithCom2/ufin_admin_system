@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
@@ -23,10 +22,9 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
   int _currentPage = 0;
 
   static const _statusFilters = [
-    (label: 'Pending', value: 'PENDING'),
-    (label: 'Approved', value: 'APPROVED'),
-    (label: 'Rejected', value: 'REJECTED'),
-    (label: 'All', value: null),
+    (label: Tr('Pending', 'ລໍຖ້າ'), value: 'PENDING'),
+    (label: Tr('Approved', 'ອະນຸມັດແລ້ວ'), value: 'APPROVED'),
+    (label: Tr('Rejected', 'ຖືກປະຕິເສດ'), value: 'REJECTED'),
   ];
 
   @override
@@ -61,12 +59,11 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Upgrade Requests'),
+        title: Text(context.tr(NavText.upgradeRequests)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
+            tooltip: context.tr(CommonText.refresh),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () => _load(page: _currentPage),
           ),
         ],
@@ -74,26 +71,24 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
       body: ContentWidth(
         child: Column(
           children: [
-            // Status filter chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: _statusFilters.map((f) {
-                  final isSelected = _statusFilter == f.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(f.label),
-                      selected: isSelected,
-                      onSelected: (_) {
-                        setState(() => _statusFilter = f.value);
-                        _load();
-                      },
-                    ),
-                  );
-                }).toList(),
-              ),
+            FilterBar(
+              filters: [
+                // The queue opens on Pending; "All" clears it.
+                FilterSelect<String>(
+                  icon: AppIcons.flag,
+                  label: context.tr(CommonText.status),
+                  value: _statusFilter,
+                  allLabel: context.tr(CommonText.all),
+                  options: [
+                    for (final f in _statusFilters)
+                      FilterOption(f.value, context.tr(f.label)),
+                  ],
+                  onChanged: (status) {
+                    setState(() => _statusFilter = status);
+                    _load();
+                  },
+                ),
+              ],
             ),
 
             // Content
@@ -117,7 +112,7 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
 
   Widget _buildList(List<UpgradeRequestDto> items, ColorScheme colorScheme) {
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) => _RequestCard(
@@ -157,13 +152,20 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
       }
       messenger.showSuccess(
         approve
-            ? 'Request #${request.id} approved'
-            : 'Request #${request.id} rejected',
+            ? FinText.requestApproved(request.id).current
+            : FinText.requestRejected(request.id).current,
       );
     } catch (e) {
       messenger.showError(
-        'Could not ${approve ? 'approve' : 'reject'} request #${request.id}: '
-        '${friendlyError(e)}',
+        approve
+            ? FinText.couldNotApproveRequest(
+                request.id,
+                friendlyError(e),
+              ).current
+            : FinText.couldNotRejectRequest(
+                request.id,
+                friendlyError(e),
+              ).current,
       );
     }
   }
@@ -176,10 +178,10 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
   }
 
   Widget _buildEmpty() {
-    return const AppEmptyView(
-      icon: Icons.upgrade_rounded,
-      title: 'No upgrade requests',
-      message: 'Requests from shops wanting to change plans will appear here.',
+    return AppEmptyView(
+      icon: AppIcons.upgrade,
+      title: context.tr(FinText.noUpgradeRequests),
+      message: context.tr(FinText.requestsFromShopsWantingTo),
     );
   }
 
@@ -190,16 +192,16 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
-            tooltip: 'Previous page',
-            icon: const Icon(Icons.chevron_left_rounded),
+            tooltip: context.tr(FinText.previousPage2),
+            icon: const AppIcon(AppIcons.chevronLeft),
             onPressed: _currentPage > 0
                 ? () => _load(page: _currentPage - 1)
                 : null,
           ),
-          Text('Page ${_currentPage + 1} of ${state.totalPages}'),
+          Text(context.tr(FinText.pageOf2(_currentPage + 1, state.totalPages))),
           IconButton(
-            tooltip: 'Next page',
-            icon: const Icon(Icons.chevron_right_rounded),
+            tooltip: context.tr(FinText.nextPage2),
+            icon: const AppIcon(AppIcons.chevronRight),
             onPressed: _currentPage < state.totalPages - 1
                 ? () => _load(page: _currentPage + 1)
                 : null,
@@ -217,19 +219,35 @@ Future<String?> _showReviewDialog(
   required UpgradeRequestDto request,
   required bool approve,
 }) {
-  final from = request.fromPlanName['en'] ?? request.fromPlanCode;
-  final to = request.toPlanName['en'] ?? request.toPlanCode;
+  final from =
+      request.fromPlanName[context.language.name] ??
+      request.fromPlanName['en'] ??
+      request.fromPlanCode;
+  final to =
+      request.toPlanName[context.language.name] ??
+      request.toPlanName['en'] ??
+      request.toPlanCode;
   return AppDialogs.confirmWithReason(
     context,
-    title: approve ? 'Approve request?' : 'Reject request?',
+    title: approve
+        ? context.tr(FinText.approveRequest)
+        : context.tr(FinText.rejectRequest),
     message: approve
-        ? '${request.shopName} moves from $from to $to '
-              '(${request.billingCycle}).'
-        : '${request.shopName} stays on $from. The shop sees your note.',
-    confirmLabel: approve ? 'Approve' : 'Reject',
-    reasonLabel: 'Review note',
+        ? context.tr(
+            FinText.movesFromTo(
+              request.shopName,
+              from,
+              to,
+              request.billingCycle,
+            ),
+          )
+        : context.tr(FinText.staysOnTheShopSees(request.shopName, from)),
+    confirmLabel: approve
+        ? context.tr(CommonText.approve)
+        : context.tr(CommonText.reject),
+    reasonLabel: context.tr(FinText.reviewNote),
     destructive: !approve,
-    icon: approve ? Icons.check_rounded : Icons.close_rounded,
+    icon: approve ? AppIcons.check : AppIcons.close,
   );
 }
 
@@ -248,7 +266,7 @@ class _RequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isPending = request.status == 'PENDING';
-    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+    final dateFormat = AppDateFormat.of('dd MMM yyyy, HH:mm');
 
     return Card(
       child: Padding(
@@ -279,12 +297,18 @@ class _RequestCard extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _PlanBadge(
-                  label: request.fromPlanName['en'] ?? request.fromPlanCode,
+                  label:
+                      request.fromPlanName[context.language.name] ??
+                      request.fromPlanName['en'] ??
+                      request.fromPlanCode,
                   color: context.status.neutral,
                 ),
-                const Icon(Icons.arrow_forward_rounded, size: 16),
+                const AppIcon(AppIcons.arrowRight, size: 16),
                 _PlanBadge(
-                  label: request.toPlanName['en'] ?? request.toPlanCode,
+                  label:
+                      request.toPlanName[context.language.name] ??
+                      request.toPlanName['en'] ??
+                      request.toPlanCode,
                   color: context.colors.primary,
                 ),
                 Container(
@@ -307,28 +331,32 @@ class _RequestCard extends StatelessWidget {
 
             // Meta
             _MetaRow(
-              icon: Icons.person_outline,
-              text: 'Requested by ${request.requestedByUsername}',
+              icon: AppIcons.person,
+              text: context.tr(
+                FinText.requestedBy(request.requestedByUsername),
+              ),
             ),
             _MetaRow(
-              icon: Icons.access_time,
+              icon: AppIcons.clock,
               text: dateFormat.format(request.createdAt.toLocal()),
             ),
             if (request.notes != null && request.notes!.isNotEmpty)
-              _MetaRow(icon: Icons.notes, text: request.notes!),
+              _MetaRow(icon: AppIcons.notes, text: request.notes!),
             if (request.reviewedByUsername != null) ...[
               const Divider(height: 16),
               _MetaRow(
-                icon: Icons.rate_review_outlined,
-                text:
-                    'Reviewed by ${request.reviewedByUsername}'
-                    '${request.reviewedAt != null ? ' on ${dateFormat.format(request.reviewedAt!.toLocal())}' : ''}',
+                icon: AppIcons.message,
+                text: request.reviewedAt == null
+                    ? context.tr(FinText.reviewedBy(request.reviewedByUsername))
+                    : context.tr(
+                        FinText.reviewedByOn(
+                          request.reviewedByUsername,
+                          dateFormat.format(request.reviewedAt!.toLocal()),
+                        ),
+                      ),
               ),
               if (request.reviewNote != null && request.reviewNote!.isNotEmpty)
-                _MetaRow(
-                  icon: Icons.comment_outlined,
-                  text: request.reviewNote!,
-                ),
+                _MetaRow(icon: AppIcons.message, text: request.reviewNote!),
             ],
 
             // Actions (only for PENDING)
@@ -339,8 +367,8 @@ class _RequestCard extends StatelessWidget {
                 children: [
                   OutlinedButton.icon(
                     onPressed: () => onReject(null),
-                    icon: const Icon(Icons.close, size: 16),
-                    label: const Text('Reject'),
+                    icon: const AppIcon(AppIcons.close, size: 16),
+                    label: Text(context.tr(CommonText.reject)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: context.colors.error,
                     ),
@@ -348,8 +376,8 @@ class _RequestCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   FilledButton.icon(
                     onPressed: () => onApprove(null),
-                    icon: const Icon(Icons.check_rounded, size: 16),
-                    label: const Text('Approve'),
+                    icon: const AppIcon(AppIcons.check, size: 16),
+                    label: Text(context.tr(CommonText.approve)),
                   ),
                 ],
               ),
@@ -388,7 +416,7 @@ class _PlanBadge extends StatelessWidget {
 }
 
 class _MetaRow extends StatelessWidget {
-  final IconData icon;
+  final AppIconData icon;
   final String text;
 
   const _MetaRow({required this.icon, required this.text});
@@ -400,7 +428,7 @@ class _MetaRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 14, color: context.colors.onSurfaceVariant),
+          AppIcon(icon, size: 14, color: context.colors.onSurfaceVariant),
           const SizedBox(width: 6),
           Expanded(
             child: Text(

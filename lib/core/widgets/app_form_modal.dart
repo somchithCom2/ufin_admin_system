@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/app_ui.dart';
 
 /// Opens a create/edit form: a centered dialog on wide screens, a tall
@@ -43,7 +44,7 @@ Future<T?> showAppFormModal<T>(
 class AppFormModal extends StatelessWidget {
   final String title;
   final String? subtitle;
-  final IconData icon;
+  final AppIconData icon;
   final GlobalKey<FormState> formKey;
   final List<Widget> children;
   final String submitLabel;
@@ -102,8 +103,8 @@ class AppFormModal extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close',
-                    icon: const Icon(Icons.close_rounded),
+                    tooltip: context.tr(CommonText.close),
+                    icon: const AppIcon(AppIcons.close),
                     onPressed: saving ? null : () => Navigator.pop(context),
                   ),
                 ],
@@ -146,7 +147,7 @@ class AppFormModal extends StatelessWidget {
                           onPressed: saving
                               ? null
                               : () => Navigator.pop(context),
-                          child: const Text('Cancel'),
+                          child: Text(context.tr(CommonText.cancel)),
                         );
                         final submit = FilledButton(
                           onPressed: saving ? null : onSubmit,
@@ -163,9 +164,9 @@ class AppFormModal extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Flexible(
+                                    Flexible(
                                       child: Text(
-                                        'Saving…',
+                                        context.tr(CommonText.saving),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
@@ -339,7 +340,7 @@ abstract final class FormValidators {
   static String? optionalInt(String? v) {
     final t = v?.trim() ?? '';
     if (t.isEmpty) return null;
-    return int.tryParse(t) == null ? 'Enter a whole number' : null;
+    return int.tryParse(t) == null ? ModelText.enterAWholeNumber.current : null;
   }
 }
 
@@ -361,7 +362,7 @@ class _ErrorBanner extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.error_outline_rounded, size: 18, color: scheme.error),
+            AppIcon(AppIcons.errorCircle, size: 18, color: scheme.error),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

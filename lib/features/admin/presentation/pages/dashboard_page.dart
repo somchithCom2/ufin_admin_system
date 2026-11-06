@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -37,11 +38,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   void _goTo(AdminSection section) =>
       ref.read(adminSectionProvider.notifier).state = section;
 
-  String _greeting() {
+  Tr _greeting() {
     final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (h < 12) return DashText.goodMorning;
+    if (h < 18) return DashText.goodAfternoon;
+    return DashText.goodEvening;
   }
 
   @override
@@ -61,12 +62,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Dashboard'),
+        title: Text(context.tr(NavText.dashboard)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
+            tooltip: context.tr(CommonText.refresh),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: state.isLoading ? null : _refreshAll,
           ),
           const SizedBox(width: 8),
@@ -79,15 +79,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             : null,
       ),
       body: switch ((state.isLoading && stats == null, state.error, stats)) {
-        (true, _, _) => const AppLoadingView(message: 'Loading dashboard…'),
+        (true, _, _) => AppLoadingView(message: context.tr(DashText.loading)),
         (_, final String error, null) => AppErrorView(
           error: error,
           onRetry: _refreshAll,
         ),
-        (_, _, null) => const AppEmptyView(
-          icon: Icons.space_dashboard_outlined,
-          title: 'No data yet',
-          message: 'Dashboard metrics will appear once shops start using UFin.',
+        (_, _, null) => AppEmptyView(
+          icon: AppIcons.dashboard,
+          title: context.tr(DashText.noData),
+          message: context.tr(DashText.noDataHint),
         ),
         (_, _, final AdminDashboardStats s) => _buildDashboard(
           s,
@@ -112,13 +112,19 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             children: [
               // Header
               Text(
-                '${_greeting()}${username == null ? '' : ', $username'}',
+                '${context.tr(_greeting())}${username == null ? '' : ', $username'}',
                 style: textTheme.headlineSmall,
               ),
               const SizedBox(height: 4),
               Text(
-                "Here's what's happening across UFin today · "
-                '${DateFormat('EEEE, d MMM y').format(DateTime.now())}',
+                context.tr(
+                  DashText.overview(
+                    DateFormat(
+                      'EEEE, d MMM y',
+                      context.localeName,
+                    ).format(DateTime.now()),
+                  ),
+                ),
                 style: textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -132,35 +138,46 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ResponsiveGrid(
                 children: [
                   StatCard(
-                    label: 'Total shops',
+                    label: context.tr(DashText.totalShops),
                     value: _number.format(stats.totalShops),
-                    caption: '${_number.format(stats.activeShops)} active',
-                    icon: Icons.storefront_rounded,
+                    caption: context.tr(
+                      DashText.nActive(_number.format(stats.activeShops)),
+                    ),
+                    icon: AppIcons.shop,
                     onTap: () => _goTo(AdminSection.shops),
                   ),
                   StatCard(
-                    label: 'Total users',
+                    label: context.tr(DashText.totalUsers),
                     value: _number.format(stats.totalUsers),
-                    caption: '${_number.format(stats.activeUsers)} active',
-                    icon: Icons.people_rounded,
+                    caption: context.tr(
+                      DashText.nActive(_number.format(stats.activeUsers)),
+                    ),
+                    icon: AppIcons.users,
                     onTap: () => _goTo(AdminSection.users),
                   ),
                   StatCard(
-                    label: 'Subscriptions',
+                    label: context.tr(NavText.subscriptions),
                     value: _number.format(stats.totalSubscriptions),
-                    caption:
-                        '${_number.format(stats.activeSubscriptions)} active',
-                    icon: Icons.card_membership_rounded,
+                    caption: context.tr(
+                      DashText.nActive(
+                        _number.format(stats.activeSubscriptions),
+                      ),
+                    ),
+                    icon: AppIcons.crown,
                     onTap: () => _goTo(AdminSection.subscriptions),
                   ),
                   StatCard(
-                    label: 'Monthly revenue',
+                    label: context.tr(DashText.monthlyRevenue),
                     value: _primaryAmount(stats.revenueThisMonthByCurrency),
                     // Other currencies are listed, never added to the kip.
                     caption: stats.revenueThisMonthByCurrency.length > 1
                         ? '+ ${stats.revenueThisMonthByCurrency.keys.skip(1).join(', ')}'
-                        : '${_number.format(stats.totalPaymentsThisMonth)} payments',
-                    icon: Icons.payments_rounded,
+                        : context.tr(
+                            DashText.nPayments(
+                              _number.format(stats.totalPaymentsThisMonth),
+                            ),
+                          ),
+                    icon: AppIcons.money,
                     onTap: () => _goTo(AdminSection.revenue),
                   ),
                 ],
@@ -209,8 +226,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
               if (stats.recentActivities.isNotEmpty)
                 SectionCard(
-                  title: 'Recent activity',
-                  icon: Icons.history_rounded,
+                  title: context.tr(DashText.recentActivity),
+                  icon: AppIcons.history,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   child: Column(
                     children: [
@@ -234,23 +251,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final status = context.status;
     final scheme = Theme.of(context).colorScheme;
     return SectionCard(
-      title: 'Shops',
-      icon: Icons.storefront_outlined,
+      title: context.tr(NavText.shops),
+      icon: AppIcons.shop,
       trailing: TextButton(
         onPressed: () => _goTo(AdminSection.shops),
-        child: const Text('View all'),
+        child: Text(context.tr(CommonText.viewAll)),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              _MiniStat(label: 'Today', value: _number.format(s.newShopsToday)),
               _MiniStat(
-                label: 'This week',
+                label: context.tr(DashText.newToday),
+                value: _number.format(s.newShopsToday),
+              ),
+              _MiniStat(
+                label: context.tr(DashText.newThisWeek),
                 value: _number.format(s.newShopsThisWeek),
               ),
               _MiniStat(
-                label: 'This month',
+                label: context.tr(DashText.newThisMonth),
                 value: _number.format(s.newShopsThisMonth),
               ),
             ],
@@ -258,10 +278,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           const SizedBox(height: AppSpacing.lg),
           _DistributionBar(
             segments: [
-              ('Active', s.activeShops, status.success),
-              ('Suspended', s.suspendedShops, scheme.error),
               (
-                'Other',
+                StatusText.lookup('active')!.of(context),
+                s.activeShops,
+                status.success,
+              ),
+              (
+                StatusText.lookup('suspended')!.of(context),
+                s.suspendedShops,
+                scheme.error,
+              ),
+              (
+                context.tr(DashText.other),
                 (s.totalShops - s.activeShops - s.suspendedShops).clamp(
                   0,
                   s.totalShops,
@@ -278,18 +306,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget _subscriptionsPanel(AdminDashboardStats s) {
     final status = context.status;
     return SectionCard(
-      title: 'Subscriptions',
-      icon: Icons.card_membership_outlined,
+      title: context.tr(NavText.subscriptions),
+      icon: AppIcons.crown,
       trailing: TextButton(
         onPressed: () => _goTo(AdminSection.subscriptions),
-        child: const Text('View all'),
+        child: Text(context.tr(CommonText.viewAll)),
       ),
       child: _DistributionBar(
         segments: [
-          ('Active', s.activeSubscriptions, status.success),
-          ('Trial', s.trialSubscriptions, status.info),
-          ('Expiring soon', s.expiringSoon, status.warning),
-          ('Expired', s.expiredSubscriptions, status.neutral),
+          (_status('active'), s.activeSubscriptions, status.success),
+          (_status('trial'), s.trialSubscriptions, status.info),
+          (_status('expiring_soon'), s.expiringSoon, status.warning),
+          (_status('expired'), s.expiredSubscriptions, status.neutral),
         ],
       ),
     );
@@ -297,28 +325,33 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   Widget _revenuePanel(AdminDashboardStats s) {
     return SectionCard(
-      title: 'Revenue',
-      icon: Icons.account_balance_wallet_outlined,
+      title: context.tr(DashText.revenue),
+      icon: AppIcons.wallet,
       trailing: TextButton(
         onPressed: () => _goTo(AdminSection.revenue),
-        child: const Text('Report'),
+        child: Text(context.tr(CommonText.report)),
       ),
       child: Column(
         children: [
           ..._amountRows(
-            'This month',
+            context.tr(CommonText.thisMonth),
             s.revenueThisMonthByCurrency,
             valueColor: context.status.success,
           ),
-          ..._amountRows('This year', s.revenueThisYearByCurrency),
+          ..._amountRows(
+            context.tr(CommonText.thisYear),
+            s.revenueThisYearByCurrency,
+          ),
           InfoRow(
-            label: 'Payments this month',
+            label: context.tr(DashText.paymentsThisMonth),
             value: _number.format(s.totalPaymentsThisMonth),
           ),
         ],
       ),
     );
   }
+
+  String _status(String raw) => StatusText.lookup(raw)!.of(context);
 
   /// The first currency's amount (LAK when present), or ₭ 0 with no revenue.
   String _primaryAmount(Map<String, double> amounts) => amounts.isEmpty
@@ -350,8 +383,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final total = entries.fold<int>(0, (sum, e) => sum + e.value);
     final scheme = Theme.of(context).colorScheme;
     return SectionCard(
-      title: 'Subscriptions by plan',
-      icon: Icons.inventory_2_outlined,
+      title: context.tr(DashText.byPlan),
+      icon: AppIcons.package,
       child: Column(
         children: [
           for (final e in entries)
@@ -406,7 +439,7 @@ class _MiniStat extends StatelessWidget {
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           Text(
-            'New ${label.toLowerCase()}',
+            label,
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
           ),
         ],
@@ -497,11 +530,12 @@ class _ActivityTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = context.status;
     final scheme = Theme.of(context).colorScheme;
-    final (IconData icon, Color color) = switch (activity.type.toUpperCase()) {
-      'SHOP_CREATED' => (Icons.add_business_rounded, status.success),
-      'SUBSCRIPTION_UPGRADED' => (Icons.upgrade_rounded, status.info),
-      'PAYMENT_RECEIVED' => (Icons.payments_rounded, status.warning),
-      _ => (Icons.info_outline_rounded, status.neutral),
+    final (AppIconData icon, Color color) = switch (activity.type
+        .toUpperCase()) {
+      'SHOP_CREATED' => (AppIcons.addBusiness, status.success),
+      'SUBSCRIPTION_UPGRADED' => (AppIcons.upgrade, status.info),
+      'PAYMENT_RECEIVED' => (AppIcons.money, status.warning),
+      _ => (AppIcons.info, status.neutral),
     };
 
     return ListTile(
@@ -514,20 +548,24 @@ class _ActivityTile extends StatelessWidget {
       ),
       subtitle: activity.shopName != null ? Text(activity.shopName!) : null,
       trailing: Text(
-        _relative(activity.timestamp),
+        _relative(context, activity.timestamp),
         style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
       ),
     );
   }
 
-  static String _relative(String timestamp) {
+  static String _relative(BuildContext context, String timestamp) {
     final date = DateTime.tryParse(timestamp);
     if (date == null) return timestamp;
     final diff = DateTime.now().difference(date.toLocal());
-    if (diff.isNegative || diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return DateFormat('d MMM').format(date);
+    if (diff.isNegative || diff.inMinutes < 1) {
+      return context.tr(CommonText.justNow);
+    }
+    if (diff.inMinutes < 60) {
+      return context.tr(CommonText.minutesAgo(diff.inMinutes));
+    }
+    if (diff.inHours < 24) return context.tr(CommonText.hoursAgo(diff.inHours));
+    if (diff.inDays < 7) return context.tr(CommonText.daysAgo(diff.inDays));
+    return DateFormat('d MMM', context.localeName).format(date);
   }
 }

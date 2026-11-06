@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/admin_revenue_report.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/statistics_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class RevenueReportPage extends ConsumerStatefulWidget {
@@ -46,12 +45,11 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Revenue Report'),
+        title: Text(context.tr(NavText.revenue)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
+            tooltip: context.tr(CommonText.refresh),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: state.isLoading ? null : notifier.refresh,
           ),
         ],
@@ -67,10 +65,10 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   : state.error != null
                   ? AppErrorView(error: state.error, onRetry: notifier.refresh)
                   : state.report == null
-                  ? const AppEmptyView(
-                      icon: Icons.insights_outlined,
-                      title: 'No data available',
-                      message: 'There is nothing to show for this period.',
+                  ? AppEmptyView(
+                      icon: AppIcons.lineChart,
+                      title: context.tr(FinText.noDataAvailable),
+                      message: context.tr(FinText.thereIsNothingToShow),
                     )
                   : RefreshIndicator(
                       onRefresh: notifier.loadRevenueReport,
@@ -101,20 +99,29 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
         children: [
           OutlinedButton.icon(
             onPressed: _selectDateRange,
-            icon: const Icon(Icons.date_range_rounded, size: 18),
+            icon: const AppIcon(AppIcons.calendarRange, size: 18),
             label: Text(
               range == null
-                  ? 'Select dates'
-                  : '${DateFormat('d MMM y').format(range.start)} – '
-                        '${DateFormat('d MMM y').format(range.end)}',
+                  ? context.tr(FinText.selectDates)
+                  : '${AppDateFormat.of('d MMM y').format(range.start)} – '
+                        '${AppDateFormat.of('d MMM y').format(range.end)}',
             ),
           ),
           SegmentedButton<String>(
             showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: 'day', label: Text('Day')),
-              ButtonSegment(value: 'week', label: Text('Week')),
-              ButtonSegment(value: 'month', label: Text('Month')),
+            segments: [
+              ButtonSegment(
+                value: 'day',
+                label: Text(context.tr(const Tr('Day', 'ວັນ'))),
+              ),
+              ButtonSegment(
+                value: 'week',
+                label: Text(context.tr(FinText.week)),
+              ),
+              ButtonSegment(
+                value: 'month',
+                label: Text(context.tr(FinText.month)),
+              ),
             ],
             selected: {_groupBy},
             onSelectionChanged: (s) => _setGroupBy(s.first),
@@ -151,7 +158,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Total revenue · ${report.currency}',
+                  context.tr(FinText.totalRevenue(report.currency)),
                   style: textTheme.bodyMedium?.copyWith(color: muted),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -171,8 +178,11 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   spacing: AppSpacing.xl,
                   runSpacing: AppSpacing.sm,
                   children: [
-                    _miniStat('Subscriptions', report.subscriptionRevenue),
-                    _miniStat('Other', report.otherRevenue),
+                    _miniStat(
+                      context.tr(NavText.subscriptions),
+                      report.subscriptionRevenue,
+                    ),
+                    _miniStat(context.tr(FinText.other), report.otherRevenue),
                   ],
                 ),
               ],
@@ -183,36 +193,38 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
         ResponsiveGrid(
           children: [
             StatCard(
-              label: 'Transactions',
+              label: context.tr(FinText.transactions),
               value: report.totalTransactions.toString(),
-              icon: Icons.receipt_long_rounded,
+              icon: AppIcons.receipt,
             ),
             StatCard(
-              label: 'Success rate',
+              label: context.tr(FinText.successRate),
               value: '${report.successRate.toStringAsFixed(1)}%',
-              caption: '${report.successfulTransactions} successful',
-              icon: Icons.check_circle_outline_rounded,
+              caption: context.tr(
+                FinText.successful(report.successfulTransactions),
+              ),
+              icon: AppIcons.checkCircle,
               color: context.status.success,
             ),
             StatCard(
-              label: 'Failed',
+              label: context.tr(FinText.failed2),
               value: report.failedTransactions.toString(),
-              icon: Icons.error_outline_rounded,
+              icon: AppIcons.errorCircle,
               color: report.failedTransactions > 0
                   ? context.colors.error
                   : null,
             ),
             StatCard(
-              label: 'Average transaction',
+              label: context.tr(FinText.averageTransaction),
               value: _money(report.averageTransactionValue),
-              icon: Icons.functions_rounded,
+              icon: AppIcons.sigma,
             ),
           ],
         ),
         if (report.revenueByPeriod.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
           SectionCard(
-            title: 'Revenue by period',
+            title: context.tr(FinText.revenueByPeriod),
             child: SizedBox(
               height: 180,
               child: _buildBarChart(report.revenueByPeriod),
@@ -222,7 +234,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
         if (report.revenueByPlan.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
           SectionCard(
-            title: 'Revenue by current plan',
+            title: context.tr(FinText.revenueByCurrentPlan),
             padding: EdgeInsets.zero,
             child: Column(
               children: [
@@ -230,7 +242,9 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   if (i > 0) const Divider(),
                   _breakdownRow(
                     title: plan.planName,
-                    subtitle: '${plan.subscriptionCount} payments',
+                    subtitle: context.tr(
+                      FinText.payments2(plan.subscriptionCount),
+                    ),
                     amount: plan.revenue,
                     percentage: plan.percentage,
                   ),
@@ -242,7 +256,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
         if (report.revenueByPaymentMethod.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.lg),
           SectionCard(
-            title: 'Revenue by payment method',
+            title: context.tr(FinText.revenueByPaymentMethod),
             padding: EdgeInsets.zero,
             child: Column(
               children: [
@@ -252,7 +266,9 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
                   _breakdownRow(
                     icon: _getPaymentMethodIcon(method.paymentMethod),
                     title: method.paymentMethodDisplay,
-                    subtitle: '${method.transactionCount} transactions',
+                    subtitle: context.tr(
+                      FinText.transactions2(method.transactionCount),
+                    ),
                     amount: method.revenue,
                     percentage: method.percentage,
                   ),
@@ -289,7 +305,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
   /// One line of a breakdown: name and count on the left, amount and share
   /// on the right, with a thin bar showing the share.
   Widget _breakdownRow({
-    IconData? icon,
+    AppIconData? icon,
     required String title,
     required String subtitle,
     required double amount,
@@ -307,7 +323,7 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 20, color: muted),
+                AppIcon(icon, size: 20, color: muted),
                 const SizedBox(width: AppSpacing.md),
               ],
               Expanded(
@@ -366,9 +382,13 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
             for (final (i, item) in data.indexed)
               Expanded(
                 child: Tooltip(
-                  message:
-                      '${_formatPeriodLabel(item.period)}: ${_money(item.revenue)}'
-                      ' · ${item.transactionCount} transactions',
+                  message: context.tr(
+                    FinText.transactions3(
+                      _formatPeriodLabel(item.period),
+                      _money(item.revenue),
+                      item.transactionCount,
+                    ),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: Column(
@@ -415,25 +435,25 @@ class _RevenueReportPageState extends ConsumerState<RevenueReportPage> {
   String _formatPeriodLabel(String period) {
     try {
       final date = DateTime.parse(period);
-      return DateFormat('d MMM').format(date);
+      return AppDateFormat.of('d MMM').format(date);
     } catch (_) {
       return period;
     }
   }
 
-  IconData _getPaymentMethodIcon(String method) {
+  AppIconData _getPaymentMethodIcon(String method) {
     switch (method.toLowerCase()) {
       case 'cash':
-        return Icons.payments_outlined;
+        return AppIcons.money;
       case 'bank_transfer':
-        return Icons.account_balance_outlined;
+        return AppIcons.bank;
       case 'qr_code':
-        return Icons.qr_code_rounded;
+        return AppIcons.qrCode;
       case 'card':
       case 'credit_card':
-        return Icons.credit_card_rounded;
+        return AppIcons.card;
       default:
-        return Icons.payment_rounded;
+        return AppIcons.card;
     }
   }
 

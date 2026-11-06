@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 class DeletedUsersPage extends ConsumerStatefulWidget {
@@ -27,12 +27,11 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('Deleted Users'),
+        title: Text(context.tr(NavText.deletedUsers)),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
+            tooltip: context.tr(CommonText.refresh),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () =>
                 ref.read(deletedUsersProvider.notifier).loadDeletedUsers(),
           ),
@@ -48,15 +47,15 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
               color: context.colors.error.withValues(alpha: 0.08),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.delete_sweep_outlined,
+                  AppIcon(
+                    AppIcons.delete,
                     size: 18,
                     color: context.colors.error,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Showing soft-deleted accounts sorted by most recently deleted.',
+                      context.tr(UserText.showingSoftDeletedAccountsSorted),
                       style: TextStyle(
                         fontSize: 13,
                         color: context.colors.error,
@@ -73,7 +72,11 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                 child: Row(
                   children: [
                     Text(
-                      '${state.users.length} deleted user${state.users.length == 1 ? '' : 's'}',
+                      state.users.length == 1
+                          ? context.tr(UserText.n1DeletedUser)
+                          : context.tr(
+                              UserText.deletedUsers(state.users.length),
+                            ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -81,7 +84,12 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                     if (state.totalPages > 1) ...[
                       const SizedBox(width: 6),
                       Text(
-                        '· page ${state.currentPage + 1} of ${state.totalPages}',
+                        context.tr(
+                          UserText.pageOf(
+                            state.currentPage + 1,
+                            state.totalPages,
+                          ),
+                        ),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -111,17 +119,17 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: context.colors.outline),
+          AppIcon(AppIcons.users, size: 64, color: context.colors.outline),
           const SizedBox(height: 16),
           Text(
-            'No deleted users',
+            context.tr(UserText.noDeletedUsers),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: context.colors.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Soft-deleted accounts will appear here.',
+            context.tr(UserText.softDeletedAccountsWillAppear),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: context.colors.onSurfaceVariant,
             ),
@@ -153,7 +161,9 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
   Widget _buildUserCard(AdminUser user) {
     final deletedAtLabel = user.deletedAt != null
         ? _formatDate(user.deletedAt!)
-        : (user.updatedAt != null ? _formatDate(user.updatedAt!) : 'Unknown');
+        : (user.updatedAt != null
+              ? _formatDate(user.updatedAt!)
+              : context.tr(CommonText.unknown));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -206,14 +216,14 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                       children: [
                         _buildTypeChip(user.userType),
                         const SizedBox(width: 6),
-                        Icon(
-                          Icons.schedule,
+                        AppIcon(
+                          AppIcons.clock,
                           size: 12,
                           color: context.colors.onSurfaceVariant,
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Deleted $deletedAtLabel',
+                          context.tr(UserText.deleted3(deletedAtLabel)),
                           style: TextStyle(
                             fontSize: 11,
                             color: context.colors.onSurfaceVariant,
@@ -226,18 +236,19 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
               ),
               // Actions
               PopupMenuButton<String>(
+                icon: const AppIcon(AppIcons.moreVertical),
                 onSelected: (action) {
                   if (action == 'restore') _confirmRestore(user);
                   if (action == 'details') _showUserDetails(user);
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'details',
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline),
+                        AppIcon(AppIcons.info),
                         SizedBox(width: 8),
-                        Text('View Details'),
+                        Text(context.tr(UserText.viewDetails2)),
                       ],
                     ),
                   ),
@@ -245,9 +256,9 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                     value: 'restore',
                     child: Row(
                       children: [
-                        Icon(Icons.restore, color: context.status.success),
+                        AppIcon(AppIcons.undo, color: context.status.success),
                         SizedBox(width: 8),
-                        Text('Restore'),
+                        Text(context.tr(UserText.restore)),
                       ],
                     ),
                   ),
@@ -281,9 +292,9 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
   String _formatDate(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inDays == 0) return 'today';
-    if (diff.inDays == 1) return 'yesterday';
-    if (diff.inDays < 7) return '${diff.inDays} days ago';
+    if (diff.inDays == 0) return context.tr(UserText.today);
+    if (diff.inDays == 1) return context.tr(UserText.yesterday);
+    if (diff.inDays < 7) return context.tr(UserText.daysAgo(diff.inDays));
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
   }
 
@@ -364,29 +375,42 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                 ],
               ),
               const SizedBox(height: 24),
-              _buildDetailSection('Contact Information', [
-                _buildDetailRow('Email', user.email ?? 'N/A'),
-                _buildDetailRow('Phone', user.phone ?? 'N/A'),
+              _buildDetailSection(context.tr(UserText.contactInformation2), [
                 _buildDetailRow(
-                  'Email Verified',
-                  user.emailVerified ? 'Yes' : 'No',
+                  context.tr(CommonText.email),
+                  user.email ?? 'N/A',
                 ),
                 _buildDetailRow(
-                  'Phone Verified',
-                  user.phoneVerified ? 'Yes' : 'No',
+                  context.tr(CommonText.phone),
+                  user.phone ?? 'N/A',
+                ),
+                _buildDetailRow(
+                  context.tr(UserText.emailVerified2),
+                  user.emailVerified
+                      ? context.tr(CommonText.yes)
+                      : context.tr(CommonText.no),
+                ),
+                _buildDetailRow(
+                  context.tr(UserText.phoneVerified2),
+                  user.phoneVerified
+                      ? context.tr(CommonText.yes)
+                      : context.tr(CommonText.no),
                 ),
               ]),
               const SizedBox(height: 16),
-              _buildDetailSection('Account', [
-                _buildDetailRow('Type', user.userType.replaceAll('_', ' ')),
+              _buildDetailSection(context.tr(NavText.account), [
                 _buildDetailRow(
-                  'Created',
+                  context.tr(CommonText.type),
+                  user.userType.replaceAll('_', ' '),
+                ),
+                _buildDetailRow(
+                  context.tr(CommonText.created),
                   user.createdAt != null
                       ? user.createdAt!.toIso8601String().split('T')[0]
                       : 'N/A',
                 ),
                 _buildDetailRow(
-                  'Deleted At',
+                  context.tr(UserText.deletedAt),
                   user.deletedAt != null
                       ? user.deletedAt!
                             .toIso8601String()
@@ -395,18 +419,18 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                       : 'N/A',
                 ),
                 _buildDetailRow(
-                  'Last Login',
+                  context.tr(UserText.lastLogin2),
                   user.lastLogin
                           ?.toIso8601String()
                           .replaceFirst('T', ' ')
                           .split('.')[0] ??
-                      'Never',
+                      context.tr(UserText.never2),
                 ),
               ]),
               if (user.shops.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _buildDetailSection(
-                  'Shops (${user.shops.length})',
+                  context.tr(UserText.shops3(user.shops.length)),
                   user.shops
                       .map((s) => _buildDetailRow(s.shopName, s.role))
                       .toList(),
@@ -419,8 +443,8 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor: context.status.success,
                   ),
-                  icon: const Icon(Icons.restore),
-                  label: const Text('Restore User'),
+                  icon: const AppIcon(AppIcons.undo),
+                  label: Text(context.tr(UserText.restoreUser)),
                   onPressed: () {
                     Navigator.pop(context);
                     _confirmRestore(user);
@@ -477,18 +501,20 @@ class _DeletedUsersPageState extends ConsumerState<DeletedUsersPage> {
   Future<void> _confirmRestore(AdminUser user) async {
     final ok = await AppDialogs.confirm(
       context,
-      title: 'Restore "${user.username}"?',
-      message: 'The account becomes active again and can sign in.',
-      confirmLabel: 'Restore',
-      icon: Icons.restore_rounded,
+      title: context.tr(UserText.restore2(user.username)),
+      message: context.tr(UserText.theAccountBecomesActiveAgain),
+      confirmLabel: context.tr(UserText.restore),
+      icon: AppIcons.undo,
     );
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(deletedUsersProvider.notifier).restoreUser(user.id);
-      messenger.showSuccess('"${user.username}" has been restored.');
+      messenger.showSuccess(UserText.hasBeenRestored(user.username).current);
     } catch (e) {
-      messenger.showError('Failed to restore user: ${friendlyError(e)}');
+      messenger.showError(
+        UserText.failedToRestoreUser(friendlyError(e)).current,
+      );
     }
   }
 }

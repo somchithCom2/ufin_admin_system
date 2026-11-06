@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -28,8 +29,8 @@ Future<void> showShopDataResetResultDialog(
 ) => showDialog<void>(
   context: context,
   builder: (ctx) => AlertDialog(
-    icon: Icon(Icons.check_circle_rounded, color: ctx.status.success),
-    title: const Text('Shop data reset'),
+    icon: AppIcon(AppIcons.checkCircle, color: ctx.status.success),
+    title: Text(context.tr(ShopText.shopDataReset)),
     content: SizedBox(
       width: 420,
       child: Column(
@@ -38,8 +39,8 @@ Future<void> showShopDataResetResultDialog(
         children: [
           Text(
             result.isEmpty
-                ? '"${result.shopName}" had nothing to remove.'
-                : '"${result.shopName}" is empty and ready to be keyed in again.',
+                ? context.tr(ShopText.hadNothingToRemove(result.shopName))
+                : context.tr(ShopText.isEmptyAndReadyTo(result.shopName)),
           ),
           if (!result.isEmpty) ...[
             const SizedBox(height: 12),
@@ -51,7 +52,7 @@ Future<void> showShopDataResetResultDialog(
     actions: [
       FilledButton(
         onPressed: () => Navigator.of(ctx).pop(),
-        child: const Text('Done'),
+        child: Text(context.tr(CommonText.done)),
       ),
     ],
   ),
@@ -90,20 +91,22 @@ class _CountList extends StatelessWidget {
       children: [
         for (final (label, count) in reset.summary) line(label, count),
         const Divider(height: 16),
-        line('Total records', reset.totalRows, bold: true),
-        if (files != null && files > 0) line('Pictures in storage', files),
+        line(context.tr(ShopText.totalRecords), reset.totalRows, bold: true),
+        if (files != null && files > 0)
+          line(context.tr(ShopText.picturesInStorage), files),
         if (files == null)
           note(
             reset.done
-                ? 'Storage could not be reached, so its pictures were left '
-                      'there. Nothing shows them any more.'
-                : 'Pictures in storage could not be counted now. The reset '
-                      'still deletes them.',
+                ? context.tr(ShopText.storageCouldNotBeReached)
+                : context.tr(ShopText.picturesInStorageCouldNot),
           ),
         if (reset.filesFailed > 0)
           note(
-            '${_count.format(reset.filesFailed)} pictures could not be '
-            'deleted from storage. Nothing shows them any more.',
+            context.tr(
+              ShopText.picturesCouldNotBeDeleted(
+                _count.format(reset.filesFailed),
+              ),
+            ),
           ),
       ],
     );
@@ -167,24 +170,21 @@ class _ResetShopDataFormState extends ConsumerState<_ResetShopDataForm> {
     final shop = widget.shop;
     return AppFormModal(
       formKey: _formKey,
-      icon: Icons.restart_alt_rounded,
-      title: 'Reset shop data',
+      icon: AppIcons.reset,
+      title: context.tr(ShopText.resetShopData),
       subtitle: '${shop.name} · #${shop.id}',
-      submitLabel: 'Reset data',
+      submitLabel: context.tr(ShopText.resetData2),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
-        const FormNotice(
-          'Deletes the records below for good, so the shop can be keyed in '
-          'again from scratch. This cannot be undone and is not the same as '
-          'Delete shop. Use it for a test shop, or one whose products went '
-          'in wrong.',
+        FormNotice(
+          context.tr(ShopText.deletesTheRecordsBelowFor),
           warning: true,
         ),
         const SizedBox(height: 20),
         FormSection(
-          title: 'Will be removed',
+          title: context.tr(ShopText.willBeRemoved),
           children: [
             FutureBuilder<ShopDataReset>(
               future: _preview,
@@ -197,15 +197,18 @@ class _ResetShopDataFormState extends ConsumerState<_ResetShopDataForm> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Could not count the records: '
-                          '${friendlyError(snapshot.error!)}',
+                          context.tr(
+                            ShopText.couldNotCountTheRecords(
+                              friendlyError(snapshot.error!),
+                            ),
+                          ),
                           style: context.text.bodySmall,
                         ),
                       ),
                       TextButton(
                         onPressed: () =>
                             setState(() => _preview = _loadPreview()),
-                        child: const Text('Retry'),
+                        child: Text(context.tr(ShopText.retry)),
                       ),
                     ],
                   );
@@ -213,17 +216,17 @@ class _ResetShopDataFormState extends ConsumerState<_ResetShopDataForm> {
                 final preview = snapshot.data!;
                 if (preview.otherShopsRows > 0) {
                   return FormNotice(
-                    '${_count.format(preview.otherShopsRows)} records of '
-                    "another shop are tied to this shop's data, so the reset "
-                    'is refused: it would delete them too. Ask a developer to '
-                    'look at the shop before resetting it.',
+                    context.tr(
+                      ShopText.recordsOfAnotherShopAre(
+                        _count.format(preview.otherShopsRows),
+                      ),
+                    ),
                     warning: true,
                   );
                 }
                 if (preview.isEmpty) {
                   return Text(
-                    'Nothing to remove: the shop has no products, sales or '
-                    'customers.',
+                    context.tr(ShopText.nothingToRemoveTheShop),
                     style: context.text.bodyMedium,
                   );
                 }
@@ -233,37 +236,30 @@ class _ResetShopDataFormState extends ConsumerState<_ResetShopDataForm> {
           ],
         ),
         FormSection(
-          title: 'Stays as it is',
+          title: context.tr(ShopText.staysAsItIs),
           children: [
             Text(
-              'The shop and its settings, receipt settings, staff and roles, '
-              'payment methods, bank accounts, exchange rates, restaurant '
-              'areas and tables, expense categories, the subscription and '
-              'its payments, the shop logo and bank QR codes. Branches are not '
-              "touched, and pictures a branch still shows are kept.",
+              context.tr(ShopText.theShopAndItsSettings),
               style: context.text.bodyMedium,
             ),
           ],
         ),
-        const FormNotice(
-          "Have the shop's tills send their offline sales first. A sale still "
-          'waiting on a till is refused once its products are gone.',
-        ),
+        FormNotice(context.tr(ShopText.haveTheShopSTills)),
         const SizedBox(height: 20),
         FormSection(
-          title: 'Confirm',
+          title: context.tr(CommonText.confirm),
           children: [
             confirmShopNameField(_confirmName, shop.name),
             TextFormField(
               controller: _reason,
               maxLines: 3,
               maxLength: 500,
-              decoration: const InputDecoration(
-                labelText: 'Reason',
-                hintText: 'e.g. test shop, products keyed in wrong',
-                helperText: "Kept in the shop's audit log",
+              decoration: InputDecoration(
+                labelText: context.tr(CommonText.reason),
+                hintText: context.tr(ShopText.eGTestShopProducts),
+                helperText: context.tr(ShopText.keptInTheShopS2),
               ),
-              validator: FormValidators.required('Reason'),
+              validator: FormValidators.required(context.tr(CommonText.reason)),
             ),
           ],
         ),

@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ufin_admin_system/config/theme/app_theme.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/services/dio_client.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shops_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import '../helpers/app_icon_finder.dart';
 
 const _ownershipResult = {
   'success': true,
@@ -181,7 +183,7 @@ void main() {
       final repo = _ShopsRepo();
       await _openShops(tester, repo);
 
-      await tester.tap(find.byIcon(Icons.more_vert).first);
+      await tester.tap(find.byAppIcon(AppIcons.moreVertical).first);
       await tester.pumpAndSettle();
       expect(find.text('Link as branch…'), findsOneWidget);
       expect(find.text('Change owner…'), findsOneWidget);
@@ -189,7 +191,7 @@ void main() {
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.more_vert).last);
+      await tester.tap(find.byAppIcon(AppIcons.moreVertical).last);
       await tester.pumpAndSettle();
       expect(find.text('Unlink branch…'), findsOneWidget);
       expect(find.text('Link as branch…'), findsNothing);
@@ -290,7 +292,7 @@ void main() {
         (0, 'Change owner…', 'Change owner'),
         (1, 'Unlink branch…', 'Unlink from branch group'),
       ]) {
-        await tester.tap(find.byIcon(Icons.more_vert).at(card));
+        await tester.tap(find.byAppIcon(AppIcons.moreVertical).at(card));
         await tester.pumpAndSettle();
         await tester.tap(find.text(action));
         await tester.pumpAndSettle();
@@ -401,7 +403,7 @@ Future<void> _openShops(
 
 Future<void> _openChangeOwner(WidgetTester tester, _ShopsRepo repo) async {
   await _openShops(tester, repo);
-  await tester.tap(find.byIcon(Icons.more_vert).first);
+  await tester.tap(find.byAppIcon(AppIcons.moreVertical).first);
   await tester.pumpAndSettle();
   await tester.tap(find.text('Change owner…'));
   await tester.pumpAndSettle();

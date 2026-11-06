@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
 /// The backend stores no icon for a shop type, so it follows from the code.
-const _shopTypeIcons = <String, IconData>{
-  'retail': Icons.store_rounded,
-  'restaurant': Icons.restaurant_rounded,
-  'cafe': Icons.local_cafe_rounded,
-  'bar': Icons.local_bar_rounded,
-  'service': Icons.room_service_rounded,
-  'wholesale': Icons.warehouse_rounded,
-  'online': Icons.shopping_cart_rounded,
-  'grocery': Icons.local_grocery_store_rounded,
-  'pharmacy': Icons.local_pharmacy_rounded,
-  'salon': Icons.spa_rounded,
-  'spa': Icons.spa_rounded,
-  'hotel': Icons.hotel_rounded,
+const _shopTypeIcons = <String, AppIconData>{
+  'retail': AppIcons.shop,
+  'restaurant': AppIcons.utensils,
+  'cafe': AppIcons.coffee,
+  'bar': AppIcons.wine,
+  'service': AppIcons.concierge,
+  'wholesale': AppIcons.warehouse,
+  'online': AppIcons.cart,
+  'grocery': AppIcons.shoppingBag,
+  'pharmacy': AppIcons.pill,
+  'salon': AppIcons.leaf,
+  'spa': AppIcons.leaf,
+  'hotel': AppIcons.bed,
 };
 
-IconData shopTypeIcon(String code) {
+AppIconData shopTypeIcon(String code) {
   final key = code.toLowerCase();
   for (final MapEntry(key: word, value: icon) in _shopTypeIcons.entries) {
     if (key.contains(word)) return icon;
   }
-  return Icons.storefront_rounded;
+  return AppIcons.shop;
 }
 
 /// Opens the create (when [existing] is null) or edit form. [save] receives
@@ -157,18 +158,22 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
   Widget build(BuildContext context) {
     return AppFormModal(
       formKey: _formKey,
-      icon: _isEdit ? Icons.edit_outlined : Icons.category_outlined,
-      title: _isEdit ? 'Edit shop type' : 'New shop type',
+      icon: _isEdit ? AppIcons.edit : AppIcons.shapes,
+      title: _isEdit
+          ? context.tr(ShopTypeText.editShopType)
+          : context.tr(ShopTypeText.newShopType),
       subtitle: _isEdit
           ? widget.existing!.name
-          : 'Group shops by the kind of business they run',
-      submitLabel: _isEdit ? 'Save changes' : 'Create shop type',
+          : context.tr(ShopTypeText.groupShopsByTheKind),
+      submitLabel: _isEdit
+          ? context.tr(CommonText.saveChanges)
+          : context.tr(ShopTypeText.createShopType),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
         FormSection(
-          title: 'Basics',
+          title: context.tr(ShopTypeText.basics),
           children: [
             TextFormField(
               controller: _code,
@@ -177,32 +182,34 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9_]')),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Code',
+              decoration: InputDecoration(
+                labelText: context.tr(CommonText.code),
                 hintText: 'RESTAURANT',
-                helperText: 'Letters, numbers and _',
+                helperText: context.tr(ShopTypeText.lettersNumbersAnd),
               ),
-              validator: FormValidators.required('Code'),
+              validator: FormValidators.required(context.tr(CommonText.code)),
             ),
           ],
         ),
         FormSection(
-          title: 'Name',
+          title: context.tr(CommonText.name),
           children: [
             FormRow(
               children: [
                 TextFormField(
                   controller: _nameEn,
-                  decoration: const InputDecoration(
-                    labelText: 'English',
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.english),
                     hintText: 'Restaurant',
                   ),
-                  validator: FormValidators.required('English name'),
+                  validator: FormValidators.required(
+                    context.tr(ShopTypeText.englishName),
+                  ),
                 ),
                 TextFormField(
                   controller: _nameLo,
-                  decoration: const InputDecoration(
-                    labelText: 'Lao (optional)',
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.laoOptional),
                     hintText: 'ຮ້ານອາຫານ',
                   ),
                 ),
@@ -211,15 +218,15 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
           ],
         ),
         FormSection(
-          title: 'Description',
-          hint: 'Optional. Shown to owners when they pick a shop type.',
+          title: context.tr(CommonText.description),
+          hint: context.tr(ShopTypeText.optionalShownToOwnersWhen),
           children: [
             TextFormField(
               controller: _descEn,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'English',
+              decoration: InputDecoration(
+                labelText: context.tr(ShopTypeText.english),
                 alignLabelWithHint: true,
               ),
             ),
@@ -227,8 +234,8 @@ class _ShopTypeFormState extends State<_ShopTypeForm> {
               controller: _descLo,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Lao',
+              decoration: InputDecoration(
+                labelText: context.tr(ShopTypeText.lao),
                 alignLabelWithHint: true,
               ),
             ),

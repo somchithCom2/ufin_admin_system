@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
-import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.dart';
 
 final systemConfigProvider = FutureProvider<SystemConfiguration>((ref) async {
   final repository = AdminRepository();
@@ -42,16 +42,13 @@ class _SystemConfigurationPageState
     final configAsync = ref.watch(systemConfigProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: buildAdminMenuButton(context),
-        title: const Text('System Configuration'),
-      ),
+      appBar: AppBar(title: Text(context.tr(SysText.systemConfiguration))),
       body: ContentWidth(
         child: configAsync.when(
           loading: () => const AppLoadingView(),
           error: (error, stack) => AppErrorView(
             error: error,
-            title: 'Failed to load configuration',
+            title: context.tr(SysText.failedToLoadConfiguration),
             onRetry: () => ref.invalidate(systemConfigProvider),
           ),
           data: (config) => SingleChildScrollView(
@@ -71,8 +68,8 @@ class _SystemConfigurationPageState
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
+                        AppIcon(
+                          AppIcons.warning,
                           color: context.colors.error,
                           size: 32,
                         ),
@@ -82,7 +79,7 @@ class _SystemConfigurationPageState
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Force Update Required',
+                                context.tr(SysText.forceUpdateRequired),
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(
                                       color: context.colors.error,
@@ -91,7 +88,7 @@ class _SystemConfigurationPageState
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'All users must update to the latest version',
+                                context.tr(SysText.allUsersMustUpdateTo),
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(color: context.colors.error),
                               ),
@@ -112,7 +109,7 @@ class _SystemConfigurationPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Maintenance Mode',
+                          context.tr(SysText.maintenanceMode),
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 16),
@@ -124,8 +121,8 @@ class _SystemConfigurationPageState
                                 children: [
                                   Text(
                                     config.isMaintenanceMode
-                                        ? 'Status: ACTIVE'
-                                        : 'Status: INACTIVE',
+                                        ? context.tr(SysText.statusActive)
+                                        : context.tr(SysText.statusInactive),
                                     style: Theme.of(context).textTheme.bodyLarge
                                         ?.copyWith(
                                           color: config.isMaintenanceMode
@@ -138,7 +135,7 @@ class _SystemConfigurationPageState
                                     const SizedBox(height: 8),
                                     Text(
                                       config.maintenanceTitle ??
-                                          'No title provided',
+                                          context.tr(SysText.noTitleProvided),
                                       style: Theme.of(
                                         context,
                                       ).textTheme.bodyMedium,
@@ -146,7 +143,7 @@ class _SystemConfigurationPageState
                                     const SizedBox(height: 4),
                                     Text(
                                       config.maintenanceMessage ??
-                                          'No message provided',
+                                          context.tr(SysText.noMessageProvided),
                                       style: Theme.of(
                                         context,
                                       ).textTheme.bodySmall,
@@ -157,7 +154,11 @@ class _SystemConfigurationPageState
                                         null) ...[
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Expected completion: ${config.expectedCompletionTime}',
+                                        context.tr(
+                                          SysText.expectedCompletion(
+                                            config.expectedCompletionTime,
+                                          ),
+                                        ),
                                         style: Theme.of(
                                           context,
                                         ).textTheme.bodySmall,
@@ -170,13 +171,15 @@ class _SystemConfigurationPageState
                             ElevatedButton.icon(
                               onPressed: () =>
                                   _showMaintenanceModeDialog(context, config),
-                              icon: Icon(
+                              icon: AppIcon(
                                 config.isMaintenanceMode
-                                    ? Icons.stop
-                                    : Icons.play_arrow,
+                                    ? AppIcons.square
+                                    : AppIcons.play,
                               ),
                               label: Text(
-                                config.isMaintenanceMode ? 'Disable' : 'Enable',
+                                config.isMaintenanceMode
+                                    ? context.tr(CommonText.disable)
+                                    : context.tr(CommonText.enable),
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: config.isMaintenanceMode
@@ -199,7 +202,7 @@ class _SystemConfigurationPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'New User Verification',
+                          context.tr(SysText.newUserVerification),
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 16),
@@ -207,8 +210,8 @@ class _SystemConfigurationPageState
                           contentPadding: EdgeInsets.zero,
                           title: Text(
                             config.enforceNewUserVerification
-                                ? 'Status: ENFORCED'
-                                : 'Status: NOT ENFORCED',
+                                ? context.tr(SysText.statusEnforced)
+                                : context.tr(SysText.statusNotEnforced),
                             style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(
                                   color: config.enforceNewUserVerification
@@ -217,11 +220,8 @@ class _SystemConfigurationPageState
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
-                          subtitle: const Text(
-                            'Newly registered shop owners must verify their '
-                            'email or phone before they can log in. Existing '
-                            'accounts are never affected. Turn off to unblock '
-                            'everyone at once if email/OTP delivery breaks.',
+                          subtitle: Text(
+                            context.tr(SysText.newlyRegisteredShopOwnersMust),
                           ),
                           value: config.enforceNewUserVerification,
                           onChanged: (value) =>
@@ -240,7 +240,7 @@ class _SystemConfigurationPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Minimum Version Requirements',
+                          context.tr(SysText.minimumVersionRequirements),
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 16),
@@ -248,7 +248,7 @@ class _SystemConfigurationPageState
                           context,
                           'Android',
                           config.minSupportedAndroidVersion,
-                          Icons.android,
+                          AppIcons.android,
                           context.status.success,
                         ),
                         const SizedBox(height: 12),
@@ -256,7 +256,7 @@ class _SystemConfigurationPageState
                           context,
                           'iOS',
                           config.minSupportedIosVersion,
-                          Icons.apple,
+                          AppIcons.apple,
                           context.colors.onSurface,
                         ),
                         const SizedBox(height: 12),
@@ -264,7 +264,7 @@ class _SystemConfigurationPageState
                           context,
                           'Windows',
                           config.minSupportedWindowsVersion,
-                          Icons.desktop_mac,
+                          AppIcons.monitor,
                           context.status.info,
                         ),
                         const SizedBox(height: 12),
@@ -272,7 +272,7 @@ class _SystemConfigurationPageState
                           context,
                           'macOS',
                           config.minSupportedMacosVersion,
-                          Icons.laptop_mac,
+                          AppIcons.laptop,
                           context.status.neutral,
                         ),
                         const SizedBox(height: 12),
@@ -280,7 +280,7 @@ class _SystemConfigurationPageState
                           context,
                           'Web',
                           config.minSupportedWebVersion,
-                          Icons.language,
+                          AppIcons.globe,
                           context.status.info,
                         ),
                         const SizedBox(height: 16),
@@ -289,8 +289,8 @@ class _SystemConfigurationPageState
                           child: ElevatedButton.icon(
                             onPressed: () =>
                                 _showUpdateVersionDialog(context, config),
-                            icon: const Icon(Icons.edit),
-                            label: const Text('Update Versions'),
+                            icon: const AppIcon(AppIcons.edit),
+                            label: Text(context.tr(SysText.updateVersions)),
                           ),
                         ),
                       ],
@@ -306,23 +306,25 @@ class _SystemConfigurationPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Update Status',
+                          context.tr(SysText.updateStatus),
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 16),
                         _buildStatusRow(
-                          'Update Available',
-                          config.updateAvailable == true ? '✅ Yes' : '❌ No',
+                          context.tr(SysText.updateAvailable),
+                          config.updateAvailable == true
+                              ? context.tr(SysText.yes)
+                              : context.tr(SysText.no),
                           config.updateAvailable == true
                               ? context.status.success
                               : context.status.neutral,
                         ),
                         const SizedBox(height: 12),
                         _buildStatusRow(
-                          'Force Update Required',
+                          context.tr(SysText.forceUpdateRequired),
                           config.forceUpdateRequired == true
-                              ? '⚠️ Yes'
-                              : '✅ No',
+                              ? context.tr(SysText.yes2)
+                              : context.tr(SysText.no2),
                           config.forceUpdateRequired == true
                               ? context.colors.error
                               : context.status.success,
@@ -341,20 +343,23 @@ class _SystemConfigurationPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Configuration Info',
+                          context.tr(SysText.configurationInfo),
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 16),
-                        _buildInfoRow('Created', config.createdAt.toString()),
+                        _buildInfoRow(
+                          context.tr(CommonText.created),
+                          config.createdAt.toString(),
+                        ),
                         const SizedBox(height: 8),
                         _buildInfoRow(
-                          'Last Updated',
+                          context.tr(SysText.lastUpdated),
                           config.updatedAt.toString(),
                         ),
                         if (config.updatedBy != null) ...[
                           const SizedBox(height: 8),
                           _buildInfoRow(
-                            'Updated By',
+                            context.tr(SysText.updatedBy),
                             config.updatedBy ?? 'N/A',
                           ),
                         ],
@@ -374,7 +379,7 @@ class _SystemConfigurationPageState
     BuildContext context,
     String platform,
     String version,
-    IconData icon,
+    AppIconData icon,
     Color color,
   ) {
     return Container(
@@ -385,7 +390,7 @@ class _SystemConfigurationPageState
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
+          AppIcon(icon, color: color, size: 24),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +402,7 @@ class _SystemConfigurationPageState
                 ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               Text(
-                'Min version: $version',
+                context.tr(SysText.minVersion(version)),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -469,8 +474,8 @@ class _SystemConfigurationPageState
       builder: (context) => AlertDialog(
         title: Text(
           config.isMaintenanceMode
-              ? 'Disable Maintenance Mode'
-              : 'Enable Maintenance Mode',
+              ? context.tr(SysText.disableMaintenanceMode)
+              : context.tr(SysText.enableMaintenanceMode),
         ),
         content: SingleChildScrollView(
           child: Form(
@@ -481,31 +486,37 @@ class _SystemConfigurationPageState
                 if (!config.isMaintenanceMode) ...[
                   TextFormField(
                     controller: titleCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Maintenance Title',
-                      hintText: 'System Maintenance',
+                    decoration: InputDecoration(
+                      labelText: context.tr(SysText.maintenanceTitle),
+                      hintText: context.tr(SysText.systemMaintenance),
                     ),
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                    validator: (v) => v?.isEmpty ?? true
+                        ? context.tr(CommonText.required)
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: messageCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Maintenance Message',
-                      hintText: 'We are performing updates. Expected time...',
+                    decoration: InputDecoration(
+                      labelText: context.tr(SysText.maintenanceMessage),
+                      hintText: context.tr(
+                        SysText.weArePerformingUpdatesExpected,
+                      ),
                     ),
                     maxLines: 3,
-                    validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                    validator: (v) => v?.isEmpty ?? true
+                        ? context.tr(CommonText.required)
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   ListTile(
-                    title: const Text('Expected Completion Time'),
+                    title: Text(context.tr(SysText.expectedCompletionTime)),
                     subtitle: Text(
                       completionTime != null
                           ? completionTime.toString()
-                          : 'Not set',
+                          : context.tr(CommonText.notSet),
                     ),
-                    trailing: const Icon(Icons.access_time),
+                    trailing: const AppIcon(AppIcons.clock),
                     onTap: () async {
                       final picked = await showDatePicker(
                         context: context,
@@ -528,7 +539,7 @@ class _SystemConfigurationPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.tr(CommonText.cancel)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -556,7 +567,9 @@ class _SystemConfigurationPageState
                 Navigator.pop(context);
                 AppFeedback.success(
                   context,
-                  'Maintenance mode ${!config.isMaintenanceMode ? 'enabled' : 'disabled'}',
+                  !config.isMaintenanceMode
+                      ? context.tr(SysText.maintenanceModeEnabled)
+                      : context.tr(SysText.maintenanceModeDisabled),
                 );
               } catch (e) {
                 if (!context.mounted) return;
@@ -568,7 +581,11 @@ class _SystemConfigurationPageState
                   ? context.colors.error
                   : context.status.warning,
             ),
-            child: Text(config.isMaintenanceMode ? 'Disable' : 'Enable'),
+            child: Text(
+              config.isMaintenanceMode
+                  ? context.tr(CommonText.disable)
+                  : context.tr(CommonText.enable),
+            ),
           ),
         ],
       ),
@@ -584,21 +601,18 @@ class _SystemConfigurationPageState
       builder: (context) => AlertDialog(
         title: Text(
           enforce
-              ? 'Enforce New User Verification'
-              : 'Stop Enforcing New User Verification',
+              ? context.tr(SysText.enforceNewUserVerification)
+              : context.tr(SysText.stopEnforcingNewUserVerification),
         ),
         content: Text(
           enforce
-              ? 'New shop owners who have not verified their email or phone '
-                    'will be blocked at login until they do. Make sure email/OTP '
-                    'delivery is working first.'
-              : 'Unverified new shop owners will be able to log in again '
-                    'immediately.',
+              ? context.tr(SysText.newShopOwnersWhoHave)
+              : context.tr(SysText.unverifiedNewShopOwnersWill),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.tr(CommonText.cancel)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -607,7 +621,11 @@ class _SystemConfigurationPageState
                   ? context.status.warning
                   : context.colors.error,
             ),
-            child: Text(enforce ? 'Enforce' : 'Stop Enforcing'),
+            child: Text(
+              enforce
+                  ? context.tr(SysText.enforce)
+                  : context.tr(SysText.stopEnforcing),
+            ),
           ),
         ],
       ),
@@ -623,7 +641,9 @@ class _SystemConfigurationPageState
       if (!context.mounted) return;
       AppFeedback.success(
         context,
-        'New user verification ${enforce ? 'enforced' : 'no longer enforced'}',
+        enforce
+            ? context.tr(SysText.newUserVerificationEnforced)
+            : context.tr(SysText.newUserVerificationNoLonger),
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -651,7 +671,7 @@ class _SystemConfigurationPageState
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Update Version Requirements'),
+        title: Text(context.tr(SysText.updateVersionRequirements)),
         content: SingleChildScrollView(
           child: Form(
             key: formKey,
@@ -660,47 +680,57 @@ class _SystemConfigurationPageState
               children: [
                 TextFormField(
                   controller: androidCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Minimum Android Version',
+                  decoration: InputDecoration(
+                    labelText: context.tr(SysText.minimumAndroidVersion),
                     hintText: '5.0',
                   ),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  validator: (v) => v?.isEmpty ?? true
+                      ? context.tr(CommonText.required)
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: iosCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Minimum iOS Version',
+                  decoration: InputDecoration(
+                    labelText: context.tr(SysText.minimumIosVersion),
                     hintText: '12.0',
                   ),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  validator: (v) => v?.isEmpty ?? true
+                      ? context.tr(CommonText.required)
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: windowsCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Minimum Windows Version',
+                  decoration: InputDecoration(
+                    labelText: context.tr(SysText.minimumWindowsVersion),
                     hintText: '10.0',
                   ),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  validator: (v) => v?.isEmpty ?? true
+                      ? context.tr(CommonText.required)
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: macosCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Minimum macOS Version',
+                  decoration: InputDecoration(
+                    labelText: context.tr(SysText.minimumMacosVersion),
                     hintText: '10.15',
                   ),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  validator: (v) => v?.isEmpty ?? true
+                      ? context.tr(CommonText.required)
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: webCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Minimum Web Version',
+                  decoration: InputDecoration(
+                    labelText: context.tr(SysText.minimumWebVersion),
                     hintText: '1.0.0',
                   ),
-                  validator: (v) => v?.isEmpty ?? true ? 'Required' : null,
+                  validator: (v) => v?.isEmpty ?? true
+                      ? context.tr(CommonText.required)
+                      : null,
                 ),
               ],
             ),
@@ -709,7 +739,7 @@ class _SystemConfigurationPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(context.tr(CommonText.cancel)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -731,14 +761,14 @@ class _SystemConfigurationPageState
                 Navigator.pop(context);
                 AppFeedback.success(
                   context,
-                  'Version requirements updated successfully',
+                  context.tr(SysText.versionRequirementsUpdatedSuccessfully),
                 );
               } catch (e) {
                 if (!context.mounted) return;
                 AppFeedback.error(context, e);
               }
             },
-            child: const Text('Update'),
+            child: Text(context.tr(SysText.update)),
           ),
         ],
       ),

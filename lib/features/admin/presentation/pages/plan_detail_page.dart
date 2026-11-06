@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/edit_plan_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -20,12 +21,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     if (!active) {
       final ok = await AppDialogs.confirm(
         context,
-        title: 'Deactivate plan?',
-        message:
-            '"${plan.name}" will no longer be offered to shops. Existing subscriptions are not affected.',
-        confirmLabel: 'Deactivate',
+        title: context.tr(PlanEditText.deactivatePlan),
+        message: context.tr(PlanEditText.willNoLongerBeOffered(plan.name)),
+        confirmLabel: context.tr(PlanEditText.deactivate),
         destructive: true,
-        icon: Icons.pause_circle_outline_rounded,
+        icon: AppIcons.pauseCircle,
       );
       if (!ok || !mounted) return;
     }
@@ -42,7 +42,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       );
     } catch (e) {
       messenger.showError(
-        'Could not update "${plan.name}": ${friendlyError(e)}',
+        PlanEditText.couldNotUpdate(plan.name, friendlyError(e)).current,
       );
     }
   }
@@ -68,14 +68,14 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
 
     if (state.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Plan Details')),
+        appBar: AppBar(title: Text(context.tr(PlanEditText.planDetails))),
         body: const AppLoadingView(),
       );
     }
 
     if (state.error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Plan Details')),
+        appBar: AppBar(title: Text(context.tr(PlanEditText.planDetails))),
         body: AppErrorView(
           error: state.error,
           onRetry: () {
@@ -91,11 +91,11 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
     final plan = state.plan;
     if (plan == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Plan Details')),
-        body: const AppEmptyView(
-          icon: Icons.inventory_2_outlined,
-          title: 'Plan not found',
-          message: 'It may have been deleted or the link is invalid.',
+        appBar: AppBar(title: Text(context.tr(PlanEditText.planDetails))),
+        body: AppEmptyView(
+          icon: AppIcons.package,
+          title: context.tr(PlanEditText.planNotFound),
+          message: context.tr(PlanEditText.itMayHaveBeenDeleted),
         ),
       );
     }
@@ -105,8 +105,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
         title: Text(plan.name),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
+            tooltip: context.tr(CommonText.refresh),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: () {
               ref.read(planDetailProvider.notifier).loadPlan(plan.id);
             },
@@ -119,8 +119,8 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showEditPlanDialog(context, plan),
-        icon: const Icon(Icons.edit),
-        label: const Text('Edit'),
+        icon: const AppIcon(AppIcons.edit),
+        label: Text(context.tr(CommonText.edit)),
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -185,7 +185,7 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Description',
+                          context.tr(CommonText.description),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
@@ -197,62 +197,74 @@ class _PlanDetailPageState extends ConsumerState<PlanDetailPage> {
                 ),
               ],
               const SizedBox(height: 12),
-              _buildDetailSection(context, 'Pricing', [
+              _buildDetailSection(context, context.tr(PlanEditText.pricing), [
                 _buildDetailRow(
-                  'Monthly',
+                  context.tr(PlanEditText.monthly),
                   currencyFormat.format(plan.priceMonthly),
                 ),
                 _buildDetailRow(
-                  'Yearly',
+                  context.tr(PlanEditText.yearly),
                   currencyFormat.format(plan.priceYearly),
                 ),
-                _buildDetailRow('Currency', plan.currency),
+                _buildDetailRow(context.tr(CommonText.currency), plan.currency),
               ]),
               const SizedBox(height: 12),
-              _buildDetailSection(context, 'Limits', [
+              _buildDetailSection(context, context.tr(PlanEditText.limits), [
                 _buildDetailRow(
-                  'Max Employees',
-                  plan.maxEmployees?.toString() ?? 'Unlimited',
+                  context.tr(PlanEditText.maxEmployees),
+                  plan.maxEmployees?.toString() ??
+                      context.tr(PlanEditText.unlimited2),
                 ),
                 _buildDetailRow(
-                  'Max Products',
-                  plan.maxProducts?.toString() ?? 'Unlimited',
+                  context.tr(PlanEditText.maxProducts),
+                  plan.maxProducts?.toString() ??
+                      context.tr(PlanEditText.unlimited2),
                 ),
                 _buildDetailRow(
-                  'Max Orders/Month',
-                  plan.maxOrdersPerMonth?.toString() ?? 'Unlimited',
+                  context.tr(PlanEditText.maxOrdersMonth),
+                  plan.maxOrdersPerMonth?.toString() ??
+                      context.tr(PlanEditText.unlimited2),
                 ),
                 _buildDetailRow(
-                  'Storage',
+                  context.tr(PlanEditText.storage),
                   plan.maxStorageMb != null
-                      ? '${plan.maxStorageMb} MB'
-                      : 'Unlimited',
+                      ? context.tr(PlanEditText.mb(plan.maxStorageMb))
+                      : context.tr(PlanEditText.unlimited2),
                 ),
               ]),
               if (plan.isTrialAvailable) ...[
                 const SizedBox(height: 12),
-                _buildDetailSection(context, 'Trial', [
-                  _buildDetailRow('Trial Available', 'Yes'),
-                  _buildDetailRow('Trial Days', plan.trialDays.toString()),
+                _buildDetailSection(context, context.tr(PlanEditText.trial), [
+                  _buildDetailRow(
+                    context.tr(PlanEditText.trialAvailable2),
+                    context.tr(CommonText.yes),
+                  ),
+                  _buildDetailRow(
+                    context.tr(PlanEditText.trialDays2),
+                    plan.trialDays.toString(),
+                  ),
                 ]),
               ],
               const SizedBox(height: 12),
-              _buildDetailSection(context, 'Statistics', [
+              _buildDetailSection(context, context.tr(NavText.statistics), [
                 _buildDetailRow(
-                  'Active Subscriptions',
+                  context.tr(PlanEditText.activeSubscriptions),
                   plan.activeSubscriptions.toString(),
                 ),
                 _buildDetailRow(
-                  'Total Subscriptions',
+                  context.tr(PlanEditText.totalSubscriptions),
                   plan.totalSubscriptions.toString(),
                 ),
-                _buildDetailRow('Display Order', plan.displayOrder.toString()),
+                _buildDetailRow(
+                  context.tr(PlanEditText.displayOrder2),
+                  plan.displayOrder.toString(),
+                ),
               ]),
               if (plan.features.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _buildDetailSection(
                   context,
-                  'Features',
+                  context.tr(PlanEditText.features),
                   plan.features.entries
                       .map((e) => _buildDetailRow(e.key, e.value.toString()))
                       .toList(),

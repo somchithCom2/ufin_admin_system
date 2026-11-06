@@ -82,7 +82,7 @@ void main() {
 
       expect(find.byType(AppLogo), findsOneWidget);
       expect(find.text('UFin Admin'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
   });
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -45,15 +46,16 @@ class ShopPickerField extends FormField<ShopSelection> {
     ValueChanged<ShopSelection>? onChanged,
     bool locked = false,
     bool enabled = true,
-    String label = 'Shop',
+    String? label,
     FormFieldValidator<ShopSelection>? validator,
   }) : super(
          enabled: enabled && !locked,
          validator:
-             validator ?? (v) => v == null ? 'Please select a shop' : null,
+             validator ??
+             (v) => v == null ? ShopText.pleaseSelectAShop.current : null,
          builder: (field) => _ShopPickerTile(
            field: field,
-           label: label,
+           label: label ?? field.context.tr(CommonText.shop),
            locked: locked,
            onChanged: onChanged,
          ),
@@ -92,16 +94,16 @@ class _ShopPickerTile extends StatelessWidget {
         isFocused: false,
         decoration: InputDecoration(
           labelText: label,
-          hintText: 'Search and select a shop',
+          hintText: context.tr(ShopText.searchAndSelectAShop),
           errorText: field.errorText,
           enabled: enabled || locked,
-          prefixIcon: const Icon(Icons.storefront_outlined, size: 20),
+          prefixIcon: const AppIcon(AppIcons.shop, size: 20),
           suffixIcon: locked
-              ? const Tooltip(
-                  message: 'Shop cannot be changed here',
-                  child: Icon(Icons.lock_outline_rounded, size: 18),
+              ? Tooltip(
+                  message: context.tr(ShopText.shopCannotBeChangedHere),
+                  child: AppIcon(AppIcons.lock, size: 18),
                 )
-              : const Icon(Icons.unfold_more_rounded),
+              : const AppIcon(AppIcons.chevronsUpDown),
         ),
         child: value == null
             ? null
@@ -263,11 +265,14 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
             child: Row(
               children: [
                 Expanded(
-                  child: Text('Select shop', style: textTheme.titleLarge),
+                  child: Text(
+                    context.tr(ShopText.selectShop),
+                    style: textTheme.titleLarge,
+                  ),
                 ),
                 IconButton(
-                  tooltip: 'Close',
-                  icon: const Icon(Icons.close_rounded),
+                  tooltip: context.tr(CommonText.close),
+                  icon: const AppIcon(AppIcons.close),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -284,9 +289,9 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
                 _debounceTimer?.cancel();
                 _load(reset: true);
               },
-              decoration: const InputDecoration(
-                hintText: 'Search by shop name, owner or phone',
-                prefixIcon: Icon(Icons.search_rounded, size: 20),
+              decoration: InputDecoration(
+                hintText: context.tr(ShopText.searchByShopNameOwner),
+                prefixIcon: AppIcon(AppIcons.search, size: 20),
               ),
             ),
           ),
@@ -303,16 +308,16 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
       if (_error != null) {
         return AppErrorView(
           error: _error,
-          title: "Couldn't load shops",
+          title: context.tr(ShopText.couldnTLoadShops),
           onRetry: () => _load(reset: true),
         );
       }
       return AppEmptyView(
-        icon: Icons.storefront_outlined,
-        title: 'No shops found',
+        icon: AppIcons.shop,
+        title: context.tr(ShopText.noShopsFound2),
         message: _search.text.trim().isEmpty
             ? null
-            : 'No shop matches "${_search.text.trim()}".',
+            : context.tr(ShopText.noShopMatches(_search.text.trim())),
       );
     }
 
@@ -327,8 +332,8 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
                   setState(() => _error = null);
                   _load();
                 },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Load more failed · Retry'),
+                icon: const AppIcon(AppIcons.refresh, size: 18),
+                label: Text(context.tr(ShopText.loadMoreFailedRetry)),
               ),
             ),
           )
@@ -347,7 +352,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
         return ListTile(
           selected: isSelected,
           leading: IconBadge(
-            icon: Icons.storefront_rounded,
+            icon: AppIcons.shop,
             color: tone.foreground(context),
             size: 40,
           ),
@@ -367,7 +372,7 @@ class _ShopPickerSheetState extends ConsumerState<_ShopPickerSheet> {
             overflow: TextOverflow.ellipsis,
           ),
           trailing: isSelected
-              ? Icon(Icons.check_circle_rounded, color: context.colors.primary)
+              ? AppIcon(AppIcons.checkCircle, color: context.colors.primary)
               : StatusBadge.fromStatus(shop.status),
           onTap: () => Navigator.of(context).pop(ShopSelection.fromShop(shop)),
         );

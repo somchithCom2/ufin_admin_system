@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
@@ -73,54 +74,36 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.shop.name} — Products'),
+        title: Text(context.tr(ShopText.products3(widget.shop.name))),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
+            tooltip: context.tr(CommonText.refresh),
+            icon: const AppIcon(AppIcons.refresh),
             onPressed: _applyFilters,
           ),
         ],
       ),
       body: Column(
         children: [
-          // Search & Filter bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: AppSearchField(
-                    controller: _searchController,
-                    hintText: 'Search products…',
-                    onSubmitted: (_) => _applyFilters(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                PopupMenuButton<String?>(
-                  icon: Badge(
-                    isLabelVisible: _inStockFilter != null,
-                    child: const Icon(Icons.filter_list),
-                  ),
-                  onSelected: (value) {
-                    setState(() {
-                      _inStockFilter = value == 'inStock' ? true : null;
-                    });
-                    _applyFilters();
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: null,
-                      child: Text('All Products'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'inStock',
-                      child: Text('In Stock Only'),
-                    ),
-                  ],
-                ),
-              ],
+          FilterBar(
+            search: AppSearchField(
+              controller: _searchController,
+              hintText: context.tr(ShopText.searchProducts),
+              onSubmitted: (_) => _applyFilters(),
             ),
+            filters: [
+              FilterSelect<bool>(
+                icon: AppIcons.packages,
+                label: context.tr(CommonText.stock),
+                value: _inStockFilter,
+                allLabel: context.tr(ShopText.allProducts),
+                options: [FilterOption(true, context.tr(ShopText.inStockOnly))],
+                onChanged: (inStock) {
+                  setState(() => _inStockFilter = inStock);
+                  _applyFilters();
+                },
+              ),
+            ],
           ),
           // Summary chip row
           if (state.products.isNotEmpty)
@@ -129,7 +112,11 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
               child: Row(
                 children: [
                   Text(
-                    '${state.products.length} product${state.products.length == 1 ? '' : 's'} loaded',
+                    state.products.length == 1
+                        ? context.tr(ShopText.n1ProductLoaded)
+                        : context.tr(
+                            ShopText.productsLoaded(state.products.length),
+                          ),
                     style: TextStyle(
                       color: context.colors.onSurfaceVariant,
                       fontSize: 12,
@@ -138,7 +125,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                   if (state.hasNext) ...[
                     const SizedBox(width: 4),
                     Text(
-                      '• more available',
+                      context.tr(ShopText.moreAvailable),
                       style: TextStyle(
                         color: context.status.info,
                         fontSize: 12,
@@ -156,10 +143,10 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                 : state.error != null && state.products.isEmpty
                 ? _buildError(state.error!)
                 : state.products.isEmpty
-                ? const AppEmptyView(
-                    icon: Icons.inventory_outlined,
-                    title: 'No products found',
-                    message: 'This shop has no products matching the filters.',
+                ? AppEmptyView(
+                    icon: AppIcons.packages,
+                    title: context.tr(ShopText.noProductsFound),
+                    message: context.tr(ShopText.thisShopHasNoProducts),
                   )
                 : _buildList(state.products, state.isLoadingMore),
           ),
@@ -233,7 +220,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
           children: [
             if (product.sku != null)
               Text(
-                'SKU: ${product.sku}',
+                context.tr(ShopText.sku(product.sku)),
                 style: TextStyle(
                   fontSize: 12,
                   color: context.colors.onSurfaceVariant,
@@ -254,8 +241,8 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
                 const SizedBox(width: 4),
                 _chip(
                   isOutOfStock
-                      ? 'Out of Stock'
-                      : 'Qty: ${product.stockQuantity}',
+                      ? context.tr(ShopText.outOfStock)
+                      : context.tr(ShopText.qty(product.stockQuantity)),
                   isOutOfStock ? context.colors.error : context.status.success,
                 ),
               ],
@@ -263,7 +250,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
           ],
         ),
         trailing: !product.isActive
-            ? _chip('Inactive', context.status.neutral)
+            ? _chip(context.tr(ShopText.inactive2), context.status.neutral)
             : null,
       ),
     );
@@ -272,7 +259,7 @@ class _ShopProductsPageState extends ConsumerState<ShopProductsPage> {
   Widget _productIcon(AdminProduct product) {
     return CircleAvatar(
       backgroundColor: context.status.info.withValues(alpha: 0.1),
-      child: Icon(Icons.inventory_2, color: context.status.info),
+      child: AppIcon(AppIcons.package, color: context.status.info),
     );
   }
 

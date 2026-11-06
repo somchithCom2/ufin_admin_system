@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ufin_admin_system/config/theme/app_theme.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/services/dio_client.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/shops_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import '../helpers/app_icon_finder.dart';
 
 Map<String, dynamic> _reset({required bool done}) => {
   'shopId': 7,
@@ -150,13 +152,13 @@ void main() {
     ) async {
       await _openShops(tester, _ResetRepo());
 
-      await tester.tap(find.byIcon(Icons.more_vert).first);
+      await tester.tap(find.byAppIcon(AppIcons.moreVertical).first);
       await tester.pumpAndSettle();
       expect(find.text('Reset data…'), findsOneWidget);
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.more_vert).last);
+      await tester.tap(find.byAppIcon(AppIcons.moreVertical).last);
       await tester.pumpAndSettle();
       expect(find.text('Reset data…'), findsNothing);
     });
@@ -319,7 +321,7 @@ Future<void> _openReset(
   Size size = const Size(1280, 1000),
 }) async {
   await _openShops(tester, repo, size: size);
-  await tester.tap(find.byIcon(Icons.more_vert).first);
+  await tester.tap(find.byAppIcon(AppIcons.moreVertical).first);
   await tester.pumpAndSettle();
   await tester.tap(find.text('Reset data…'));
   await tester.pumpAndSettle();

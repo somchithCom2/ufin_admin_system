@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscriptions_list_page.dart';
@@ -109,21 +110,18 @@ void main() {
     expect(repository.queries.last.search, 'noy');
     expect(repository.queries.last.paid, isTrue);
 
-    await tester.tap(find.text('Free'));
-    await tester.pumpAndSettle();
+    await _pick(tester, chip: 'Paid', option: 'Free');
     expect(repository.queries.last.planCode, 'free');
     expect(repository.queries.last.paid, isFalse);
     expect(repository.queries.last.search, 'noy');
 
-    await tester.ensureVisible(find.text('Expired'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Expired'));
-    await tester.pumpAndSettle();
+    await _pick(tester, chip: 'Status', option: 'Expired');
     expect(repository.queries.last.status, 'expired');
     expect(repository.queries.last.planCode, 'free');
+    // The chips now name the chosen values.
+    expect(find.widgetWithText(FilterButton, 'Expired'), findsOneWidget);
 
-    await tester.tap(find.text('All plans'));
-    await tester.pumpAndSettle();
+    await _pick(tester, chip: 'Free', option: 'All plans');
     expect(repository.queries.last.planCode, isNull);
     expect(repository.queries.last.paid, isFalse);
   });
@@ -151,10 +149,21 @@ void main() {
       tester.element(find.byType(SubscriptionsListPage)),
     );
 
-    await tester.tap(find.text('Free'));
-    await tester.pumpAndSettle();
+    await _pick(tester, chip: 'Paid', option: 'Free');
     await container.read(subscriptionsProvider.notifier).refresh();
 
     expect(repository.queries.last.planCode, 'free');
   });
+}
+
+/// Opens the filter chip showing [chip] and chooses [option] from its menu.
+Future<void> _pick(
+  WidgetTester tester, {
+  required String chip,
+  required String option,
+}) async {
+  await tester.tap(find.widgetWithText(FilterButton, chip));
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(MenuItemButton, option));
+  await tester.pumpAndSettle();
 }

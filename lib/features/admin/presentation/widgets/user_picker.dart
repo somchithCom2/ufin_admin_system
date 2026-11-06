@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -49,7 +50,7 @@ class UserPickerField extends FormField<UserSelection> {
     super.key,
     super.initialValue,
     ValueChanged<UserSelection?>? onChanged,
-    String label = 'Account',
+    String? label,
     String? helperText,
     bool required = true,
     Set<int> excludeIds = const {},
@@ -57,10 +58,12 @@ class UserPickerField extends FormField<UserSelection> {
   }) : super(
          validator:
              validator ??
-             (v) => required && v == null ? 'Please select an account' : null,
+             (v) => required && v == null
+                 ? UserText.pleaseSelectAnAccount.current
+                 : null,
          builder: (field) => _UserPickerTile(
            field: field,
-           label: label,
+           label: label ?? field.context.tr(NavText.account),
            helperText: helperText,
            clearable: !required,
            excludeIds: excludeIds,
@@ -112,18 +115,18 @@ class _UserPickerTile extends StatelessWidget {
         isEmpty: value == null,
         decoration: InputDecoration(
           labelText: label,
-          hintText: 'Search and select an account',
+          hintText: context.tr(UserText.searchAndSelectAnAccount),
           helperText: helperText,
           helperMaxLines: 3,
           errorText: field.errorText,
-          prefixIcon: const Icon(Icons.person_outline_rounded, size: 20),
+          prefixIcon: const AppIcon(AppIcons.person, size: 20),
           suffixIcon: clearable && value != null
               ? IconButton(
-                  tooltip: 'Clear',
-                  icon: const Icon(Icons.close_rounded, size: 18),
+                  tooltip: context.tr(CommonText.clear),
+                  icon: const AppIcon(AppIcons.close, size: 18),
                   onPressed: _clear,
                 )
-              : const Icon(Icons.unfold_more_rounded),
+              : const AppIcon(AppIcons.chevronsUpDown),
         ),
         child: value == null
             ? null
@@ -292,11 +295,14 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
             child: Row(
               children: [
                 Expanded(
-                  child: Text('Select account', style: context.text.titleLarge),
+                  child: Text(
+                    context.tr(UserText.selectAccount),
+                    style: context.text.titleLarge,
+                  ),
                 ),
                 IconButton(
-                  tooltip: 'Close',
-                  icon: const Icon(Icons.close_rounded),
+                  tooltip: context.tr(CommonText.close),
+                  icon: const AppIcon(AppIcons.close),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -313,9 +319,9 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
                 _debounceTimer?.cancel();
                 _load(reset: true);
               },
-              decoration: const InputDecoration(
-                hintText: 'Search by username, name, phone or email',
-                prefixIcon: Icon(Icons.search_rounded, size: 20),
+              decoration: InputDecoration(
+                hintText: context.tr(UserText.searchByUsernameNamePhone),
+                prefixIcon: AppIcon(AppIcons.search, size: 20),
               ),
             ),
           ),
@@ -332,16 +338,18 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
       if (_error != null) {
         return AppErrorView(
           error: _error,
-          title: "Couldn't load accounts",
+          title: context.tr(UserText.couldnTLoadAccounts),
           onRetry: () => _load(reset: true),
         );
       }
       return AppEmptyView(
-        icon: Icons.person_search_outlined,
-        title: 'No accounts found',
+        icon: AppIcons.userSearch,
+        title: context.tr(UserText.noAccountsFound),
         message: _search.text.trim().isEmpty
             ? null
-            : 'No active staff account matches "${_search.text.trim()}".',
+            : context.tr(
+                UserText.noActiveStaffAccountMatches(_search.text.trim()),
+              ),
       );
     }
 
@@ -356,8 +364,8 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
                   setState(() => _error = null);
                   _load();
                 },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Load more failed · Retry'),
+                icon: const AppIcon(AppIcons.refresh, size: 18),
+                label: Text(context.tr(UserText.loadMoreFailedRetry)),
               ),
             ),
           )
@@ -376,7 +384,7 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
         return ListTile(
           selected: isSelected,
           leading: IconBadge(
-            icon: Icons.person_rounded,
+            icon: AppIcons.person,
             color: context.colors.primary,
             size: 40,
           ),
@@ -392,13 +400,15 @@ class _UserPickerSheetState extends ConsumerState<_UserPickerSheet> {
               user.username,
               if ((user.phone ?? '').isNotEmpty) user.phone!,
               if (user.shops.isNotEmpty)
-                '${user.shops.length} shop${user.shops.length == 1 ? '' : 's'}',
+                user.shops.length == 1
+                    ? context.tr(UserText.n1Shop)
+                    : context.tr(UserText.shops2(user.shops.length)),
             ].join(' · '),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           trailing: isSelected
-              ? Icon(Icons.check_circle_rounded, color: context.colors.primary)
+              ? AppIcon(AppIcons.checkCircle, color: context.colors.primary)
               : null,
           onTap: () => Navigator.of(context).pop(selection),
         );

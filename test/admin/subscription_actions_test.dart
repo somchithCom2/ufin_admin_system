@@ -2,10 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/data/repositories/admin_repository.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/subscription_action_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
+import '../helpers/app_icon_finder.dart';
 
 class LifecycleRepository extends AdminRepository {
   LifecycleRepository() : super(dio: Dio());
@@ -174,7 +176,7 @@ void main() {
     // Label "Shop" plus the pre-filled shop name ("Shop" in this fixture).
     expect(find.text('Shop'), findsNWidgets(2));
     expect(find.text('#5'), findsOneWidget);
-    expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+    expect(find.byAppIcon(AppIcons.lock), findsOneWidget);
 
     await tester.tap(find.text('#5'));
     await tester.pumpAndSettle();

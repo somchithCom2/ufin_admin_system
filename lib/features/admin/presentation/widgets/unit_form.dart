@@ -1,21 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
 /// Unit categories the backend accepts, with a label and example for each.
-const unitCategories = <String, (String, String)>{
-  'piece': ('Piece', 'pc, box, pack'),
-  'weight': ('Weight', 'kg, g, lb'),
-  'volume': ('Volume', 'L, ml'),
-  'length': ('Length', 'm, cm'),
-  'area': ('Area', 'm², ft²'),
-  'custom': ('Custom', 'anything else'),
+const unitCategories = <String, (Tr, String)>{
+  'piece': (Tr('Piece', 'ຊິ້ນ'), 'pc, box, pack'),
+  'weight': (Tr('Weight', 'ນ້ຳໜັກ'), 'kg, g, lb'),
+  'volume': (Tr('Volume', 'ປະລິມາດ'), 'L, ml'),
+  'length': (Tr('Length', 'ຄວາມຍາວ'), 'm, cm'),
+  'area': (Tr('Area', 'ພື້ນທີ່'), 'm², ft²'),
+  'custom': (Tr('Custom', 'ກຳນົດເອງ'), '…'),
 };
 
+/// Display name for a unit category code, falling back to the raw code.
+String unitCategoryLabel(BuildContext context, String code) {
+  final entry = unitCategories[code.toLowerCase()];
+  return entry == null ? humanize(code) : context.tr(entry.$1);
+}
+
 const _extraLanguages = [
-  ('th', 'Thai'),
-  ('vi', 'Vietnamese'),
-  ('zh', 'Chinese'),
+  ('th', ShopTypeText.thai),
+  ('vi', ShopTypeText.vietnamese),
+  ('zh', ShopTypeText.chinese),
 ];
 
 /// Opens the create (when [existing] is null) or edit form. [save] should
@@ -74,6 +81,10 @@ class _UnitFormState extends State<_UnitForm> {
 
   bool get _hasExtraNames =>
       _extraLanguages.any((l) => _names[l.$1]!.text.trim().isNotEmpty);
+
+  /// Drives the SVG chevron, which ExpansionTile only rotates for its own
+  /// default icon.
+  late bool _moreLanguagesOpen = _hasExtraNames;
 
   @override
   void dispose() {
@@ -148,37 +159,45 @@ class _UnitFormState extends State<_UnitForm> {
   Widget build(BuildContext context) {
     return AppFormModal(
       formKey: _formKey,
-      icon: _isEdit ? Icons.edit_outlined : Icons.straighten_rounded,
-      title: _isEdit ? 'Edit unit' : 'New unit',
+      icon: _isEdit ? AppIcons.edit : AppIcons.ruler,
+      title: _isEdit
+          ? context.tr(ShopTypeText.editUnit)
+          : context.tr(ShopTypeText.newUnit),
       subtitle: _isEdit
           ? '${widget.existing!.name['en'] ?? widget.existing!.code} · ${widget.existing!.abbreviation}'
-          : 'A unit of measure shops can sell products in',
-      submitLabel: _isEdit ? 'Save changes' : 'Create unit',
+          : context.tr(ShopTypeText.aUnitOfMeasureShops),
+      submitLabel: _isEdit
+          ? context.tr(CommonText.saveChanges)
+          : context.tr(ShopTypeText.createUnit),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
         FormSection(
-          title: 'Basics',
+          title: context.tr(ShopTypeText.basics2),
           children: [
             FormRow(
               children: [
                 TextFormField(
                   controller: _code,
                   autofocus: !_isEdit,
-                  decoration: const InputDecoration(
-                    labelText: 'Code',
+                  decoration: InputDecoration(
+                    labelText: context.tr(CommonText.code),
                     hintText: 'piece',
                   ),
-                  validator: FormValidators.required('Code'),
+                  validator: FormValidators.required(
+                    context.tr(CommonText.code),
+                  ),
                 ),
                 TextFormField(
                   controller: _abbr,
-                  decoration: const InputDecoration(
-                    labelText: 'Abbreviation',
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.abbreviation2),
                     hintText: 'pc',
                   ),
-                  validator: FormValidators.required('Abbreviation'),
+                  validator: FormValidators.required(
+                    context.tr(ShopTypeText.abbreviation2),
+                  ),
                 ),
               ],
             ),
@@ -186,15 +205,18 @@ class _UnitFormState extends State<_UnitForm> {
               flex: const [3, 2],
               children: [
                 DropdownButtonFormField<String>(
+                  icon: const AppIcon(AppIcons.chevronDown, size: 20),
                   initialValue: _category,
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Category'),
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.category2),
+                  ),
                   items: [
                     for (final e in unitCategories.entries)
                       DropdownMenuItem(
                         value: e.key,
                         child: Text(
-                          '${e.value.$1}  ·  ${e.value.$2}',
+                          '${context.tr(e.value.$1)}  ·  ${e.value.$2}',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -208,12 +230,16 @@ class _UnitFormState extends State<_UnitForm> {
                       ),
                   ],
                   onChanged: (v) => setState(() => _category = v),
-                  validator: (v) => v == null ? 'Choose a category' : null,
+                  validator: (v) => v == null
+                      ? context.tr(ShopTypeText.chooseACategory)
+                      : null,
                 ),
                 TextFormField(
                   controller: _sortOrder,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Sort order'),
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.sortOrder),
+                  ),
                   validator: FormValidators.optionalInt,
                 ),
               ],
@@ -221,21 +247,25 @@ class _UnitFormState extends State<_UnitForm> {
           ],
         ),
         FormSection(
-          title: 'Name',
+          title: context.tr(CommonText.name),
           children: [
             FormRow(
               children: [
                 TextFormField(
                   controller: _names['en'],
-                  decoration: const InputDecoration(
-                    labelText: 'English',
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.english2),
                     hintText: 'Piece',
                   ),
-                  validator: FormValidators.required('English name'),
+                  validator: FormValidators.required(
+                    context.tr(ShopTypeText.englishName2),
+                  ),
                 ),
                 TextFormField(
                   controller: _names['lo'],
-                  decoration: const InputDecoration(labelText: 'Lao'),
+                  decoration: InputDecoration(
+                    labelText: context.tr(ShopTypeText.lao2),
+                  ),
                 ),
               ],
             ),
@@ -245,23 +275,30 @@ class _UnitFormState extends State<_UnitForm> {
                 context,
               ).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
-                initiallyExpanded: _hasExtraNames,
+                initiallyExpanded: _moreLanguagesOpen,
+                onExpansionChanged: (open) =>
+                    setState(() => _moreLanguagesOpen = open),
+                trailing: AnimatedRotation(
+                  turns: _moreLanguagesOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: const AppIcon(AppIcons.chevronDown, size: 20),
+                ),
                 tilePadding: EdgeInsets.zero,
                 childrenPadding: const EdgeInsets.only(top: 4),
                 title: Text(
-                  'More languages',
+                  context.tr(ShopTypeText.moreLanguages),
                   style: context.text.bodyMedium?.copyWith(
                     color: context.colors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                subtitle: const Text('Thai, Vietnamese, Chinese'),
+                subtitle: Text(context.tr(ShopTypeText.thaiVietnameseChinese)),
                 children: [
                   for (final (i, (lang, label)) in _extraLanguages.indexed) ...[
                     if (i > 0) const SizedBox(height: 14),
                     TextFormField(
                       controller: _names[lang],
-                      decoration: InputDecoration(labelText: label),
+                      decoration: InputDecoration(labelText: context.tr(label)),
                     ),
                   ],
                 ],
@@ -270,26 +307,26 @@ class _UnitFormState extends State<_UnitForm> {
           ],
         ),
         FormSection(
-          title: 'Details',
+          title: context.tr(CommonText.details),
           children: [
             TextFormField(
               controller: _description,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
+              decoration: InputDecoration(
+                labelText: context.tr(ShopTypeText.descriptionOptional),
                 alignLabelWithHint: true,
               ),
             ),
             FormSwitch(
-              title: 'Active',
-              subtitle: 'Shops can pick this unit for products',
+              title: context.tr(ShopTypeText.active3),
+              subtitle: context.tr(ShopTypeText.shopsCanPickThisUnit),
               value: _isActive,
               onChanged: (v) => setState(() => _isActive = v),
             ),
             FormSwitch(
-              title: 'Default unit',
-              subtitle: 'Pre-selected when creating new products',
+              title: context.tr(ShopTypeText.defaultUnit),
+              subtitle: context.tr(ShopTypeText.preSelectedWhenCreatingNew),
               value: _isDefault,
               onChanged: (v) => setState(() => _isDefault = v),
             ),

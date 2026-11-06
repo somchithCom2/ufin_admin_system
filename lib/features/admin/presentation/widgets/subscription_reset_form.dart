@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 
@@ -52,16 +53,12 @@ class _SubscriptionResetFormState extends State<_SubscriptionResetForm> {
   String get _hint {
     if (_isTrial) {
       return _endsNow
-          ? 'Ends the trial now. The shop cannot open new bills until it picks '
-                'a plan.'
-          : 'Leave empty for a full new trial, or enter the days left. 0 ends '
-                'it now. No payment is recorded.';
+          ? context.tr(SubsText.endsTheTrialNowThe)
+          : context.tr(SubsText.leaveEmptyForAFull);
     }
     return _endsNow
-        ? 'Ends this paid plan now and moves the shop to Free, where it cannot '
-              'open new bills. A reset will not bring the plan back.'
-        : 'Leave empty for a new billing period, or enter the days left. 0 '
-              'ends it now. No payment is recorded.';
+        ? context.tr(SubsText.endsThisPaidPlanNow)
+        : context.tr(SubsText.leaveEmptyForANew);
   }
 
   @override
@@ -75,8 +72,8 @@ class _SubscriptionResetFormState extends State<_SubscriptionResetForm> {
     final text = value?.trim() ?? '';
     if (text.isEmpty) return null;
     final days = int.tryParse(text);
-    if (days == null) return 'Enter a whole number of days';
-    if (days > _maxDays) return 'Enter 0 to $_maxDays days';
+    if (days == null) return context.tr(SubsText.enterAWholeNumberOf2);
+    if (days > _maxDays) return context.tr(SubsText.enter0ToDays(_maxDays));
     return null;
   }
 
@@ -104,16 +101,18 @@ class _SubscriptionResetFormState extends State<_SubscriptionResetForm> {
   Widget build(BuildContext context) {
     return AppFormModal(
       formKey: _formKey,
-      icon: Icons.restart_alt_rounded,
-      title: 'Reset subscription',
+      icon: AppIcons.reset,
+      title: context.tr(SubsText.resetSubscription),
       subtitle: widget.subscription.shopName,
-      submitLabel: _endsNow ? 'End now' : 'Reset',
+      submitLabel: _endsNow
+          ? context.tr(SubsText.endNow)
+          : context.tr(CommonText.reset),
       onSubmit: _submit,
       saving: _saving,
       error: _error,
       children: [
         FormSection(
-          title: 'Period',
+          title: context.tr(SubsText.period2),
           hint: _hint,
           children: [
             TextFormField(
@@ -121,9 +120,9 @@ class _SubscriptionResetFormState extends State<_SubscriptionResetForm> {
               autofocus: true,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Days left (optional)',
-                suffixText: 'days',
+              decoration: InputDecoration(
+                labelText: context.tr(SubsText.daysLeftOptional),
+                suffixText: context.tr(SubsText.days2),
               ),
               validator: _validateDays,
               onChanged: (_) => setState(() {}),
@@ -131,14 +130,14 @@ class _SubscriptionResetFormState extends State<_SubscriptionResetForm> {
           ],
         ),
         FormSection(
-          title: 'Reason',
+          title: context.tr(CommonText.reason),
           children: [
             TextFormField(
               controller: _reason,
               minLines: 2,
               maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Reason (optional)',
+              decoration: InputDecoration(
+                labelText: context.tr(SubsText.reasonOptional2),
                 alignLabelWithHint: true,
               ),
               onFieldSubmitted: (_) => _submit(),

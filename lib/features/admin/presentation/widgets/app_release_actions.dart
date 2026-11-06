@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
@@ -42,21 +43,19 @@ abstract final class AppReleaseActions {
     final platform = platformLabel(release.platform);
     final ok = await AppDialogs.confirm(
       context,
-      title: 'Publish v${release.versionName}?',
+      title: context.tr(ReleaseText.publishV(release.versionName)),
       message: release.isMandatory
-          ? 'Every $platform shop on an older version will be required to '
-                'update before using the app.'
-          : 'Every $platform shop on an older version will be offered this '
-                'update.',
-      confirmLabel: 'Publish',
-      icon: Icons.publish_rounded,
+          ? context.tr(ReleaseText.everyShopOnAnOlder(platform))
+          : context.tr(ReleaseText.everyShopOnAnOlder2(platform)),
+      confirmLabel: context.tr(ReleaseText.publish3),
+      icon: AppIcons.upload,
     );
     if (!ok || !context.mounted) return null;
     return _run(
       context,
       ref,
       () => ref.read(adminRepositoryProvider).publishAppRelease(release.id),
-      'v${release.versionName} published',
+      context.tr(ReleaseText.vPublished(release.versionName)),
     );
   }
 
@@ -67,19 +66,17 @@ abstract final class AppReleaseActions {
   ) async {
     final ok = await AppDialogs.confirm(
       context,
-      title: 'Unpublish v${release.versionName}?',
-      message:
-          'Shops will stop being offered this update. Shops that already '
-          'installed it are not affected.',
-      confirmLabel: 'Unpublish',
-      icon: Icons.unpublished_outlined,
+      title: context.tr(ReleaseText.unpublishV(release.versionName)),
+      message: context.tr(ReleaseText.shopsWillStopBeingOffered),
+      confirmLabel: context.tr(ReleaseText.unpublish3),
+      icon: AppIcons.eyeOff,
     );
     if (!ok || !context.mounted) return null;
     return _run(
       context,
       ref,
       () => ref.read(adminRepositoryProvider).unpublishAppRelease(release.id),
-      'v${release.versionName} unpublished',
+      context.tr(ReleaseText.vUnpublished(release.versionName)),
     );
   }
 
@@ -91,21 +88,20 @@ abstract final class AppReleaseActions {
   ) async {
     final ok = await AppDialogs.confirm(
       context,
-      title: 'Delete v${release.versionName}?',
+      title: context.tr(ReleaseText.deleteV(release.versionName)),
       message: release.isPublished
-          ? 'This release is live. Deleting it stops shops being offered it, '
-                'and it is removed permanently.'
-          : 'This draft is removed permanently.',
-      confirmLabel: 'Delete',
+          ? context.tr(ReleaseText.thisReleaseIsLiveDeleting)
+          : context.tr(ReleaseText.thisDraftIsRemovedPermanently),
+      confirmLabel: context.tr(CommonText.delete),
       destructive: true,
-      icon: Icons.delete_outline_rounded,
+      icon: AppIcons.delete,
     );
     if (!ok || !context.mounted) return false;
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(adminRepositoryProvider).deleteAppRelease(release.id);
       _changed(ref);
-      messenger.showSuccess('v${release.versionName} deleted');
+      messenger.showSuccess(ReleaseText.vDeleted(release.versionName).current);
       return true;
     } catch (e) {
       if (context.mounted) AppFeedback.error(context, e);
@@ -131,7 +127,7 @@ abstract final class AppReleaseActions {
         _changed(ref);
       },
     );
-    if (saved) messenger.showSuccess('Release updated');
+    if (saved) messenger.showSuccess(ReleaseText.releaseUpdated.current);
     return updated;
   }
 
@@ -164,8 +160,11 @@ abstract final class AppReleaseActions {
       final r = created;
       messenger.showSuccess(
         r == null
-            ? 'Release saved as draft'
-            : '${platformLabel(r.platform)} v${r.versionName} saved as draft',
+            ? ReleaseText.releaseSavedAsDraft.current
+            : ReleaseText.vSavedAsDraft(
+                platformLabel(r.platform),
+                r.versionName,
+              ).current,
       );
     }
     return created;
@@ -178,7 +177,9 @@ abstract final class AppReleaseActions {
     required String what,
   }) async {
     await Clipboard.setData(ClipboardData(text: text));
-    if (context.mounted) AppFeedback.success(context, '$what copied');
+    if (context.mounted) {
+      AppFeedback.success(context, context.tr(ReleaseText.copied(what)));
+    }
   }
 
   /// The notes as a shop sees them, ready to paste into a store listing.

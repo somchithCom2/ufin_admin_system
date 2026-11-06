@@ -1,3 +1,4 @@
+import 'package:ufin_admin_system/l10n/l10n.dart';
 import 'admin_shop.dart';
 
 /// Makes an existing top-level shop a branch of another
@@ -172,9 +173,9 @@ class OwnerChange {
   );
 
   String get sourceLabel => switch (source) {
-    'link' => 'Linked into a branch group',
-    'unlink' => 'Unlinked from a branch group',
-    'owner_change' => 'Owner changed',
-    _ => 'Owner changed',
+    'link' => ModelText.linkedIntoABranchGroup.current,
+    'unlink' => ModelText.unlinkedFromABranchGroup.current,
+    'owner_change' => ModelText.ownerChanged.current,
+    _ => ModelText.ownerChanged.current,
   };
 }

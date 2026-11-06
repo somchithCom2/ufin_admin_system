@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ufin_admin_system/config/routes/app_routes.dart';
+import 'package:ufin_admin_system/core/icons/app_icons.dart';
 import 'package:ufin_admin_system/core/providers/auth_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
@@ -71,169 +72,260 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     });
 
     final error = auth.isLoading ? null : auth.error;
+    final isWide = MediaQuery.sizeOf(context).width >= 960;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Center(child: AppLogo(size: 56)),
-                  const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'Welcome back',
-                    textAlign: TextAlign.center,
-                    style: textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Sign in to the UFin admin console',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xl),
-                      child: Form(
-                        key: _formKey,
-                        child: AutofillGroup(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 180),
-                                child: error == null
-                                    ? const SizedBox.shrink()
-                                    : Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: AppSpacing.lg,
-                                        ),
-                                        child: _ErrorBanner(
-                                          message: friendlyError(error),
-                                        ),
-                                      ),
-                              ),
-                              _FieldLabel('Username'),
-                              TextFormField(
-                                controller: _usernameController,
-                                enabled: !auth.isLoading,
-                                autofillHints: const [AutofillHints.username],
-                                textInputAction: TextInputAction.next,
-                                keyboardType: TextInputType.text,
-                                autocorrect: false,
-                                decoration: const InputDecoration(
-                                  hintText: 'Enter your username',
-                                  prefixIcon: Icon(
-                                    Icons.person_outline_rounded,
-                                    size: 20,
-                                  ),
-                                ),
-                                onChanged: (_) => _clearErrorOnEdit(),
-                                onFieldSubmitted: (_) =>
-                                    _passwordFocus.requestFocus(),
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty)
-                                    ? 'Please enter your username'
-                                    : null,
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                              _FieldLabel('Password'),
-                              TextFormField(
-                                controller: _passwordController,
-                                focusNode: _passwordFocus,
-                                enabled: !auth.isLoading,
-                                obscureText: _obscure,
-                                autofillHints: const [AutofillHints.password],
-                                textInputAction: TextInputAction.done,
-                                decoration: InputDecoration(
-                                  hintText: 'Enter your password',
-                                  prefixIcon: const Icon(
-                                    Icons.lock_outline_rounded,
-                                    size: 20,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    tooltip: _obscure
-                                        ? 'Show password'
-                                        : 'Hide password',
-                                    icon: Icon(
-                                      _obscure
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      size: 20,
-                                    ),
-                                    onPressed: () =>
-                                        setState(() => _obscure = !_obscure),
-                                  ),
-                                ),
-                                onChanged: (_) => _clearErrorOnEdit(),
-                                onFieldSubmitted: (_) => _submit(),
-                                validator: (v) => (v == null || v.isEmpty)
-                                    ? 'Please enter your password'
-                                    : null,
-                              ),
-                              const SizedBox(height: AppSpacing.xl),
-                              FilledButton(
-                                onPressed: auth.isLoading ? null : _submit,
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size.fromHeight(48),
-                                ),
-                                child: auth.isLoading
-                                    ? Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: scheme.onSurfaceVariant,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          const Text('Signing in…'),
-                                        ],
-                                      )
-                                    : const Text('Sign in'),
-                              ),
-                            ],
-                          ),
-                        ),
+    final form = ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 380),
+      child: Form(
+        key: _formKey,
+        child: AutofillGroup(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (!isWide) ...[
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppLogo(size: 44),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
+              Text(
+                context.tr(AuthText.welcome),
+                style: textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                context.tr(AuthText.subtitle),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                child: error == null
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        child: _ErrorBanner(message: friendlyError(error)),
                       ),
+              ),
+              _FieldLabel(context.tr(AuthText.username)),
+              TextFormField(
+                controller: _usernameController,
+                enabled: !auth.isLoading,
+                autofillHints: const [AutofillHints.username],
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.text,
+                autocorrect: false,
+                decoration: InputDecoration(
+                  hintText: context.tr(AuthText.usernameHint),
+                  prefixIcon: const AppIcon(AppIcons.person, size: 20),
+                ),
+                onChanged: (_) => _clearErrorOnEdit(),
+                onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? context.tr(AuthText.usernameRequired)
+                    : null,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _FieldLabel(context.tr(AuthText.password)),
+              TextFormField(
+                controller: _passwordController,
+                focusNode: _passwordFocus,
+                enabled: !auth.isLoading,
+                obscureText: _obscure,
+                autofillHints: const [AutofillHints.password],
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  hintText: context.tr(AuthText.passwordHint),
+                  prefixIcon: const AppIcon(AppIcons.lock, size: 20),
+                  suffixIcon: IconButton(
+                    tooltip: context.tr(
+                      _obscure ? AuthText.showPassword : AuthText.hidePassword,
                     ),
+                    icon: AppIcon(
+                      _obscure ? AppIcons.eye : AppIcons.eyeOff,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _obscure = !_obscure),
                   ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.shield_outlined,
-                        size: 14,
+                ),
+                onChanged: (_) => _clearErrorOnEdit(),
+                onFieldSubmitted: (_) => _submit(),
+                validator: (v) => (v == null || v.isEmpty)
+                    ? context.tr(AuthText.passwordRequired)
+                    : null,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              FilledButton(
+                onPressed: auth.isLoading ? null : _submit,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                ),
+                child: auth.isLoading
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(context.tr(AuthText.signingIn)),
+                        ],
+                      )
+                    : Text(context.tr(AuthText.signIn)),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Row(
+                children: [
+                  AppIcon(
+                    AppIcons.shieldLock,
+                    size: 14,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      context.tr(AuthText.restricted),
+                      style: textTheme.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          'Restricted to administrator accounts',
-                          textAlign: TextAlign.center,
-                          style: textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
         ),
+      ),
+    );
+
+    final formPane = SafeArea(
+      child: Column(
+        children: [
+          // Language and theme are reachable before signing in.
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 12, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                LanguageToggle(),
+                SizedBox(width: 4),
+                ThemeModeButton(),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(28, 16, 28, 40),
+                child: form,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Scaffold(
+      body: isWide
+          ? Row(
+              children: [
+                const Expanded(flex: 5, child: _BrandPanel()),
+                Expanded(
+                  flex: 6,
+                  child: ColoredBox(color: scheme.surface, child: formPane),
+                ),
+              ],
+            )
+          : formPane,
+    );
+  }
+}
+
+/// Left half of the wide login layout: brand, one-line pitch, highlights.
+class _BrandPanel extends StatelessWidget {
+  const _BrandPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colors;
+    final text = context.text;
+    final points = [
+      (AppIcons.badgeCheck, AuthText.heroPoint1),
+      (AppIcons.wallet, AuthText.heroPoint2),
+      (AppIcons.rocket, AuthText.heroPoint3),
+    ];
+    return Container(
+      color: scheme.surfaceContainerLowest,
+      padding: const EdgeInsets.fromLTRB(56, 48, 56, 48),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const AppLogo(size: 36),
+              const SizedBox(width: 12),
+              Text(context.tr(NavText.appName), style: text.titleMedium),
+            ],
+          ),
+          const Spacer(),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 440),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(context.tr(AuthText.heroTitle), style: text.displaySmall),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  context.tr(AuthText.heroBody),
+                  style: text.bodyLarge?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                for (final (icon, label) in points)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: scheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: AppIcon(icon, size: 17, color: scheme.primary),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Text(
+                            context.tr(label),
+                            style: text.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const Spacer(flex: 2),
+          Text(
+            '© ${DateTime.now().year} UFin',
+            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
       ),
     );
   }
@@ -275,7 +367,7 @@ class _ErrorBanner extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.error_outline_rounded, size: 18, color: scheme.error),
+            AppIcon(AppIcons.errorCircle, size: 18, color: scheme.error),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
