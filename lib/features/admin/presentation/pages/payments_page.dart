@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/core/icons/app_icons.dart';
+import 'package:ufin_admin_system/core/utils/date_presets.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/payments_provider.dart';
@@ -94,39 +95,13 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
   };
 
   /// Date presets, each resolving to an inclusive (start, end) day range.
-  static List<(Tr, DateTimeRange Function(DateTime today))> get _datePresets =>
-      [
-        (CommonText.today, (t) => DateTimeRange(start: t, end: t)),
-        (
-          const Tr('Last 7 days', '7 ມື້ຜ່ານມາ'),
-          (t) =>
-              DateTimeRange(start: t.subtract(const Duration(days: 6)), end: t),
-        ),
-        (
-          CommonText.thisMonth,
-          (t) => DateTimeRange(start: DateTime(t.year, t.month), end: t),
-        ),
-        (
-          const Tr('Last month', 'ເດືອນແລ້ວ'),
-          (t) => DateTimeRange(
-            start: DateTime(t.year, t.month - 1),
-            end: DateTime(t.year, t.month, 0),
-          ),
-        ),
-      ];
-
   String? _trOrNull(Tr? t) => t == null ? null : context.tr(t);
 
   String? _dateLabelFor(DateTime? start, DateTime? end) {
     if (start == null || end == null) return null;
     final today = DateUtils.dateOnly(DateTime.now());
-    for (final (label, range) in _datePresets) {
-      final r = range(today);
-      if (DateUtils.isSameDay(r.start, start) &&
-          DateUtils.isSameDay(r.end, end)) {
-        return context.tr(label);
-      }
-    }
+    final preset = DatePreset.matching(start, end, now: today);
+    if (preset != null) return context.tr(preset.label);
     final sameYear = start.year == end.year && start.year == today.year;
     final f = DateFormat(sameYear ? 'd MMM' : 'd MMM y', context.localeName);
     return DateUtils.isSameDay(start, end)
@@ -242,13 +217,13 @@ class _PaymentsPageState extends ConsumerState<PaymentsPage> {
           label: context.tr(CommonText.date),
           value: dateLabel,
           entries: [
-            for (final (label, range) in _datePresets)
+            for (final preset in DatePreset.values)
               FilterMenuEntry(
-                label: context.tr(label),
+                label: context.tr(preset.label),
                 icon: AppIcons.calendar,
-                selected: context.tr(label) == dateLabel,
+                selected: context.tr(preset.label) == dateLabel,
                 onSelected: () {
-                  final r = range(today);
+                  final r = preset.range(today);
                   notifier.setDateRangeFilter(r.start, r.end);
                 },
               ),

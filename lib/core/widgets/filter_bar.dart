@@ -296,6 +296,79 @@ class FilterButton extends StatelessWidget {
   }
 }
 
+/// One-tap choice chip for quick options shown side by side (e.g. Today,
+/// Yesterday): same height and colours as [FilterButton], no menu.
+class FilterPill extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final AppIconData? icon;
+
+  const FilterPill({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.colors;
+    final fg = selected ? scheme.primary : scheme.onSurface;
+    final icon = this.icon;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Material(
+        color: selected
+            ? scheme.primary.withValues(alpha: 0.10)
+            : scheme.surface,
+        shape: StadiumBorder(
+          side: BorderSide(
+            color: selected
+                ? scheme.primary.withValues(alpha: 0.5)
+                : scheme.outlineVariant,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 40),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    AppIcon(
+                      icon,
+                      size: 16,
+                      color: selected ? fg : scheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(
+                    label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.2,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: fg,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// One row of a [FilterMenu].
 class FilterMenuEntry {
   final String label;

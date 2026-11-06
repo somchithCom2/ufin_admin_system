@@ -90,6 +90,9 @@ abstract final class CommonText {
   static const yesterday = Tr('Yesterday', 'ມື້ວານ');
   static const thisWeek = Tr('This week', 'ອາທິດນີ້');
   static const thisMonth = Tr('This month', 'ເດືອນນີ້');
+  static const last7Days = Tr('Last 7 days', '7 ມື້ຜ່ານມາ');
+  static const lastMonth = Tr('Last month', 'ເດືອນແລ້ວ');
+  static const custom = Tr('Custom', 'ກຳນົດເອງ');
   static const thisYear = Tr('This year', 'ປີນີ້');
   static const justNow = Tr('Just now', 'ຫາກໍ່ນີ້');
   static Tr minutesAgo(int n) => Tr('${n}m ago', '$n ນາທີກ່ອນ');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ufin_admin_system/core/icons/app_icons.dart';
+import 'package:ufin_admin_system/core/utils/date_presets.dart';
 import 'package:ufin_admin_system/core/utils/money_format.dart';
 import 'package:ufin_admin_system/features/admin/data/models/models.dart';
 import 'package:ufin_admin_system/features/admin/presentation/providers/daily_sales_provider.dart';
@@ -81,8 +82,12 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
     return byCurrency.isEmpty ? const {'LAK': 0.0} : byCurrency;
   }
 
-  void _showFilterModal() {
+  void _showCustomPeriod() {
     final formatter = AppDateFormat.of('dd/MM/yyyy');
+    // Edits stay in the sheet until Search, so Cancel leaves the page's
+    // period (and the data shown for it) untouched.
+    var start = startDate;
+    var end = endDate;
 
     showModalBottomSheet(
       context: context,
@@ -117,20 +122,20 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           children: [
                             ListTile(
                               title: Text(context.tr(FinText.startDate)),
-                              subtitle: Text(formatter.format(startDate)),
+                              subtitle: Text(formatter.format(start)),
                               trailing: const AppIcon(AppIcons.calendar),
                               onTap: () async {
                                 final picked = await showDatePicker(
                                   context: context,
-                                  initialDate: startDate,
+                                  initialDate: start,
                                   firstDate: DateTime(2020),
-                                  lastDate: endDate,
+                                  lastDate: end,
                                 );
                                 if (picked != null) {
                                   setModalState(() {
-                                    startDate = _at(
+                                    start = _at(
                                       picked,
-                                      TimeOfDay.fromDateTime(startDate),
+                                      TimeOfDay.fromDateTime(start),
                                     );
                                   });
                                 }
@@ -139,10 +144,9 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                             _timeTile(
                               context,
                               context.tr(FinText.startTime),
-                              startDate,
-                              (time) => setModalState(
-                                () => startDate = _at(startDate, time),
-                              ),
+                              start,
+                              (time) =>
+                                  setModalState(() => start = _at(start, time)),
                             ),
                           ],
                         ),
@@ -158,20 +162,20 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           children: [
                             ListTile(
                               title: Text(context.tr(FinText.endDate)),
-                              subtitle: Text(formatter.format(endDate)),
+                              subtitle: Text(formatter.format(end)),
                               trailing: const AppIcon(AppIcons.calendar),
                               onTap: () async {
                                 final picked = await showDatePicker(
                                   context: context,
-                                  initialDate: endDate,
-                                  firstDate: startDate,
+                                  initialDate: end,
+                                  firstDate: start,
                                   lastDate: DateTime.now(),
                                 );
                                 if (picked != null) {
                                   setModalState(() {
-                                    endDate = _at(
+                                    end = _at(
                                       picked,
-                                      TimeOfDay.fromDateTime(endDate),
+                                      TimeOfDay.fromDateTime(end),
                                     );
                                   });
                                 }
@@ -180,15 +184,14 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                             _timeTile(
                               context,
                               context.tr(FinText.endTime),
-                              endDate,
-                              (time) => setModalState(
-                                () => endDate = _at(endDate, time),
-                              ),
+                              end,
+                              (time) =>
+                                  setModalState(() => end = _at(end, time)),
                             ),
                           ],
                         ),
                       ),
-                      if (endDate.isBefore(startDate)) ...[
+                      if (end.isBefore(start)) ...[
                         const SizedBox(height: 12),
                         Text(
                           context.tr(FinText.endMustNotBeBefore),
@@ -208,16 +211,11 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: endDate.isBefore(startDate)
+                              onPressed: end.isBefore(start)
                                   ? null
                                   : () {
-                                      ref
-                                          .read(dailySalesProvider.notifier)
-                                          .loadDailySales(
-                                            startDate: startDate,
-                                            endDate: endDate,
-                                          );
                                       Navigator.pop(context);
+                                      _apply(start, end);
                                     },
                               icon: const AppIcon(AppIcons.search),
                               label: Text(context.tr(CommonText.search)),
@@ -237,6 +235,42 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
     );
   }
 
+  /// Shows and loads [start]..[end].
+  void _apply(DateTime start, DateTime end) {
+    setState(() {
+      startDate = start;
+      endDate = end;
+    });
+    ref
+        .read(dailySalesProvider.notifier)
+        .loadDailySales(startDate: start, endDate: end);
+  }
+
+  /// Whole days 00:00–23:59 of [preset].
+  void _applyPreset(DatePreset preset) {
+    final r = preset.range(DateTime.now());
+    _apply(r.start, DateTime(r.end.year, r.end.month, r.end.day, 23, 59));
+  }
+
+  /// The preset on screen; `null` for a custom period or one with times.
+  DatePreset? get _preset {
+    final wholeDays =
+        startDate.hour == 0 &&
+        startDate.minute == 0 &&
+        endDate.hour == 23 &&
+        endDate.minute == 59;
+    if (!wholeDays) return null;
+    return DatePreset.matching(startDate, endDate, now: DateTime.now());
+  }
+
+  /// Short label for the Custom chip once a custom period is on screen.
+  String _customLabel() {
+    final f = AppDateFormat.of('d MMM');
+    return DateUtils.isSameDay(startDate, endDate)
+        ? f.format(startDate)
+        : '${f.format(startDate)} – ${f.format(endDate)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dailySalesProvider);
@@ -246,11 +280,6 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
       appBar: AppBar(
         title: Text(context.tr(FinText.dailySalesSummary)),
         actions: [
-          IconButton(
-            icon: const AppIcon(AppIcons.sliders),
-            tooltip: context.tr(CommonText.filter),
-            onPressed: _showFilterModal,
-          ),
           IconButton(
             tooltip: context.tr(CommonText.refresh),
             icon: const AppIcon(AppIcons.refresh),
@@ -263,6 +292,25 @@ class _DailySalesPageState extends ConsumerState<DailySalesPage> {
       body: ContentWidth(
         child: Column(
           children: [
+            // One tap for the usual periods; Custom opens dates and times.
+            FilterBar(
+              filters: [
+                for (final preset in DatePreset.values)
+                  FilterPill(
+                    label: context.tr(preset.label),
+                    selected: _preset == preset,
+                    onTap: () => _applyPreset(preset),
+                  ),
+                FilterPill(
+                  icon: AppIcons.calendarRange,
+                  label: _preset == null
+                      ? _customLabel()
+                      : context.tr(CommonText.custom),
+                  selected: _preset == null,
+                  onTap: _showCustomPeriod,
+                ),
+              ],
+            ),
             // Active Filter Info
             if (state.data != null)
               Padding(
