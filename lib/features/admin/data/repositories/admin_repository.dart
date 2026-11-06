@@ -748,6 +748,22 @@ class AdminRepository {
     }
   }
 
+  /// The same expiring list as full subscriptions, so a row opens straight
+  /// into its detail page. The backend sends one DTO for both.
+  Future<List<AdminSubscription>> getExpiringAdminSubscriptions({
+    int days = 7,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.adminSubscriptionExpiring,
+        queryParameters: {'days': days},
+      );
+      return _parseListResponse(response, AdminSubscription.fromJson);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   // ============================================================
   // PAYMENTS
   // ============================================================

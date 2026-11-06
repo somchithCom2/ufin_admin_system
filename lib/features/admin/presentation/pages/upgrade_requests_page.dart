@@ -6,6 +6,10 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/admin_shell.
 import 'package:ufin_admin_system/features/admin/presentation/providers/dashboard_provider.dart';
 import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
+/// Set by another page (the dashboard's work queue) to open the list on
+/// Pending, whatever filter was left selected. The page clears it.
+final upgradeRequestsShowPendingProvider = StateProvider<bool>((ref) => false);
+
 class UpgradeRequestsPage extends ConsumerStatefulWidget {
   const UpgradeRequestsPage({super.key});
 
@@ -28,7 +32,12 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // A first visit opens on Pending anyway; drop a request made before it.
+      ref.read(upgradeRequestsShowPendingProvider.notifier).state = false;
+      _load();
+    });
   }
 
   void _load({int page = 0}) {
@@ -41,6 +50,13 @@ class _UpgradeRequestsPageState extends ConsumerState<UpgradeRequestsPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(upgradeRequestsProvider);
+    // The page stays alive between visits, so a later request arrives here.
+    ref.listen(upgradeRequestsShowPendingProvider, (_, show) {
+      if (!show) return;
+      ref.read(upgradeRequestsShowPendingProvider.notifier).state = false;
+      setState(() => _statusFilter = 'PENDING');
+      _load();
+    });
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(

@@ -11,15 +11,26 @@ import 'package:ufin_admin_system/core/widgets/widgets.dart';
 
 /// Which plans the list shows. Paid first: free trials outnumber paying shops,
 /// and paying shops are the ones to manage.
-enum _PlanFilter {
+enum SubscriptionPlanFilter {
   paid('Paid'),
   free('Free'),
   all('All plans');
 
-  const _PlanFilter(this.label);
+  const SubscriptionPlanFilter(this.label);
 
   final String label;
 }
+
+/// Filters another page asks the list to open with, e.g. the dashboard's
+/// "lapsed to Free" row. The list applies it once and clears it.
+typedef SubscriptionsListPreset = ({
+  String? status,
+  SubscriptionPlanFilter plan,
+});
+
+final subscriptionsListPresetProvider = StateProvider<SubscriptionsListPreset?>(
+  (ref) => null,
+);
 
 class SubscriptionsListPage extends ConsumerStatefulWidget {
   const SubscriptionsListPage({super.key});
@@ -31,7 +42,7 @@ class SubscriptionsListPage extends ConsumerStatefulWidget {
 
 class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
   String? _statusFilter;
-  _PlanFilter _planFilter = _PlanFilter.paid;
+  SubscriptionPlanFilter _planFilter = SubscriptionPlanFilter.paid;
   final _searchController = TextEditingController();
   late ScrollController _scrollController;
 
@@ -41,7 +52,24 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_applyPreset()) _reload();
+    });
+  }
+
+  /// Takes the preset another page left, if any, and reloads with it.
+  /// Returns false when there was none.
+  bool _applyPreset() {
+    final preset = ref.read(subscriptionsListPresetProvider);
+    if (preset == null || !mounted) return false;
+    ref.read(subscriptionsListPresetProvider.notifier).state = null;
+    _searchController.clear();
+    setState(() {
+      _statusFilter = preset.status;
+      _planFilter = preset.plan;
+    });
+    _reload();
+    return true;
   }
 
   @override
@@ -61,8 +89,8 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
         .read(subscriptionsProvider.notifier)
         .loadSubscriptions(
           status: _statusFilter,
-          planCode: _planFilter == _PlanFilter.free ? 'free' : null,
-          paid: _planFilter == _PlanFilter.paid,
+          planCode: _planFilter == SubscriptionPlanFilter.free ? 'free' : null,
+          paid: _planFilter == SubscriptionPlanFilter.paid,
           search: search.isEmpty ? null : search,
         );
   }
@@ -80,6 +108,10 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
   @override
   Widget build(BuildContext context) {
     final subscriptionsState = ref.watch(subscriptionsProvider);
+    // The page stays alive between visits, so a preset set later arrives here.
+    ref.listen(subscriptionsListPresetProvider, (_, preset) {
+      if (preset != null) _applyPreset();
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -125,7 +157,8 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(
                 children: [
-                  for (final plan in _PlanFilter.values) _buildPlanChip(plan),
+                  for (final plan in SubscriptionPlanFilter.values)
+                    _buildPlanChip(plan),
                 ],
               ),
             ),
@@ -176,7 +209,7 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
     );
   }
 
-  Widget _buildPlanChip(_PlanFilter plan) {
+  Widget _buildPlanChip(SubscriptionPlanFilter plan) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
@@ -220,13 +253,14 @@ class _SubscriptionsListPageState extends ConsumerState<SubscriptionsListPage> {
             'No subscriptions found',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          if (_statusFilter != null || _planFilter != _PlanFilter.all) ...[
+          if (_statusFilter != null ||
+              _planFilter != SubscriptionPlanFilter.all) ...[
             const SizedBox(height: 8),
             TextButton(
               onPressed: () {
                 setState(() {
                   _statusFilter = null;
-                  _planFilter = _PlanFilter.all;
+                  _planFilter = SubscriptionPlanFilter.all;
                 });
                 _reload();
               },

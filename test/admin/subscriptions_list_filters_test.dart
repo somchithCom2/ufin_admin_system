@@ -34,6 +34,9 @@ class _Repository implements AdminRepository {
     bool paid = false,
     String? search,
   }) async {
+    // The work queue behind the menu button counts lapsed shops with a
+    // one-row read; only the list's own loads are recorded.
+    if (size == 1) return _page(const []);
     queries.add((
       status: status,
       planCode: planCode,
@@ -54,6 +57,17 @@ class _Repository implements AdminRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+PaginatedResponse<AdminSubscription> _page(List<AdminSubscription> rows) =>
+    PaginatedResponse(
+      content: rows,
+      page: 0,
+      size: 20,
+      totalElements: rows.length,
+      totalPages: 1,
+      isFirst: true,
+      isLast: true,
+    );
 
 void main() {
   late _Repository repository;

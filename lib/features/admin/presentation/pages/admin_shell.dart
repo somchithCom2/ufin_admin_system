@@ -17,6 +17,7 @@ import 'package:ufin_admin_system/features/admin/presentation/pages/deleted_user
 import 'package:ufin_admin_system/features/admin/presentation/pages/upgrade_requests_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/app_releases_page.dart';
 import 'package:ufin_admin_system/features/admin/presentation/pages/system_configuration_page.dart';
+import 'package:ufin_admin_system/features/admin/presentation/providers/work_queue_provider.dart';
 
 /// Global scaffold key for drawer access
 final adminScaffoldKey = GlobalKey<ScaffoldState>();
@@ -133,6 +134,37 @@ final adminSectionProvider = StateProvider.autoDispose<AdminSection>(
   (ref) => AdminSection.dashboard,
 );
 
+/// Opens Subscriptions with these filters selected, from anywhere.
+void openSubscriptionsWith(
+  WidgetRef ref, {
+  String? status,
+  SubscriptionPlanFilter plan = SubscriptionPlanFilter.all,
+}) {
+  ref.read(subscriptionsListPresetProvider.notifier).state = (
+    status: status,
+    plan: plan,
+  );
+  ref.read(adminSectionProvider.notifier).state = AdminSection.subscriptions;
+}
+
+/// Opens Upgrade Requests on its Pending list, from anywhere.
+void openPendingUpgradeRequests(WidgetRef ref) {
+  ref.read(upgradeRequestsShowPendingProvider.notifier).state = true;
+  ref.read(adminSectionProvider.notifier).state = AdminSection.upgradeRequests;
+}
+
+/// The count shown on a sidebar item, from the work queue; `null` for none.
+({int count, bool urgent})? _navBadge(AdminSection section, WorkQueue? queue) {
+  final count = switch (section) {
+    AdminSection.upgradeRequests => queue?.pendingRequests,
+    AdminSection.subscriptions => queue?.expiring?.length,
+    _ => null,
+  };
+  if (count == null || count == 0) return null;
+  // A request waits on the admin; an expiring plan is only a heads-up.
+  return (count: count, urgent: section == AdminSection.upgradeRequests);
+}
+
 /// Main admin shell: persistent sidebar on wide screens, drawer on mobile.
 class AdminShell extends ConsumerStatefulWidget {
   const AdminShell({super.key});
@@ -168,6 +200,12 @@ class _AdminShellState extends ConsumerState<AdminShell> {
   @override
   Widget build(BuildContext context) {
     final current = ref.watch(adminSectionProvider);
+    // Each visit to a section is a chance the queue moved on; the notifier
+    // skips this if it loaded in the last 30 seconds.
+    ref.listen(
+      adminSectionProvider,
+      (_, _) => ref.read(workQueueProvider.notifier).refresh(),
+    );
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= AppSpacing.tabletBreakpoint;
     final isExtended = width >= AppSpacing.desktopBreakpoint;
@@ -244,6 +282,7 @@ class _Sidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authStateProvider);
+    final queue = ref.watch(workQueueProvider).queue;
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final padding = MediaQuery.paddingOf(context);
@@ -275,6 +314,7 @@ class _Sidebar extends ConsumerWidget {
           section: s,
           selected: s == current,
           compact: compact,
+          badge: _navBadge(s, queue),
           onTap: () => onSelect(s),
         ),
       );
@@ -393,6 +433,7 @@ class _NavTile extends StatelessWidget {
   final AdminSection section;
   final bool selected;
   final bool compact;
+  final ({int count, bool urgent})? badge;
   final VoidCallback onTap;
 
   const _NavTile({
@@ -400,12 +441,27 @@ class _NavTile extends StatelessWidget {
     required this.selected,
     required this.compact,
     required this.onTap,
+    this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final fg = selected ? scheme.primary : scheme.onSurfaceVariant;
+    final status = context.status;
+    final badge = this.badge;
+    final (Color badgeBg, Color badgeFg) = badge?.urgent ?? false
+        ? (scheme.primary, scheme.onPrimary)
+        : (status.warningContainer, status.onWarningContainer);
+    final badgeText = badge == null
+        ? ''
+        : badge.count > 99
+        ? '99+'
+        : '${badge.count}';
+    final icon = Icon(
+      selected ? section.selectedIcon : section.icon,
+      color: selected ? scheme.primary : scheme.onSurfaceVariant,
+      size: compact ? 22 : 20,
+    );
     final bg = selected
         ? scheme.primary.withValues(alpha: 0.10)
         : Colors.transparent;
@@ -421,19 +477,20 @@ class _NavTile extends StatelessWidget {
           child: SizedBox(
             height: 42,
             child: compact
-                ? Icon(
-                    selected ? section.selectedIcon : section.icon,
-                    color: fg,
-                    size: 22,
+                ? Center(
+                    child: badge == null
+                        ? icon
+                        : Badge(
+                            label: Text(badgeText),
+                            backgroundColor: badgeBg,
+                            textColor: badgeFg,
+                            child: icon,
+                          ),
                   )
                 : Row(
                     children: [
                       const SizedBox(width: 12),
-                      Icon(
-                        selected ? section.selectedIcon : section.icon,
-                        color: fg,
-                        size: 20,
-                      ),
+                      icon,
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -449,6 +506,28 @@ class _NavTile extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (badge != null)
+                        Container(
+                          constraints: const BoxConstraints(minWidth: 22),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeBg,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            badgeText,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: badgeFg,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 10),
                     ],
                   ),
           ),
@@ -459,9 +538,19 @@ class _NavTile extends StatelessWidget {
     return Semantics(
       selected: selected,
       button: true,
-      label: section.label,
+      label: badge == null
+          ? section.label
+          : '${section.label}, ${badge.count} '
+                '${badge.urgent ? 'waiting' : 'expiring soon'}',
       child: compact
-          ? Tooltip(message: section.label, preferBelow: false, child: tile)
+          ? Tooltip(
+              message: badge == null
+                  ? section.label
+                  : '${section.label} · ${badge.count} '
+                        '${badge.urgent ? 'waiting' : 'expiring soon'}',
+              preferBelow: false,
+              child: tile,
+            )
           : tile,
     );
   }
@@ -473,11 +562,23 @@ Widget? buildAdminMenuButton(BuildContext context) {
       MediaQuery.sizeOf(context).width >= AppSpacing.tabletBreakpoint;
   if (isWideScreen) return null;
 
-  return IconButton(
-    tooltip: 'Menu',
-    icon: const Icon(Icons.menu_rounded),
-    onPressed: () {
-      adminScaffoldKey.currentState?.openDrawer();
+  return Consumer(
+    builder: (context, ref, _) {
+      // On a phone the badges are inside the closed drawer; a dot says so.
+      final queue = ref.watch(workQueueProvider).queue;
+      final waiting =
+          (queue?.pendingRequests ?? 0) + (queue?.expiring?.length ?? 0);
+      return IconButton(
+        tooltip: waiting > 0 ? 'Menu · items need attention' : 'Menu',
+        icon: Badge(
+          isLabelVisible: waiting > 0,
+          smallSize: 8,
+          child: const Icon(Icons.menu_rounded),
+        ),
+        onPressed: () {
+          adminScaffoldKey.currentState?.openDrawer();
+        },
+      );
     },
   );
 }
